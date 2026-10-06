@@ -1,0 +1,44 @@
+<%# locals: active, archived, needsSetup -%>
+<header class="page-header">
+  <div>
+    <h1>Einsätze &amp; Übungen</h1>
+    <p class="subtle">Alle Lagen, zu denen die Drohnengruppe ausgerückt ist.</p>
+  </div>
+  <a class="button button--primary" href="#/missions/new"><%- icon('plus') %><span>Neuer Einsatz</span></a>
+</header>
+
+<% if (needsSetup) { -%>
+  <div class="callout callout--info">
+    <%- icon('sliders') %>
+    <div>
+      <strong>Willkommen bei di-drop!</strong>
+      Trag in den <a href="#/settings/general">Einstellungen</a> kurz deine Einheit und deinen Namen ein –
+      dann wirst du bei neuen Einsätzen automatisch als Drone Operator eingetragen.
+    </div>
+  </div>
+<% } -%>
+
+<section class="section">
+  <h2 class="section__title">Aktiv <span class="count"><%= active.length %></span></h2>
+  <% if (active.length === 0) { -%>
+    <div class="empty">
+      <%- icon('drone', { size: 40, class: 'empty__icon' }) %>
+      <p><strong>Gerade kein aktiver Einsatz.</strong></p>
+      <p class="subtle">Leg einen neuen Einsatz oder eine Übung an, um Flüge zu erfassen.</p>
+      <a class="button button--primary" href="#/missions/new"><%- icon('plus') %><span>Neuer Einsatz</span></a>
+    </div>
+  <% } else { -%>
+    <div class="list">
+      <% active.forEach((mission) => { %><%- include('missions/_card', { mission }) %><% }) %>
+    </div>
+  <% } -%>
+</section>
+
+<% if (archived.length) { -%>
+  <section class="section">
+    <h2 class="section__title">Abgeschlossen <span class="count"><%= archived.length %></span></h2>
+    <div class="list list--muted">
+      <% archived.forEach((mission) => { %><%- include('missions/_card', { mission }) %><% }) %>
+    </div>
+  </section>
+<% } -%>

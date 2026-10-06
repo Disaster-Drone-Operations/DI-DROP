@@ -1,0 +1,21 @@
+<%# locals: mission -%>
+<% const d = mission.startsAt -%>
+<a class="list__row mission-row" href="#/missions/<%= mission.id %>">
+  <div class="datebox <%= isToday(d) ? 'datebox--today' : '' %>">
+    <span class="datebox__day"><%= d.getDate() %></span>
+    <span class="datebox__month"><%= d.toLocaleDateString('de-DE', { month: 'short' }).replace('.', '') %></span>
+  </div>
+  <div class="mission-row__main">
+    <div class="mission-row__title">
+      <span class="truncate"><%= mission.title %></span>
+      <%- kindBadge(mission) %>
+    </div>
+    <div class="meta">
+      <span><%- icon('pin', { size: 13 }) %><%= mission.location %></span>
+      <% if (mission.start_time) { %><span><%- icon('clock', { size: 13 }) %><%= mission.start_time %> Uhr</span><% } %>
+      <span><%- icon('drone', { size: 13 }) %><%= pluralize(Number(mission.flights_count ?? 0), 'Flug', 'Flüge') %></span>
+      <% if (mission.reference) { %><span class="subtle">Nr. <%= mission.reference %></span><% } %>
+    </div>
+  </div>
+  <%- icon('chevron', { class: 'icon list__chevron' }) %>
+</a>

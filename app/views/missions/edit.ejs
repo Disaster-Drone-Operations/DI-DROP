@@ -1,0 +1,8 @@
+<%# locals: mission -%>
+<header class="page-header">
+  <div>
+    <a class="backlink" href="#/missions/<%= mission.id %>"><%= mission.title %></a>
+    <h1><%= mission.kindLabel %> bearbeiten</h1>
+  </div>
+</header>
+<%- include('missions/_form', { mission }) %>

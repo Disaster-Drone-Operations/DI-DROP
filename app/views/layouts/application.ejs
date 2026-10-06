@@ -1,0 +1,47 @@
+<%# locals: body, flash, currentPath, unitName, activeMissions -%>
+<div class="window">
+  <aside class="sidebar">
+    <div class="titlebar" data-tauri-drag-region></div>
+
+    <div class="brand">
+      <span class="brand__logo"><%- icon('drone', { size: 18 }) %></span>
+      <div class="brand__text">
+        <div class="brand__name">di-drop</div>
+        <div class="brand__unit"><%= unitName || 'Disaster Drone Operator' %></div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a href="#/" class="nav__item <%= isCurrent(currentPath, '/', { exact: true }) || currentPath === '/missions/new' ? 'is-active' : '' %>">
+        <%- icon('missions') %><span>Einsätze</span>
+      </a>
+
+      <% if (activeMissions.length) { -%>
+        <div class="nav__heading">Aktiv</div>
+        <% activeMissions.forEach((m) => { -%>
+          <a href="#/missions/<%= m.id %>" class="nav__item nav__item--sub <%= isCurrent(currentPath, `/missions/${m.id}`) ? 'is-active' : '' %>" title="<%= m.title %>">
+            <span class="dot dot--<%= m.kind %>"></span><span class="truncate"><%= m.title %></span>
+          </a>
+        <% }) -%>
+      <% } -%>
+    </nav>
+
+    <nav class="nav nav--bottom">
+      <a href="#/settings" class="nav__item <%= isCurrent(currentPath, '/settings') ? 'is-active' : '' %>">
+        <%- icon('settings') %><span>Einstellungen</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <div class="titlebar" data-tauri-drag-region></div>
+    <% if (flash.notice || flash.alert) { -%>
+      <div class="toast <%= flash.alert ? 'toast--alert' : '' %>" data-controller="flash" role="status">
+        <%- icon(flash.alert ? 'alert' : 'check') %><span><%= flash.notice || flash.alert %></span>
+      </div>
+    <% } -%>
+    <div class="page">
+      <%- body %>
+    </div>
+  </main>
+</div>

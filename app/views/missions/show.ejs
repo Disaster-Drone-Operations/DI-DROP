@@ -1,0 +1,99 @@
+<%# locals: mission, flights, flight, nextControlAt -%>
+<% const path = `/missions/${mission.id}` -%>
+<header class="page-header">
+  <div>
+    <a class="backlink" href="#/">Einsätze</a>
+    <div class="eyebrow">
+      <%- kindBadge(mission) %>
+      <% if (!mission.isActive) { %><span class="badge badge--muted">Abgeschlossen</span><% } %>
+      <% if (mission.reference) { %><span class="subtle">Nr. <%= mission.reference %></span><% } %>
+    </div>
+    <h1><%= mission.title %></h1>
+    <div class="meta meta--large">
+      <span><%- icon('calendar', { size: 14 }) %><%= formatDate(mission.date) %><% if (mission.start_time) { %>, <%= mission.start_time %> Uhr<% } %></span>
+      <span><%- icon('pin', { size: 14 }) %><%= mission.location %></span>
+    </div>
+  </div>
+  <div class="toolbar">
+    <a class="button" href="#<%= path %>/edit"><%- icon('pencil') %><span>Bearbeiten</span></a>
+    <% if (mission.isActive) { -%>
+      <%- buttonTo('Abschließen', path, { method: 'patch', icon: 'archive', params: { 'mission[status]': 'abgeschlossen' },
+            confirm: `„${mission.title}“ abschließen? Er erscheint dann unter „Abgeschlossen“ und kann jederzeit wieder geöffnet werden.`,
+            confirmButton: 'Abschließen' }) %>
+    <% } else { -%>
+      <%- buttonTo('Wieder öffnen', path, { method: 'patch', icon: 'reopen', params: { 'mission[status]': 'aktiv' } }) %>
+    <% } -%>
+  </div>
+</header>
+
+<div class="columns">
+  <div class="columns__main">
+    <% if (mission.isActive) { -%>
+      <% if (nextControlAt) { -%>
+        <div class="next-flight" data-controller="countdown" data-countdown-at-value="<%= nextControlAt.toISOString() %>">
+          <%- icon('kontrolle', { size: 20 }) %>
+          <div>
+            <div class="next-flight__label">Nächster Kontrollflug</div>
+            <div class="next-flight__time"><%= formatTime(nextControlAt) %> Uhr
+              <span class="next-flight__relative" data-countdown-target="label"></span>
+            </div>
+          </div>
+          <span class="subtle next-flight__interval">alle <%= mission.control_interval_minutes %> Min.</span>
+        </div>
+      <% } else if (mission.control_interval_minutes) { -%>
+        <div class="callout callout--subtle">
+          <%- icon('clock') %>
+          <span>Kontrollflüge alle <%= mission.control_interval_minutes %> Minuten – der Takt startet mit dem ersten Kontrollflug.</span>
+        </div>
+      <% } -%>
+
+      <%- include('flights/_form', { mission, flight }) %>
+    <% } -%>
+
+    <section class="section">
+      <h2 class="section__title">Flüge <span class="count"><%= flights.length %></span></h2>
+      <% if (flights.length === 0) { -%>
+        <div class="empty empty--compact">
+          <p class="subtle">Noch keine Flüge erfasst.</p>
+        </div>
+      <% } else { -%>
+        <ol class="timeline">
+          <% flights.slice().reverse().forEach((f) => { %><%- include('flights/_flight', { mission, flight: f }) %><% }) %>
+        </ol>
+      <% } -%>
+    </section>
+  </div>
+
+  <aside class="columns__side">
+    <section class="card">
+      <h3 class="card__title"><%- icon('users') %> Team</h3>
+      <dl class="details">
+        <% missionRoles().forEach(([attr, label]) => { -%>
+          <dt><%= label %></dt><dd><%= mission[attr] || '–' %></dd>
+        <% }) -%>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h3 class="card__title"><%- icon('pin') %> Einsatzdaten</h3>
+      <dl class="details">
+        <dt>Ort</dt><dd><%= mission.location %></dd>
+        <% if (mission.coordinates) { %><dt>Koordinaten</dt><dd class="mono selectable"><%= mission.coordinates %></dd><% } %>
+        <% if (mission.requested_by) { %><dt>Angefordert</dt><dd><%= mission.requested_by %></dd><% } %>
+        <dt>Kontrollflüge</dt><dd><%= mission.control_interval_minutes ? `alle ${mission.control_interval_minutes} Min.` : 'kein Intervall' %></dd>
+      </dl>
+    </section>
+
+    <% if (mission.notes) { -%>
+      <section class="card">
+        <h3 class="card__title">Notizen</h3>
+        <p class="notes selectable"><%= mission.notes %></p>
+      </section>
+    <% } -%>
+
+    <section class="danger-zone">
+      <%- buttonTo(`${mission.kindLabel} löschen`, path, { method: 'delete', icon: 'trash', class: 'button button--danger-quiet',
+            confirm: `„${mission.title}“ mit allen ${flights.length} Flügen endgültig löschen?`, confirmButton: 'Löschen' }) %>
+    </section>
+  </aside>
+</div>
