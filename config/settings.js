@@ -57,6 +57,14 @@ export default [
     ],
   },
   {
+    key: 'updates',
+    title: 'Aktualisierungen',
+    icon: 'import',
+    description: 'Daten, die di-drop bei Bedarf aus dem Internet nachlädt. Alles funktioniert auch ohne – die Aktualisierung macht es nur genauer.',
+    partial: 'settings/_updates',
+    fields: [],
+  },
+  {
     key: 'nextcloud',
     title: 'Nextcloud',
     icon: 'cloud',

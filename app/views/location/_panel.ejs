@@ -1,4 +1,4 @@
-<%# locals: position, session, configured, now, coords -%>
+<%# locals: position, session, configured, coords, address -%>
 <% const live = session?.mode === 'stream' && ['streaming', 'paired', 'pairing', 'waiting', 'reconnecting'].includes(session.status) -%>
 <% if (!configured) { -%>
   <div class="callout callout--info location-setup">
@@ -25,6 +25,11 @@
     </div>
 
     <dl class="location-card__details">
+      <dt>Ort</dt>
+      <dd class="selectable">
+        <% if (address?.text) { %><%= address.text %><% if (address.source === 'offline' && address.final) { %> <span class="hint">– ohne Internet nur der nächste Ort</span><% } %>
+        <% } else { %><span class="hint"><%= address?.final ? 'nicht ermittelbar' : 'wird ermittelt …' %></span><% } %>
+      </dd>
       <dt>Grad, Minuten, Sekunden</dt><dd class="mono selectable"><%= coords.dms %></dd>
       <dt>UTM (Zone 32, ETRS89)</dt><dd class="mono selectable"><%= coords.utm %></dd>
       <% if (position.accuracy != null) { %><dt>Genauigkeit</dt><dd>± <%= Math.round(position.accuracy) %> m<% if (position.accuracy > 50) { %> <span class="hint">– ungenau, evtl. im Freien wiederholen</span><% } %></dd><% } %>

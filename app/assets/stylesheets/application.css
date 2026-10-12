@@ -953,3 +953,16 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .relay-status__line .spinner { width: 14px; height: 14px; border-width: 2px; }
 .relay-status__ok { color: var(--success); display: inline-flex; }
 .relay-status__bad { color: var(--danger); display: inline-flex; }
+
+/* Einstellungen → Aktualisierungen */
+.update-list { display: flex; flex-direction: column; margin-top: 12px; }
+.update-item { display: flex; align-items: flex-start; gap: 16px; padding: 12px 0; border-top: 1px solid var(--border); }
+.update-item__text { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.update-item__text p { margin: 0; }
+.update-item__status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+.update-item__status .spinner { width: 12px; height: 12px; border-width: 2px; }
+.update-item__status--ok { color: var(--success); }
+.update-item__status--error { color: var(--danger); }
+.mission-location-hint { margin: -6px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.mission-location-hint .icon { color: var(--success); }
+.mission-location-hint .button { min-height: 22px; padding: 0 8px; font-size: 12px; }

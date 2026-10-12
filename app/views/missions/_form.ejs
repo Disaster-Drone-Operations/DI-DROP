@@ -2,7 +2,8 @@
 <% const f = formFor(mission, 'mission') -%>
 <% const path = mission.isNewRecord ? '/missions' : `/missions/${mission.id}` -%>
 <% const moreFields = ['reference', 'requested_by', 'coordinates', 'group_leader', 'pilot', 'observer', 'operator', 'control_interval_minutes', 'notes'] -%>
-<form action="#<%= path %>" method="post" class="form" novalidate data-shortcut="save">
+<form action="#<%= path %>" method="post" class="form" novalidate data-shortcut="save"
+      data-controller="mission-location" data-mission-location-configured-value="<%= relayConfigured() ? 'true' : 'false' %>">
   <% if (!mission.isNewRecord) { %><input type="hidden" name="_method" value="patch"><% } %>
   <%- errorSummary(mission) %>
 
@@ -11,7 +12,9 @@
       <%- f.field('kind', { label: 'Art', type: 'segmented', options: missionKindOptions(), wide: true }) %>
       <%- f.field('title', { label: 'Stichwort', required: true, autofocus: mission.isNewRecord, wide: true,
             placeholder: 'z. B. Waldbrand Hohe Warte, Vermisstensuche Schneekopf' }) %>
-      <%- f.field('location', { label: 'Einsatzort', required: true, wide: true, placeholder: 'Ort, Gebiet oder Sammelpunkt' }) %>
+      <%- f.field('location', { label: 'Einsatzort', required: true, wide: true, placeholder: 'Ort, Gebiet oder Sammelpunkt',
+            button: `<button type="button" class="button" data-action="mission-location#here" title="Standort vom Smartphone übernehmen">${icon('pin')}<span>Hier</span></button>` }) %>
+      <p class="hint field--wide mission-location-hint" data-mission-location-target="hint" hidden></p>
       <%- f.field('date', { label: 'Datum', type: 'date', required: true }) %>
       <%- f.field('start_time', { label: 'Beginn', type: 'time' }) %>
     </div>
@@ -53,6 +56,8 @@
       </fieldset>
     </div>
   </details>
+
+  <%- include('location/_transfer_dialog') %>
 
   <div class="form-actions">
     <a class="button" href="#<%= mission.isNewRecord ? '/' : path %>">Abbrechen</a>

@@ -96,3 +96,14 @@ RELAY_URL=http://127.0.0.1:8787 node --test test/relay.contract.test.mjs
 
 In der App unter *Standort-Übertragung → Eigenen Relay-Server verwenden* `http://127.0.0.1:8787`
 eintragen; den QR-Link in einem zweiten Browser-Tab öffnen (Geolocation ggf. per Konsole simulieren).
+
+### Ortsangabe aus Koordinaten
+
+`app/services/address_service.js`: ohne Internet der nächste Ort aus der Ortsliste
+(„Musterdorf, 1,3 km nordöstlich“), mit Internet die Adresse von OpenStreetMap Nominatim
+(Rust: `src-tauri/src/geocode.rs`, App-Kennung, max. 1 Anfrage/s). Genutzt auf „Mein Standort“
+und beim Knopf „Hier“ neben dem Einsatzort.
+
+Die Ortsliste (`public/data/places_de.tsv`, GeoNames, CC BY 4.0) wird mitgeliefert und kann unter
+*Einstellungen → Aktualisierungen* neu geladen werden (`src-tauri/src/places.rs`, gespeichert in
+den App-Daten). Mitgelieferte Fassung neu erzeugen: `node script/build_places.mjs /pfad/DE.txt`.

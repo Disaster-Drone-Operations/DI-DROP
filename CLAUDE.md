@@ -62,6 +62,10 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Sicherheitsregeln: Cloudflare-Token nie im Worker, auf der Smartphone-Seite, im QR-Code,
   in WebSocket-Nachrichten oder Logs; kein Global API Key; Positionen nie dauerhaft speichern;
   im Zweifel Verbindung abbrechen (fail closed).
+- QR-Dialog überall per `<%- include('location/_transfer_dialog') %>` einbinden und nur
+  `startTransfer()` aufrufen – der Dialog öffnet sich selbst.
+- Nachladbare Daten (Ortsliste u. Ä.) als Eintrag in `app/services/updates.js`
+  (Einstellungen → Aktualisierungen).
 - Ansichten, die oft neu gezeichnet werden, mit `morph()` aus `lib/morph.js` aktualisieren
   (sonst gehen Klicks verloren).
 

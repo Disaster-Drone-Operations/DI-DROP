@@ -47,11 +47,13 @@ function control({ type = 'text', id, name, value, options = [], placeholder, re
 }
 
 // Ein komplettes Feld: Label, Eingabe, Fehler, Hinweis
-export function field({ label, hint, errors = [], wide, ...opts }) {
+//   button: HTML eines Knopfs rechts neben der Eingabe (z. B. „Hier“ beim Einsatzort)
+export function field({ label, hint, errors = [], wide, button, ...opts }) {
   const invalid = errors.length > 0
+  const input = button ? `<div class="input-with-button">${control(opts)}${button}</div>` : control(opts)
   return `<div class="field${invalid ? ' field--invalid' : ''}${wide ? ' field--wide' : ''}">
     ${label ? `<label class="field__label" for="${escapeHtml(opts.id)}">${escapeHtml(label)}${opts.required ? ' <span class="required">*</span>' : ''}</label>` : ''}
-    ${control(opts)}
+    ${input}
     ${invalid ? `<p class="field__error">${escapeHtml(label ?? '')} ${escapeHtml(errors.join(', '))}</p>` : ''}
     ${hint ? `<p class="hint">${escapeHtml(hint)}</p>` : ''}
   </div>`

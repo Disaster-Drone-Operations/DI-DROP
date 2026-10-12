@@ -6,10 +6,5 @@
   </div>
 </header>
 
-<div data-controller="location" data-location-configured-value="<%= configured ? 'true' : 'false' %>">
-  <div data-location-target="panel"></div>
-
-  <dialog class="sheet location-dialog" data-location-target="dialog" data-action="close->location#dialogClosed">
-    <div class="sheet__body" data-location-target="transfer"></div>
-  </dialog>
-</div>
+<div data-controller="location" data-location-configured-value="<%= configured ? 'true' : 'false' %>"></div>
+<%- include('location/_transfer_dialog') %>

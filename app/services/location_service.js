@@ -37,14 +37,15 @@ export async function startTransfer(mode) {
       emit()
     },
   })
-  state.session = { mode, status: 'connecting', text: 'Verbinde mit dem Relay …' }
+  const id = Date.now() // Dialoge öffnen sich einmal pro neuer Übertragung
+  state.session = { id, mode, status: 'connecting', text: 'Verbinde mit dem Relay …' }
   emit()
   try {
     const { qrUrl } = await client.start(mode)
     state.session = { ...state.session, qrUrl }
     emit()
   } catch (error) {
-    state.session = { mode, status: 'error', text: error.message }
+    state.session = { id, mode, status: 'error', text: error.message }
     emit()
   }
 }
@@ -58,6 +59,12 @@ export function closeTransfer() {
   stopTransfer()
   state.session = null
   emit()
+}
+
+// Position, die nicht älter als maxAgeMs ist (z. B. für „Hier“ im Einsatzformular)
+export function freshPosition(maxAgeMs = 5 * 60_000) {
+  const p = state.position
+  return p && Date.now() - p.timestamp <= maxAgeMs ? p : null
 }
 
 export const isLive = () => state.session?.mode === 'stream' && ['streaming', 'paired', 'reconnecting'].includes(state.session.status)

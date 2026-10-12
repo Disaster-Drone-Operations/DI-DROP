@@ -31,11 +31,11 @@
 
 <div class="dialog__actions">
   <% if (live && ['streaming', 'paired', 'reconnecting'].includes(s.status)) { -%>
-    <button type="button" class="button" data-action="location#stop">Beenden</button>
-    <button type="button" class="button button--primary" data-action="location#hideTransfer">Im Hintergrund weiter</button>
+    <button type="button" class="button" data-action="location-transfer#stop">Beenden</button>
+    <button type="button" class="button button--primary" data-action="location-transfer#hide">Im Hintergrund weiter</button>
   <% } else if (['done', 'stopped', 'error'].includes(s.status)) { -%>
-    <button type="button" class="button button--primary" data-action="location#closeTransfer" autofocus>Schließen</button>
+    <button type="button" class="button button--primary" data-action="location-transfer#close" autofocus>Schließen</button>
   <% } else { -%>
-    <button type="button" class="button" data-action="location#closeTransfer">Abbrechen</button>
+    <button type="button" class="button" data-action="location-transfer#close">Abbrechen</button>
   <% } -%>
 </div>

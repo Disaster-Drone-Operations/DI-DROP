@@ -1,23 +1,21 @@
 import { Controller } from '@hotwired/stimulus'
-import QRCode from 'qrcode'
 import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
 import platform from '/lib/platform/index.js'
+import { distance } from '/lib/geo.js'
 import { formatDecimal, formatDms, formatUtm, mapLinks } from '/lib/location/coordinates.js'
-import { currentLocation, startTransfer, stopTransfer, closeTransfer } from '/app/services/location_service.js'
+import { currentLocation, startTransfer, stopTransfer } from '/app/services/location_service.js'
+import { describeLocation } from '/app/services/address_service.js'
 
-// Seite "Mein Standort": zeichnet Position und Übertragungsdialog bei jeder Änderung neu
+// Seite "Mein Standort": zeichnet die Position bei jeder Änderung neu (Dialog: location-transfer)
 export default class extends Controller {
-  static targets = ['panel', 'dialog', 'transfer']
   static values = { configured: Boolean }
 
   connect() {
     this.onChange = () => this.refresh()
     window.addEventListener('location:changed', this.onChange)
-    this.ticker = setInterval(() => this.renderPanel(), 15_000) // "vor 2 Min." aktuell halten
+    this.ticker = setInterval(() => this.paint(), 15_000) // "vor 2 Min." aktuell halten
     this.refresh()
-    // Kopplung noch nicht abgeschlossen → QR-Dialog wieder zeigen (eine laufende Live-Übertragung nicht)
-    if (['connecting', 'waiting', 'pairing', 'paired'].includes(currentLocation().session?.status)) this.showTransfer()
   }
 
   disconnect() {
@@ -25,23 +23,32 @@ export default class extends Controller {
     clearInterval(this.ticker)
   }
 
-  async refresh() {
-    const { session } = currentLocation()
-    if (session?.qrUrl && session.qrUrl !== this.qrFor) {
-      this.qrFor = session.qrUrl
-      this.qrDataUrl = await QRCode.toDataURL(session.qrUrl, { errorCorrectionLevel: 'M', margin: 2, width: 480 })
-    }
-    if (!session?.qrUrl) this.qrFor = this.qrDataUrl = null
-    this.renderPanel()
-    this.renderTransfer()
-    // Einzelabfrage erfolgreich → Dialog schließt sich kurz darauf von selbst
-    if (session?.status === 'done' && this.dialogTarget.open) {
-      clearTimeout(this.autoClose)
-      this.autoClose = setTimeout(() => this.closeTransfer(), 1200)
-    }
+  refresh() {
+    this.lookupAddress()
+    this.paint()
   }
 
-  renderPanel() {
+  // Adresse nur neu ermitteln, wenn sich die Position spürbar bewegt hat (Live: nicht bei jeder Meldung)
+  lookupAddress() {
+    const { position } = currentLocation()
+    if (!position) return
+    const last = this.addressFor
+    if (last && distance(last.lat, last.lon, position.lat, position.lon) < 30) return
+    this.addressFor = { lat: position.lat, lon: position.lon }
+    this.address = null
+    const current = () => this.addressFor?.lat === position.lat && this.addressFor?.lon === position.lon
+    describeLocation(position.lat, position.lon, (result) => {
+      if (!current()) return
+      this.address = { ...result, final: false }
+      this.paint()
+    }).then((result) => {
+      if (!current()) return
+      this.address = { ...result, final: true }
+      this.paint()
+    })
+  }
+
+  paint() {
     const { position, session } = currentLocation()
     const coords = position && {
       decimal: formatDecimal(position.lat, position.lon),
@@ -50,41 +57,19 @@ export default class extends Controller {
       links: mapLinks(position.lat, position.lon),
       age: age(position.timestamp),
     }
-    morph(this.panelTarget, render('location/_panel', { position, session, configured: this.configuredValue, coords }))
+    morph(this.element, render('location/_panel', { position, session, configured: this.configuredValue, coords, address: this.address }))
   }
 
-  renderTransfer() {
-    const { session } = currentLocation()
-    morph(this.transferTarget, render('location/_transfer', { session, qrDataUrl: this.qrDataUrl }))
+  start({ params: { mode } }) {
+    startTransfer(mode)
   }
 
-  async start({ params: { mode } }) {
-    this.showTransfer()
-    await startTransfer(mode)
-  }
-
-  async stop() {
-    await stopTransfer()
+  stop() {
+    stopTransfer()
   }
 
   showTransfer() {
-    if (!this.dialogTarget.open) this.dialogTarget.showModal()
-  }
-
-  hideTransfer() {
-    this.dialogTarget.close()
-  }
-
-  closeTransfer() {
-    clearTimeout(this.autoClose)
-    this.dialogTarget.close()
-  }
-
-  // Dialog zu (auch per Esc): eine laufende Live-Übertragung bleibt bestehen, alles andere wird beendet
-  dialogClosed() {
-    const { session } = currentLocation()
-    const live = session?.mode === 'stream' && ['streaming', 'paired', 'reconnecting'].includes(session.status)
-    if (session && !live) closeTransfer()
+    window.dispatchEvent(new CustomEvent('location:show-transfer'))
   }
 
   async copy({ params: { text }, currentTarget }) {

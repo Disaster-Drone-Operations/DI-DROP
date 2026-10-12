@@ -4,6 +4,8 @@
 
 pub mod media;
 mod cloudflare;
+mod geocode;
+mod places;
 mod menu;
 
 use std::path::{Path, PathBuf};
@@ -154,6 +156,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![scan_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir, open_url,
             cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
+            geocode::reverse_geocode,
+            places::places_info, places::places_read, places::places_update,
             cloudflare::cf_api, cloudflare::cf_upload_worker])
         .run(tauri::generate_context!())
         .expect("Fehler beim Starten von di-drop");
