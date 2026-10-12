@@ -54,6 +54,7 @@ export async function runRedo() {
 
 export const commands = {
   settings: () => router().redirectTo('/settings'),
+  about: () => router().redirectTo('/about'),
   new_mission: () => router().redirectTo('/missions/new'),
 
   async new_assignment() {

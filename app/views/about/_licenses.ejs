@@ -1,0 +1,16 @@
+<%# locals: data, query -%>
+<% const q = (query ?? '').trim().toLowerCase() -%>
+<% const groups = q ? data.groups.filter((g) => g.license.toLowerCase().includes(q) || g.packages.some((p) => p.toLowerCase().includes(q))) : data.groups -%>
+<div class="about__filter">
+  <input type="search" placeholder="Bibliothek oder Lizenz suchen" value="<%= query ?? '' %>" data-action="input->about#filter" aria-label="Bibliotheken durchsuchen">
+  <span class="hint"><%= data.count %> Bibliotheken</span>
+</div>
+<div class="about__licenses">
+  <% groups.forEach((g) => { -%>
+    <details class="about__license">
+      <summary><span class="truncate"><%= g.packages.join(', ') %></span><span class="badge badge--tiny"><%= g.license %></span></summary>
+      <pre class="selectable"><%= g.text %></pre>
+    </details>
+  <% }) -%>
+  <% if (!groups.length) { %><p class="hint">Nichts gefunden.</p><% } %>
+</div>

@@ -107,3 +107,9 @@ und beim Knopf „Hier“ neben dem Einsatzort.
 Die Ortsliste (`public/data/places_de.tsv`, GeoNames, CC BY 4.0) wird mitgeliefert und kann unter
 *Einstellungen → Aktualisierungen* neu geladen werden (`src-tauri/src/places.rs`, gespeichert in
 den App-Daten). Mitgelieferte Fassung neu erzeugen: `node script/build_places.mjs /pfad/DE.txt`.
+
+### Lizenzen
+
+„Über di-drop“ (App-Menü bzw. Einstellungen) zeigt Quellenangaben für OpenStreetMap und GeoNames
+sowie alle Bibliotheken mit Lizenztexten aus `public/data/licenses.json`
+(neu erzeugen: `node script/build_licenses.mjs`).

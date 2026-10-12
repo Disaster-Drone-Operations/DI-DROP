@@ -15,6 +15,8 @@ export default (r) => {
   // "Mein Standort": Position vom Smartphone über den eigenen Relay
   r.get('/location', 'location#show')
 
+  r.get('/about', 'about#show')
+
   r.get('/settings', 'settings#index')
   r.get('/settings/:section', 'settings#show')
   r.patch('/settings/:section', 'settings#update')

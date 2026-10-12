@@ -1,0 +1,33 @@
+<%# locals: version -%>
+<div class="about" data-controller="about">
+  <header class="about__head">
+    <span class="brand__logo about__logo"><%- icon('drone', { size: 30 }) %></span>
+    <div>
+      <h1>di-drop</h1>
+      <p class="subtle">Disaster Drone Operator · Version <%= version %></p>
+    </div>
+  </header>
+
+  <section class="card about__section">
+    <h2 class="card__title">Daten von Dritten</h2>
+    <dl class="about__sources">
+      <dt>Adressen</dt>
+      <dd>
+        Kartendaten © <a href="#" data-action="about#open" data-about-url-param="https://www.openstreetmap.org/copyright">OpenStreetMap-Mitwirkende</a>,
+        verfügbar unter der Open Database License (ODbL). Abgefragt über den Dienst Nominatim.
+      </dd>
+      <dt>Ortsnamen</dt>
+      <dd>
+        <a href="#" data-action="about#open" data-about-url-param="https://www.geonames.org">GeoNames</a>,
+        lizenziert unter <a href="#" data-action="about#open" data-about-url-param="https://creativecommons.org/licenses/by/4.0/deed.de">CC BY 4.0</a>.
+        Für di-drop verändert: auf bewohnte Orte in Deutschland gefiltert und verkleinert.
+      </dd>
+    </dl>
+  </section>
+
+  <section class="card about__section">
+    <h2 class="card__title">Open-Source-Bibliotheken</h2>
+    <p class="subtle">di-drop baut auf freier Software auf. Danke an alle, die daran mitarbeiten.</p>
+    <div data-about-target="licenses"><p class="hint">Wird geladen …</p></div>
+  </section>
+</div>

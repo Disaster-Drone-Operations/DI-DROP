@@ -69,6 +69,13 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Ansichten, die oft neu gezeichnet werden, mit `morph()` aus `lib/morph.js` aktualisieren
   (sonst gehen Klicks verloren).
 
+## Lizenzen & Quellenangaben
+
+- Nach jeder Änderung an Abhängigkeiten (package.json, Cargo.toml):
+  `node script/build_licenses.mjs` → `public/data/licenses.json` (Seite „Über di-drop“).
+- Daten von Dritten immer dort kennzeichnen, wo sie erscheinen (OpenStreetMap:
+  „© OpenStreetMap-Mitwirkende“, GeoNames: „CC BY 4.0“), und auf „Über di-drop“ aufführen.
+
 ## Testen
 
 - Browser + echter Rust-Code: `http://localhost:1420/?bridge` (siehe README).

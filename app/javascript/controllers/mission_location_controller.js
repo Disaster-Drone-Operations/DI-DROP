@@ -75,6 +75,9 @@ export default class extends Controller {
         html += `<button type="button" class="button" data-action="mission-location#takeSuggestion">„${escapeHtml(result.text)}“ übernehmen</button>`
         this.suggestion = result.text
       }
+      html += result.source === 'online'
+        ? '<span class="osm-credit">© OpenStreetMap-Mitwirkende</span>'
+        : '<span class="osm-credit">Ortsnamen: GeoNames (CC BY 4.0)</span>'
       if (!result.text) html = `${icon('check')}<span>Koordinaten übernommen. Ein Ortsname ließ sich nicht ermitteln.</span>`
       this.showHint(html, { html: true })
     })

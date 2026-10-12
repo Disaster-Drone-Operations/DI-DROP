@@ -28,6 +28,7 @@
       <dt>Ort</dt>
       <dd class="selectable">
         <% if (address?.text) { %><%= address.text %><% if (address.source === 'offline' && address.final) { %> <span class="hint">– ohne Internet nur der nächste Ort</span><% } %>
+          <br><% if (address.source === 'online') { %><a href="#" class="osm-credit" data-action="location#openMap:prevent" data-location-url-param="https://www.openstreetmap.org/copyright">© OpenStreetMap-Mitwirkende</a><% } else { %><span class="osm-credit">Ortsnamen: GeoNames (CC BY 4.0)</span><% } %>
         <% } else { %><span class="hint"><%= address?.final ? 'nicht ermittelbar' : 'wird ermittelt …' %></span><% } %>
       </dd>
       <dt>Grad, Minuten, Sekunden</dt><dd class="mono selectable"><%= coords.dms %></dd>

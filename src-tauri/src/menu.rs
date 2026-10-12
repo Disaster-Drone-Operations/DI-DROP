@@ -3,7 +3,7 @@
 //! Tastenkürzel durch denselben Code (app/javascript/shortcuts.js).
 //! Unter Windows gibt es kein Menü (unüblich); dort fängt die Oberfläche die Kürzel selbst ab.
 
-use tauri::menu::{AboutMetadata, Menu, MenuItemBuilder, SubmenuBuilder};
+use tauri::menu::{Menu, MenuItemBuilder, SubmenuBuilder};
 use tauri::{AppHandle, Runtime};
 
 pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
@@ -12,7 +12,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     };
 
     let app_menu = SubmenuBuilder::new(app, "di-drop")
-        .about_with_text("Über di-drop", Some(AboutMetadata { name: Some("di-drop".into()), ..Default::default() }))
+        // Eigene Seite statt Systemfenster: dort stehen auch Quellenangaben und Lizenzen
+        .item(&MenuItemBuilder::with_id("about", "Über di-drop").build(app)?)
         .separator()
         .item(&item("settings", "Einstellungen …", "CmdOrCtrl+,")?)
         .separator()
