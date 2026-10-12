@@ -54,6 +54,17 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Achtung: Die laufende Desktop-App lädt Codeänderungen sofort nach – eine Migration
   daher erst speichern, wenn sie vollständig ist (sonst läuft eine halbe Version).
 
+## Mein Standort / Relay
+
+- Protokolländerungen nur zusammen mit `docs/location-relay-protocol.md` und den
+  Vertrags-Tests (`test/relay.contract.test.mjs`). Nach Änderungen an `relay/*`
+  `RELAY_BUNDLE_VERSION` in `relay/bundle.js` erhöhen (der Assistent prüft sie per `/health`).
+- Sicherheitsregeln: Cloudflare-Token nie im Worker, auf der Smartphone-Seite, im QR-Code,
+  in WebSocket-Nachrichten oder Logs; kein Global API Key; Positionen nie dauerhaft speichern;
+  im Zweifel Verbindung abbrechen (fail closed).
+- Ansichten, die oft neu gezeichnet werden, mit `morph()` aus `lib/morph.js` aktualisieren
+  (sonst gehen Klicks verloren).
+
 ## Testen
 
 - Browser + echter Rust-Code: `http://localhost:1420/?bridge` (siehe README).

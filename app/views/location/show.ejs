@@ -1,0 +1,15 @@
+<%# locals: configured -%>
+<header class="page-header">
+  <div>
+    <h1>Mein Standort</h1>
+    <p class="subtle">Position vom Smartphone übernehmen – per QR-Code, ohne Kabel und ohne App.</p>
+  </div>
+</header>
+
+<div data-controller="location" data-location-configured-value="<%= configured ? 'true' : 'false' %>">
+  <div data-location-target="panel"></div>
+
+  <dialog class="sheet location-dialog" data-location-target="dialog" data-action="close->location#dialogClosed">
+    <div class="sheet__body" data-location-target="transfer"></div>
+  </dialog>
+</div>

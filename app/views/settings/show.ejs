@@ -13,6 +13,13 @@
     <% }) -%>
   </nav>
 
+  <% if (section.partial) { -%>
+    <div class="card settings__panel">
+      <h2 class="settings__title"><%= section.title %></h2>
+      <p class="subtle"><%= section.description %></p>
+      <%- include(section.partial) %>
+    </div>
+  <% } else { -%>
   <form class="card settings__panel" action="#/settings/<%= section.key %>" method="post" novalidate data-shortcut="save">
     <input type="hidden" name="_method" value="patch">
     <h2 class="settings__title"><%= section.title %></h2>
@@ -38,4 +45,5 @@
       <button type="submit" class="button button--primary">Speichern</button>
     </div>
   </form>
+  <% } -%>
 </div>

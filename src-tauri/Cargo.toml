@@ -24,6 +24,8 @@ jpeg-decoder = "0.3.2"
 walkdir = "2.5.0"
 image = { version = "0.25.10", default-features = false, features = ["jpeg"] }
 rayon = "1.12.0"
+reqwest = { version = "0.13", features = ["json", "multipart"] }
+keyring = { version = "3", features = ["apple-native", "windows-native"] }
 
 # Abhängigkeiten auch im Debug-Build optimieren – Bild-Dekodierung wäre sonst sehr langsam
 [profile.dev.package."*"]

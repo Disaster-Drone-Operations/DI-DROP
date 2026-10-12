@@ -70,3 +70,29 @@ src-tauri/            Rust-Seite: Bild-Scan, Metadaten, Import, Vorschaubilder
 SQLite. Desktop: `~/Library/Application Support/app.didrop.desktop/di-drop.db`
 bzw. `%APPDATA%\app.didrop.desktop\di-drop.db`. Browser: SQLite als WebAssembly,
 gespeichert in IndexedDB.
+
+## Mein Standort (Location Relay)
+
+Der Rechner hat oft kein GPS – das Smartphone liefert die Position. di-drop zeigt einen
+QR-Code, das Smartphone öffnet die Relay-Webseite, verbindet sich und sendet die Position
+Ende-zu-Ende-verschlüsselt (AES-GCM, Schlüssel nur im QR-Fragment). Protokoll:
+[`docs/location-relay-protocol.md`](docs/location-relay-protocol.md).
+
+- `relay/` – Cloudflare Worker + Durable Object (`worker.js`), Smartphone-Seite
+  (`phone.html`, `phone.js`), gemeinsames Protokoll (`protocol.js`), Bundle-Bauer.
+- `lib/location/` – Desktop-Client des Protokolls, Koordinaten (Dezimal, GMS, UTM 32) und Kartenlinks.
+- `app/services/location_service.js` – aktuelle Position nur im Arbeitsspeicher, keine Historie.
+- `app/services/cloudflare_deployer.js` – Assistent unter *Einstellungen → Standort-Übertragung*:
+  installiert den Relay im **eigenen** Cloudflare-Konto des Nutzers (API-Token mit
+  „Workers-Skripte bearbeiten“ + „Kontoeinstellungen lesen“). Der Token liegt nur im
+  Schlüsselbund (`src-tauri/src/cloudflare.rs`) und wird im Betrieb nicht gebraucht.
+
+Lokal ohne Cloudflare testen:
+
+```bash
+node relay/dev.mjs && npx wrangler dev --config relay/wrangler.dev.toml --port 8787 --ip 127.0.0.1
+RELAY_URL=http://127.0.0.1:8787 node --test test/relay.contract.test.mjs
+```
+
+In der App unter *Standort-Übertragung → Eigenen Relay-Server verwenden* `http://127.0.0.1:8787`
+eintragen; den QR-Link in einem zweiten Browser-Tab öffnen (Geolocation ggf. per Konsole simulieren).

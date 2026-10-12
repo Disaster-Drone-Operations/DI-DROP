@@ -417,7 +417,7 @@ legend.card__title + * { clear: both; }
 .hint { font-size: 12px; color: var(--text-2); }
 .field__error { font-size: 12px; color: var(--danger); }
 
-input[type=text], input[type=url], input[type=number], input[type=date], input[type=time],
+input[type=text], input[type=password], input[type=url], input[type=number], input[type=date], input[type=time],
 input[type=datetime-local], select, textarea {
   width: 100%;
   font: inherit;
@@ -911,3 +911,45 @@ input[type=number].input-inline { width: 64px !important; }
 .shortcut-heading { margin-top: 6px; font-size: 13px; }
 kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 5px; background: var(--surface-2); white-space: nowrap; }
 .shot__image:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; box-shadow: none; }
+
+/* ── Mein Standort ──────────────────────────────────────────────────────── */
+.location-setup { align-items: center; margin-bottom: 16px; }
+.location-setup > div { flex: 1; }
+.location-setup p { margin: 2px 0 0; }
+.location-card { display: flex; flex-direction: column; gap: 14px; max-width: 640px; }
+.location-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.location-card__head .eyebrow { color: var(--text-2); font-size: 12px; margin-top: 0; }
+.location-card__coords { font-size: 24px; font-weight: 600; letter-spacing: .01em; }
+.location-card__details { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; }
+.location-card__details dt { color: var(--text-2); }
+.location-card__details dd { margin: 0; }
+.location-card__maps { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+.location-actions { justify-content: flex-start; margin-top: 16px; }
+.location-dialog { width: 460px; }
+.location-qr { display: flex; gap: 18px; align-items: center; }
+.location-qr img { width: 200px; height: 200px; border-radius: var(--radius-sm); background: #fff; flex: none; image-rendering: pixelated; }
+.location-qr__steps { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+.location-status { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text-2); }
+.location-status.is-ok { color: var(--success); }
+.location-status .spinner { width: 14px; height: 14px; border-width: 2px; }
+.badge--live { background: var(--success-soft); color: var(--success); font-weight: 600; }
+.badge--live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 5px; display: inline-block; vertical-align: 1px; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+
+/* Einrichtung des Relays (Einstellungen → Standort-Übertragung) */
+.relay-steps { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 14px; }
+.relay-steps > li { display: flex; gap: 12px; }
+.relay-steps > li > div { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.relay-steps p { margin: 0; }
+.relay-steps .stepper__num { background: var(--selected); color: var(--text-2); }
+.relay-steps .is-active .stepper__num { background: var(--accent); color: var(--on-accent); }
+.relay-steps .is-done .stepper__num { background: var(--success-soft); color: var(--success); }
+.relay-steps .is-disabled { color: var(--text-3); }
+.relay-actions { justify-content: flex-start; }
+.relay-token { max-width: 460px; }
+.relay-token input { flex: 1; }
+.relay-status { display: flex; flex-direction: column; gap: 4px; margin: 16px 0 12px; }
+.relay-status__line { display: flex; align-items: center; gap: 8px; }
+.relay-status__line .spinner { width: 14px; height: 14px; border-width: 2px; }
+.relay-status__ok { color: var(--success); display: inline-flex; }
+.relay-status__bad { color: var(--danger); display: inline-flex; }

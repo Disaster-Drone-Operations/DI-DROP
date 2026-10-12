@@ -1,0 +1,16 @@
+<%# locals: section, values, errors -%>
+<div data-controller="relay-setup" data-relay-setup-url-value="<%= values.url ?? '' %>">
+  <div data-relay-setup-target="body"></div>
+</div>
+
+<details class="disclosure" <%= Object.keys(errors).length ? 'open' : '' %>>
+  <summary>Eigenen Relay-Server verwenden <span class="disclosure__hint">– für Fortgeschrittene</span></summary>
+  <form class="disclosure__body" action="#/settings/relay" method="post" novalidate data-shortcut="save">
+    <input type="hidden" name="_method" value="patch">
+    <% const f = section.fields[0] -%>
+    <%- field({ id: 'settings_url', name: 'settings[url]', value: values.url, errors: errors.url ?? [], label: f.label, type: f.type, hint: f.hint, placeholder: f.placeholder }) %>
+    <div class="form-actions form-actions--inline">
+      <button type="submit" class="button">Adresse speichern</button>
+    </div>
+  </form>
+</details>

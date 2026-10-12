@@ -1,0 +1,13 @@
+# Nur für den lokalen Test (wrangler dev). Das echte Deployment macht die App selbst
+# über die Cloudflare-API – ohne wrangler auf dem Rechner des Nutzers.
+name = "di-drop-relay-dev"
+main = ".dev/worker.js"
+compatibility_date = "2026-09-01"
+
+[[durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "RelaySession"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RelaySession"]

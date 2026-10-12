@@ -1,0 +1,41 @@
+<%# locals: session, qrDataUrl -%>
+<% const s = session ?? { status: 'stopped', text: '' } -%>
+<% const live = s.mode === 'stream' -%>
+<h2 class="dialog__title"><%= live ? 'Live-Standort' : 'Standort vom Smartphone' %></h2>
+
+<% if (['waiting', 'pairing'].includes(s.status) && qrDataUrl) { -%>
+  <div class="location-qr">
+    <img src="<%= qrDataUrl %>" alt="QR-Code zum Verbinden des Smartphones" width="240" height="240">
+    <ol class="location-qr__steps">
+      <li>Mit der <strong>Kamera des Smartphones</strong> den Code scannen.</li>
+      <li>Die Seite im Browser öffnen und <strong><%= live ? '„Live-Übertragung starten“' : '„Meinen Standort senden“' %></strong> tippen.</li>
+      <li>Den Standortzugriff <strong>erlauben</strong>.</li>
+    </ol>
+  </div>
+<% } else if (s.status === 'error') { -%>
+  <div class="callout callout--danger"><%- icon('alert') %><span><%= s.text %></span></div>
+<% } else if (s.status === 'done') { -%>
+  <div class="dialog__center"><%- icon('check', { size: 32 }) %><span>Standort empfangen.</span></div>
+<% } -%>
+
+<% if (s.status !== 'error') { -%>
+  <p class="location-status <%= ['streaming', 'done'].includes(s.status) ? 'is-ok' : '' %>">
+    <% if (['connecting', 'pairing', 'paired', 'reconnecting'].includes(s.status)) { %><span class="spinner"></span><% } %>
+    <% if (s.status === 'streaming') { %><span class="badge badge--live">Live</span><% } %>
+    <span><%= s.text %></span>
+  </p>
+<% } -%>
+<% if (s.status === 'waiting' || s.status === 'pairing') { -%>
+  <p class="hint">Der Code gilt nur für diese eine Übertragung. Positionen werden verschlüsselt übertragen – der Relay kann sie nicht lesen.</p>
+<% } -%>
+
+<div class="dialog__actions">
+  <% if (live && ['streaming', 'paired', 'reconnecting'].includes(s.status)) { -%>
+    <button type="button" class="button" data-action="location#stop">Beenden</button>
+    <button type="button" class="button button--primary" data-action="location#hideTransfer">Im Hintergrund weiter</button>
+  <% } else if (['done', 'stopped', 'error'].includes(s.status)) { -%>
+    <button type="button" class="button button--primary" data-action="location#closeTransfer" autofocus>Schließen</button>
+  <% } else { -%>
+    <button type="button" class="button" data-action="location#closeTransfer">Abbrechen</button>
+  <% } -%>
+</div>

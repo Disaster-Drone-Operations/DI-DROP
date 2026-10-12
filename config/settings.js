@@ -5,6 +5,7 @@
 // abrufbar über Setting.get('general.unit_name').
 //
 // Feldtypen: text, textarea, number, select, url, folder
+// partial: eigene Ansicht statt des Standardformulars (z. B. ein Einrichtungs-Assistent)
 //   folder öffnet in der Desktop-App den nativen Ordner-Dialog.
 
 export default [
@@ -42,6 +43,17 @@ export default [
     fields: [
       { key: 'base_path', label: 'Basisordner', type: 'folder', default: '',
         hint: 'Leer lassen für den Standard: Ordner „Bilder/di-drop“ in deinem Benutzerordner. Darin entsteht pro Einsatz „2026_10_06__Einsatzname“ und pro Flug „2026_10_06__1430“. Gilt für Einsätze, die noch keine Bilder haben.' },
+    ],
+  },
+  {
+    key: 'relay',
+    title: 'Standort-Übertragung',
+    icon: 'pin',
+    description: 'Damit das Smartphone seinen Standort an di-drop senden kann, braucht es einen kleinen Vermittlungsdienst („Relay“). Er läuft kostenlos in deinem eigenen Cloudflare-Konto und sieht nur verschlüsselte Daten.',
+    partial: 'settings/_relay',
+    fields: [
+      { key: 'url', label: 'Adresse des Relays', type: 'url', default: '', placeholder: 'https://di-drop-relay.….workers.dev',
+        hint: 'Wird bei der Einrichtung automatisch eingetragen. Nur ändern, wenn du einen eigenen Relay-Server betreibst.' },
     ],
   },
   {

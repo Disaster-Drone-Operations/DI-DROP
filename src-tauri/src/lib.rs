@@ -3,6 +3,7 @@
 // Datenbank und Dialoge kommen als fertige Tauri-Plugins.
 
 pub mod media;
+mod cloudflare;
 mod menu;
 
 use std::path::{Path, PathBuf};
@@ -110,6 +111,15 @@ fn rename_dir(from: String, to: String) -> Result<String, String> {
     media::rename_dir(Path::new(&from), Path::new(&to)).map(|p| p.display().to_string())
 }
 
+/// Öffnet eine Webseite im Standard-Browser (z. B. Karten, Cloudflare). Nur https.
+#[tauri::command]
+fn open_url(app: AppHandle, url: String) -> Result<(), String> {
+    if !url.starts_with("https://") {
+        return Err("Nur https-Adressen".into());
+    }
+    app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
+}
+
 fn percent_decode(s: &str) -> Result<String, String> {
     let bytes = s.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
@@ -142,7 +152,9 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![scan_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir])
+        .invoke_handler(tauri::generate_handler![scan_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir, open_url,
+            cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
+            cloudflare::cf_api, cloudflare::cf_upload_worker])
         .run(tauri::generate_context!())
         .expect("Fehler beim Starten von di-drop");
 }

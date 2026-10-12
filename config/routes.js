@@ -12,6 +12,9 @@ export default (r) => {
   // Modul "Bilddaten"
   r.get('/media', 'media#index')
 
+  // "Mein Standort": Position vom Smartphone über den eigenen Relay
+  r.get('/location', 'location#show')
+
   r.get('/settings', 'settings#index')
   r.get('/settings/:section', 'settings#show')
   r.patch('/settings/:section', 'settings#update')

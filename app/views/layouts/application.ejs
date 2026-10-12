@@ -19,6 +19,9 @@
       <a href="#/media" class="nav__item <%= isCurrent(currentPath, '/media') || /^\/missions\/\d+\/(flights|comparisons)/.test(currentPath) ? 'is-active' : '' %>">
         <%- icon('images') %><span>Bilddaten</span>
       </a>
+      <a href="#/location" class="nav__item <%= isCurrent(currentPath, '/location') ? 'is-active' : '' %>" data-controller="location-nav">
+        <%- icon('pin') %><span>Mein Standort</span><span class="badge badge--live badge--tiny" data-location-nav-target="live" hidden>Live</span>
+      </a>
       <span class="nav__item is-disabled" title="Kommt später">
         <%- icon('radar') %><span>Luftraum</span><span class="badge badge--muted badge--tiny">bald</span>
       </span>

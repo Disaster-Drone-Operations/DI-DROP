@@ -1,0 +1,82 @@
+<%# locals: s -%>
+<% if (s.url && !s.setup) { -%>
+  <div class="relay-status">
+    <div class="relay-status__line">
+      <% if (s.health === 'checking') { %><span class="spinner"></span><span>Verbindung wird geprüft …</span>
+      <% } else if (s.health === 'ok') { %><span class="relay-status__ok"><%- icon('check') %></span><strong>Relay ist eingerichtet und erreichbar.</strong>
+      <% } else { %><span class="relay-status__bad"><%- icon('alert') %></span><strong>Relay ist nicht erreichbar.</strong><% } %>
+    </div>
+    <div class="mono subtle selectable"><%= s.url %></div>
+    <% if (s.health === 'down') { %><p class="hint">Ohne Internet kann das Smartphone keine Position senden. Ist die Verbindung da, den Relay neu einrichten.</p><% } %>
+  </div>
+  <div class="toolbar relay-actions">
+    <button type="button" class="button" data-action="relay-setup#check">Verbindung testen</button>
+    <% if (s.available) { %><button type="button" class="button" data-action="relay-setup#beginSetup"><%= s.hasToken ? 'Relay aktualisieren' : 'Neu einrichten' %></button><% } %>
+    <% if (s.hasToken) { %><button type="button" class="button button--danger-quiet" data-action="relay-setup#forgetToken" title="Der Schlüssel wird nur zum Einrichten gebraucht.">Cloudflare-Schlüssel entfernen</button><% } %>
+  </div>
+<% } else if (!s.available) { -%>
+  <div class="callout callout--subtle"><%- icon('alert') %><span>Die Einrichtung bei Cloudflare geht nur in der Desktop-App. Hier im Browser kannst du unten die Adresse eines vorhandenen Relays eintragen.</span></div>
+<% } else { -%>
+  <ol class="relay-steps">
+    <li class="<%= s.step === 'account' ? 'is-active' : 'is-done' %>">
+      <span class="stepper__num"><%= s.step === 'account' ? '1' : '✓' %></span>
+      <div>
+        <strong>Cloudflare-Konto</strong>
+        <% if (s.step === 'account') { -%>
+          <p class="subtle">Kostenlos, nur E-Mail-Adresse und Passwort nötig. Das Konto gehört dir – di-drop speichert keine Zugangsdaten.</p>
+          <div class="toolbar relay-actions">
+            <button type="button" class="button" data-action="relay-setup#openSignup">Konto anlegen …</button>
+            <button type="button" class="button button--primary" data-action="relay-setup#haveAccount">Ich habe ein Konto</button>
+          </div>
+        <% } -%>
+      </div>
+    </li>
+
+    <li class="<%= s.step === 'token' ? 'is-active' : s.step === 'account' ? 'is-disabled' : 'is-done' %>">
+      <span class="stepper__num"><%= ['account', 'token'].includes(s.step) ? '2' : '✓' %></span>
+      <div>
+        <strong>Zugangsschlüssel</strong>
+        <% if (s.step === 'token') { -%>
+          <p class="subtle">Cloudflare öffnet eine Seite, auf der die nötigen Rechte schon ausgewählt sind. Dort ganz unten <em>„Weiter zur Zusammenfassung“</em> und dann <em>„Token erstellen“</em> klicken und den Schlüssel kopieren.</p>
+          <div class="toolbar relay-actions"><button type="button" class="button" data-action="relay-setup#openTokenPage">Schlüssel bei Cloudflare erstellen …</button></div>
+          <form class="input-with-button relay-token" data-action="submit->relay-setup#saveToken">
+            <input type="password" name="token" placeholder="Schlüssel hier einfügen" autocomplete="off" spellcheck="false" data-relay-setup-target="token" <%= s.busy ? 'disabled' : '' %>>
+            <button type="submit" class="button button--primary" <%= s.busy ? 'disabled' : '' %>>Einrichten</button>
+          </form>
+          <p class="hint">Der Schlüssel wird im Schlüsselbund des Computers gespeichert – nicht in di-drop und nie auf dem Smartphone.</p>
+        <% } -%>
+      </div>
+    </li>
+
+    <li class="<%= s.step === 'install' ? 'is-active' : 'is-disabled' %>">
+      <span class="stepper__num">3</span>
+      <div>
+        <strong>Relay installieren</strong>
+        <% if (s.step === 'install') { -%>
+          <% if (s.accounts?.length > 1 && !s.accountId) { -%>
+            <p class="subtle">Der Schlüssel hat Zugriff auf mehrere Konten. Welches soll den Relay bekommen?</p>
+            <div class="toolbar relay-actions" style="justify-content:flex-start">
+              <% s.accounts.forEach((a) => { %><button type="button" class="button" data-action="relay-setup#chooseAccount" data-relay-setup-id-param="<%= a.id %>"><%= a.name %></button><% }) %>
+            </div>
+          <% } else if (s.needsSubdomain) { -%>
+            <p class="subtle">Dein Konto braucht noch einen Namen für seine Internet-Adresse (einmalig, später nicht mehr änderbar). Die Adresse wird dann <span class="mono">di-drop-relay.<em>name</em>.workers.dev</span>.</p>
+            <form class="input-with-button relay-token" data-action="submit->relay-setup#createSubdomain">
+              <input type="text" name="subdomain" value="<%= s.suggestion %>" autocomplete="off" spellcheck="false" data-relay-setup-target="subdomain" <%= s.busy ? 'disabled' : '' %>>
+              <button type="submit" class="button button--primary" <%= s.busy ? 'disabled' : '' %>>Weiter</button>
+            </form>
+          <% } -%>
+          <% if (s.progress) { -%>
+            <p class="location-status"><span class="spinner"></span><span><%= s.progress %></span></p>
+          <% } -%>
+        <% } -%>
+      </div>
+    </li>
+  </ol>
+
+  <% if (s.error) { -%>
+    <div class="callout callout--danger"><%- icon('alert') %><span><%= s.error %></span></div>
+  <% } -%>
+  <% if (s.url) { -%>
+    <div class="toolbar relay-actions" style="justify-content:flex-start"><button type="button" class="button button--quiet" data-action="relay-setup#cancelSetup">Abbrechen</button></div>
+  <% } -%>
+<% } -%>

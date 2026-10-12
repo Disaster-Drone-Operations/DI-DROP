@@ -1,0 +1,62 @@
+<%# locals: position, session, configured, now, coords -%>
+<% const live = session?.mode === 'stream' && ['streaming', 'paired', 'pairing', 'waiting', 'reconnecting'].includes(session.status) -%>
+<% if (!configured) { -%>
+  <div class="callout callout--info location-setup">
+    <%- icon('pin') %>
+    <div>
+      <strong>Einmalig einrichten</strong>
+      <p>Die Übertragung läuft über einen kleinen Dienst („Relay“) in deinem eigenen, kostenlosen Cloudflare-Konto. Die Einrichtung dauert etwa fünf Minuten.</p>
+    </div>
+    <a class="button button--primary" href="#/settings/relay">Einrichten</a>
+  </div>
+<% } -%>
+
+<% if (position) { -%>
+  <section class="card location-card">
+    <div class="location-card__head">
+      <div>
+        <div class="eyebrow">
+          <% if (live) { %><span class="badge badge--live">Live</span><% } %>
+          Vom Smartphone · <span title="<%= formatDateTime(new Date(position.timestamp)) %>"><%= coords.age %></span>
+        </div>
+        <div class="location-card__coords mono selectable" data-location-target="coords"><%= coords.decimal %></div>
+      </div>
+      <button type="button" class="button" data-action="location#copy" data-location-text-param="<%= coords.decimal %>"><%- icon('copy') %><span>Kopieren</span></button>
+    </div>
+
+    <dl class="location-card__details">
+      <dt>Grad, Minuten, Sekunden</dt><dd class="mono selectable"><%= coords.dms %></dd>
+      <dt>UTM (Zone 32, ETRS89)</dt><dd class="mono selectable"><%= coords.utm %></dd>
+      <% if (position.accuracy != null) { %><dt>Genauigkeit</dt><dd>± <%= Math.round(position.accuracy) %> m<% if (position.accuracy > 50) { %> <span class="hint">– ungenau, evtl. im Freien wiederholen</span><% } %></dd><% } %>
+      <% if (position.alt != null) { %><dt>Höhe (GPS)</dt><dd title="GPS-Höhe über dem Ellipsoid – in Thüringen etwa 45 m mehr als die Höhe über NN"><%= Math.round(position.alt) %> m<% if (position.altAccuracy) { %> <span class="hint">(± <%= Math.round(position.altAccuracy) %> m)</span><% } %></dd><% } %>
+      <dt>Zeitpunkt</dt><dd><%= formatDateTime(new Date(position.timestamp)) %></dd>
+    </dl>
+
+    <div class="location-card__maps">
+      <% coords.links.forEach((link) => { -%>
+        <button type="button" class="button" data-action="location#openMap" data-location-url-param="<%= link.url %>"><%- icon('map') %><span><%= link.label %></span></button>
+      <% }) -%>
+    </div>
+  </section>
+<% } else { -%>
+  <div class="empty">
+    <%- icon('pin', { size: 40, class: 'empty__icon' }) %>
+    <p><strong>Noch kein Standort.</strong></p>
+    <p class="subtle">Hol die Position von deinem Smartphone: QR-Code scannen, im Browser freigeben, fertig.</p>
+  </div>
+<% } -%>
+
+<div class="toolbar location-actions">
+  <% if (live) { -%>
+    <button type="button" class="button" data-action="location#showTransfer"><%- icon('qr') %><span>QR-Code zeigen</span></button>
+    <button type="button" class="button button--primary" data-action="location#stop"><span>Live-Standort beenden</span></button>
+  <% } else { -%>
+    <button type="button" class="button button--primary" data-action="location#start" data-location-mode-param="single" <%= configured ? '' : 'disabled' %>>
+      <%- icon('phone') %><span><%= position ? 'Standort erneut holen' : 'Standort vom Smartphone holen' %></span>
+    </button>
+    <button type="button" class="button" data-action="location#start" data-location-mode-param="stream" <%= configured ? '' : 'disabled' %>
+            title="Das Smartphone sendet laufend seine Position, bis du die Übertragung beendest.">
+      <%- icon('radar') %><span>Live-Standort</span>
+    </button>
+  <% } -%>
+</div>
