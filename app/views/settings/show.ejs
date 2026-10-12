@@ -13,7 +13,7 @@
     <% }) -%>
   </nav>
 
-  <form class="card settings__panel" action="#/settings/<%= section.key %>" method="post" novalidate>
+  <form class="card settings__panel" action="#/settings/<%= section.key %>" method="post" novalidate data-shortcut="save">
     <input type="hidden" name="_method" value="patch">
     <h2 class="settings__title"><%= section.title %></h2>
     <p class="subtle"><%= section.description %></p>

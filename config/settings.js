@@ -38,14 +38,10 @@ export default [
     key: 'storage',
     title: 'Bildablage',
     icon: 'folder',
-    badge: 'Vorschau',
-    description: 'Wohin die Bilder von der SD-Karte kopiert werden. Wird mit dem Bilder-Import aktiv.',
+    description: 'Wohin importierte Bilder kopiert werden.',
     fields: [
       { key: 'base_path', label: 'Basisordner', type: 'folder', default: '',
-        hint: 'Unter diesem Ordner wird pro Einsatz ein Unterordner angelegt.' },
-      { key: 'folder_pattern', label: 'Ordnerstruktur', type: 'text',
-        default: '{datum}_{einsatz}/{flug_nr}_{flugtyp}',
-        hint: 'Platzhalter: {datum} {uhrzeit} {einsatz} {ort} {flug_nr} {flugtyp}' },
+        hint: 'Leer lassen für den Standard: Ordner „Bilder/di-drop“ in deinem Benutzerordner. Darin entsteht pro Einsatz „2026_10_06__Einsatzname“ und pro Flug „2026_10_06__1430“. Gilt für Einsätze, die noch keine Bilder haben.' },
     ],
   },
   {

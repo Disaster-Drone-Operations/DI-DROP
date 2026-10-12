@@ -1,0 +1,28 @@
+<dialog class="sheet shortcuts" data-controller="dialog">
+  <div class="sheet__body">
+    <h2 class="dialog__title">Tastaturkürzel</h2>
+    <dl class="shortcut-list">
+      <dt><kbd><%= shortcut('Mod+N') %></kbd></dt><dd>Neuer Auftrag</dd>
+      <dt><kbd><%= shortcut('Mod+Shift+N') %></kbd></dt><dd>Neuer Einsatz</dd>
+      <dt><kbd><%= shortcut('Mod+O') %></kbd></dt><dd>Bilder importieren</dd>
+      <dt><kbd><%= shortcut('Mod+S') %></kbd></dt><dd>Sichern (Formulare)</dd>
+      <dt><kbd><%= shortcut('Mod+Z') %></kbd></dt><dd>Letzte Aktion widerrufen</dd>
+      <dt><kbd><%= shortcut('Mod+Shift+Z') %></kbd></dt><dd>Wiederholen</dd>
+      <dt><kbd><%= shortcut('Mod+1') %> / <%= shortcut('Mod+2') %></kbd></dt><dd>Einsätze / Bilddaten</dd>
+      <dt><kbd><%= shortcut('Mod+[') %> / <%= shortcut('Mod+]') %></kbd></dt><dd>Zurück / Vorwärts</dd>
+      <dt><kbd><%= shortcut('Mod+,') %></kbd></dt><dd>Einstellungen</dd>
+      <dt><kbd><%= /Mac/.test(navigator.userAgent) ? '⌃⌘F' : 'F11' %></kbd></dt><dd>Vollbild</dd>
+    </dl>
+    <h3 class="shortcut-heading">Bilder</h3>
+    <dl class="shortcut-list">
+      <dt><kbd>← → ↑ ↓</kbd></dt><dd>Bild in der Übersicht auswählen</dd>
+      <dt><kbd>Leertaste</kbd></dt><dd>Ausgewähltes Bild groß anzeigen</dd>
+      <dt><kbd>← →</kbd></dt><dd>Galerie: vorheriges / nächstes Bild</dd>
+      <dt><kbd>↑ ↓</kbd></dt><dd>Galerie: dieselbe Stelle früher / später</dd>
+      <dt><kbd>+ − 0</kbd></dt><dd>Galerie: zoomen / zurücksetzen</dd>
+      <dt><kbd>Doppelklick</kbd></dt><dd>Galerie: auf die Stelle zoomen · Wegpunkt-Name: umbenennen</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Galerie oder Dialog schließen</dd>
+    </dl>
+    <div class="dialog__actions"><button type="button" class="button button--primary" data-action="dialog#close">OK</button></div>
+  </div>
+</dialog>

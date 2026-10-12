@@ -1,0 +1,57 @@
+<%# locals: mission, newAssignment, newAssignmentParams, open, returnTo -%>
+<% const p = newAssignmentParams ?? {} -%>
+<% const kind = p.kind ?? newAssignment.kind -%>
+<% const errors = newAssignment.errors ?? {} -%>
+<div data-controller="dialog" data-dialog-open-value="<%= open ? 'true' : 'false' %>" class="dialog-host">
+  <button type="button" class="button button--small" data-action="dialog#open"><%- icon('plus') %><span>Neuer Auftrag</span></button>
+  <dialog class="sheet" data-dialog-target="dialog">
+    <form action="#/missions/<%= mission.id %>/assignments" method="post" class="sheet__body" novalidate
+          data-controller="assignment-form choice" data-action="change->assignment-form#update">
+      <input type="hidden" name="return_to" value="<%= returnTo %>">
+      <h2 class="dialog__title">Neuer Auftrag</h2>
+
+      <div class="kind-picker">
+        <% commonAssignmentKinds().forEach((k) => { %><%- include('assignments/_kind_option', { k, kind }) %><% }) %>
+      </div>
+      <details class="disclosure" <%= moreAssignmentKinds().some((k) => k.key === kind) ? 'open' : '' %>>
+        <summary>Weitere Auftragsarten <span class="disclosure__hint">– Lageerkundung, Kartierung, Positionsaufnahme, Gebietszuordnung</span></summary>
+        <div class="kind-picker disclosure__body">
+          <% moreAssignmentKinds().forEach((k) => { %><%- include('assignments/_kind_option', { k, kind }) %><% }) %>
+        </div>
+      </details>
+
+      <div class="field <%= errors.title ? 'field--invalid' : '' %>" data-assignment-form-target="titleField">
+        <label class="field__label" for="assignment_title">Name</label>
+        <input type="text" id="assignment_title" name="assignment[title]" value="<%= p.title ?? '' %>"
+               data-assignment-form-target="title" placeholder="z. B. Bagger-Zufahrt prüfen">
+        <% if (errors.title) { %><p class="field__error">Bitte einen Namen angeben.</p><% } %>
+      </div>
+
+      <div class="field">
+        <span class="field__label">Wann?</span>
+        <div class="choices choices--inline">
+          <label class="choice"><input type="radio" name="assignment[when]" value="now" <%= p.when !== 'at' ? 'checked' : '' %>><span class="choice__label">sofort</span></label>
+          <label class="choice">
+            <input type="radio" id="assignment_when_at" name="assignment[when]" value="at" <%= p.when === 'at' ? 'checked' : '' %>>
+            <span class="choice__label">um <input type="time" class="input-inline" name="assignment[time]" value="<%= p.time ?? '' %>" data-choice="assignment_when_at"> Uhr</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field" data-assignment-form-target="intervalField" hidden>
+        <label class="field__label" for="assignment_interval">Takt</label>
+        <select id="assignment_interval" name="assignment[interval]">
+          <% intervalOptions(mission.control_interval_minutes).slice(1).forEach(([v, label]) => { -%>
+            <option value="<%= v %>" <%= String(mission.control_interval_minutes ?? 30) === v ? 'selected' : '' %>><%= label %></option>
+          <% }) -%>
+        </select>
+        <p class="hint">Nach jedem Kontrollflug fragt die App, wann der nächste starten soll – der Takt ist nur der Vorschlag.</p>
+      </div>
+
+      <div class="dialog__actions">
+        <button type="button" class="button" data-action="dialog#close">Abbrechen</button>
+        <button type="submit" class="button button--primary">Auftrag anlegen</button>
+      </div>
+    </form>
+  </dialog>
+</div>

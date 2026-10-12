@@ -1,4 +1,4 @@
-<%# locals: mission, flights, flight, nextControlAt -%>
+<%# locals: mission, open, done, history, timeline, counts, canImport, newAssignment, newAssignmentParams, showNewAssignment -%>
 <% const path = `/missions/${mission.id}` -%>
 <header class="page-header">
   <div>
@@ -15,6 +15,7 @@
     </div>
   </div>
   <div class="toolbar">
+    <a class="button" href="#<%= path %>/comparisons"><%- icon('kontrolle') %><span>Vergleichsbilder</span></a>
     <a class="button" href="#<%= path %>/edit"><%- icon('pencil') %><span>Bearbeiten</span></a>
     <% if (mission.isActive) { -%>
       <%- buttonTo('Abschließen', path, { method: 'patch', icon: 'archive', params: { 'mission[status]': 'abgeschlossen' },
@@ -26,74 +27,68 @@
   </div>
 </header>
 
-<div class="columns">
+<div class="columns" data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>" data-media-import-return-path-value="<%= path %>">
   <div class="columns__main">
-    <% if (mission.isActive) { -%>
-      <% if (nextControlAt) { -%>
-        <div class="next-flight" data-controller="countdown" data-countdown-at-value="<%= nextControlAt.toISOString() %>">
-          <%- icon('kontrolle', { size: 20 }) %>
-          <div>
-            <div class="next-flight__label">Nächster Kontrollflug</div>
-            <div class="next-flight__time"><%= formatTime(nextControlAt) %> Uhr
-              <span class="next-flight__relative" data-countdown-target="label"></span>
-            </div>
-          </div>
-          <span class="subtle next-flight__interval">alle <%= mission.control_interval_minutes %> Min.</span>
-        </div>
-      <% } else if (mission.control_interval_minutes) { -%>
-        <div class="callout callout--subtle">
-          <%- icon('clock') %>
-          <span>Kontrollflüge alle <%= mission.control_interval_minutes %> Minuten – der Takt startet mit dem ersten Kontrollflug.</span>
-        </div>
-      <% } -%>
-
-      <%- include('flights/_form', { mission, flight }) %>
-    <% } -%>
+    <% if (mission.isActive) { %><%- include('media/_import_zone', { canImport, label: null }) %><% } %>
 
     <section class="section">
-      <h2 class="section__title">Flüge <span class="count"><%= flights.length %></span></h2>
-      <% if (flights.length === 0) { -%>
-        <div class="empty empty--compact">
-          <p class="subtle">Noch keine Flüge erfasst.</p>
-        </div>
+      <h2 class="section__title">Verlauf</h2>
+      <% if (!history.length) { -%>
+        <div class="empty empty--compact"><p class="subtle">Noch keine Bilder. Nach dem Flug einfach die SD-Karte oder den Ordner hierher – oder direkt auf einen Auftrag rechts – ziehen.</p></div>
       <% } else { -%>
-        <ol class="timeline">
-          <% flights.slice().reverse().forEach((f) => { %><%- include('flights/_flight', { mission, flight: f }) %><% }) %>
-        </ol>
+        <div class="history">
+          <% history.forEach((a) => { %><%- include('assignments/_history', { assignment: a, entry: timeline.get(a.id) }) %><% }) %>
+        </div>
       <% } -%>
     </section>
+
+    <details class="disclosure disclosure--card section">
+      <summary>Einsatzdaten &amp; Einheit <span class="disclosure__hint">– <%= mission.location %><%= mission.operator ? ` · Drone Operator: ${mission.operator}` : '' %></span></summary>
+      <div class="disclosure__body mission-details">
+        <dl class="details">
+          <% missionRoles().forEach(([attr, label]) => { -%>
+            <dt><%= label %></dt><dd><%= mission[attr] || '–' %></dd>
+          <% }) -%>
+          <dt>Ort</dt><dd><%= mission.location %></dd>
+          <% if (mission.coordinates) { %><dt>Koordinaten</dt><dd class="mono selectable"><%= mission.coordinates %></dd><% } %>
+          <% if (mission.requested_by) { %><dt>Angefordert</dt><dd><%= mission.requested_by %></dd><% } %>
+        </dl>
+        <% if (mission.notes) { %><p class="notes selectable"><%= mission.notes %></p><% } %>
+        <div class="danger-zone">
+          <%- buttonTo(`${mission.kindLabel} löschen`, path, { method: 'delete', icon: 'trash', class: 'button button--danger-quiet',
+                confirm: `„${mission.title}“ mit allen Aufträgen endgültig löschen? Die Bilddateien bleiben im Ordner erhalten.`, confirmButton: 'Löschen' }) %>
+        </div>
+      </div>
+    </details>
   </div>
 
-  <aside class="columns__side">
-    <section class="card">
-      <h3 class="card__title"><%- icon('users') %> Team</h3>
-      <dl class="details">
-        <% missionRoles().forEach(([attr, label]) => { -%>
-          <dt><%= label %></dt><dd><%= mission[attr] || '–' %></dd>
-        <% }) -%>
-      </dl>
-    </section>
+  <aside class="columns__side tasks">
+    <div class="tasks__header">
+      <h2 class="section__title">Aufträge <span class="count"><%= open.length %></span></h2>
+      <% if (mission.isActive) { %><%- include('assignments/_new_dialog', { mission, newAssignment, newAssignmentParams, open: showNewAssignment, returnTo: path }) %><% } %>
+    </div>
 
-    <section class="card">
-      <h3 class="card__title"><%- icon('pin') %> Einsatzdaten</h3>
-      <dl class="details">
-        <dt>Ort</dt><dd><%= mission.location %></dd>
-        <% if (mission.coordinates) { %><dt>Koordinaten</dt><dd class="mono selectable"><%= mission.coordinates %></dd><% } %>
-        <% if (mission.requested_by) { %><dt>Angefordert</dt><dd><%= mission.requested_by %></dd><% } %>
-        <dt>Kontrollflüge</dt><dd><%= mission.control_interval_minutes ? `alle ${mission.control_interval_minutes} Min.` : 'kein Intervall' %></dd>
-      </dl>
-    </section>
-
-    <% if (mission.notes) { -%>
-      <section class="card">
-        <h3 class="card__title">Notizen</h3>
-        <p class="notes selectable"><%= mission.notes %></p>
-      </section>
+    <% if (!open.length) { -%>
+      <div class="empty empty--compact"><p class="subtle">Keine offenen Aufträge.</p></div>
     <% } -%>
+    <% open.forEach((a) => { %><%- include('assignments/_card', { assignment: a, counts, returnTo: path, showMission: false }) %><% }) %>
 
-    <section class="danger-zone">
-      <%- buttonTo(`${mission.kindLabel} löschen`, path, { method: 'delete', icon: 'trash', class: 'button button--danger-quiet',
-            confirm: `„${mission.title}“ mit allen ${flights.length} Flügen endgültig löschen?`, confirmButton: 'Löschen' }) %>
-    </section>
+    <% if (done.length) { -%>
+      <details class="disclosure tasks__done">
+        <summary>Erledigt <span class="count"><%= done.length %></span></summary>
+        <div class="disclosure__body tasks__list">
+          <% done.forEach((a) => { -%>
+            <div class="task-row">
+              <%- icon('check', { size: 14 }) %>
+              <a href="#<%= path %>/assignments/<%= a.id %>" class="truncate"><%= a.title %></a>
+              <span class="subtle"><%= counts.get(a.id) ? `${counts.get(a.id).shots} Aufn.` : '' %></span>
+              <%- buttonTo('Wieder öffnen', `${path}/assignments/${a.id}/reopen`, { method: 'patch', icon: 'reopen', class: 'button button--icon-quiet', params: { return_to: path } }) %>
+            </div>
+          <% }) -%>
+        </div>
+      </details>
+    <% } -%>
   </aside>
+
+  <dialog class="import-dialog" data-media-import-target="dialog"></dialog>
 </div>

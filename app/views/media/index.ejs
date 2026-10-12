@@ -1,0 +1,50 @@
+<%# locals: groups, upcoming -%>
+<header class="page-header">
+  <div>
+    <h1>Bilddaten</h1>
+    <p class="subtle">Nach dem Flug Bilder importieren, bearbeiten und bereitstellen.</p>
+  </div>
+</header>
+
+<ol class="process">
+  <li><span class="stepper__num">1</span><div><strong>Import</strong><p class="subtle">Nach dem Flug: SD-Karte oder Ordner auf der Einsatzseite – direkt auf den Auftrag ziehen.</p></div></li>
+  <li><span class="stepper__num">2</span><div><strong>Bearbeiten</strong><p class="subtle">Vergleichsbilder erstellen, Kompass einzeichnen <span class="badge badge--muted badge--tiny">bald</span></p></div></li>
+  <li><span class="stepper__num">3</span><div><strong>Ablage</strong><p class="subtle">In die Nextcloud oder als Ordner/ZIP. <span class="badge badge--muted badge--tiny">bald</span></p></div></li>
+</ol>
+
+<% if (upcoming.length) { -%>
+  <section class="section">
+    <h2 class="section__title">Anstehende Aufträge <span class="count"><%= upcoming.length %></span></h2>
+    <div class="task-grid">
+      <% upcoming.forEach((a) => { %><%- include('assignments/_card', { assignment: a, counts: null, returnTo: null, showMission: true }) %><% }) %>
+    </div>
+  </section>
+<% } -%>
+
+<% if (!groups.length) { -%>
+  <div class="empty">
+    <%- icon('images', { size: 40, class: 'empty__icon' }) %>
+    <p><strong>Kein aktiver Einsatz.</strong></p>
+    <p class="subtle">Bilder gehören immer zu einem Einsatz.</p>
+    <a class="button button--primary" href="#/missions/new"><%- icon('plus') %><span>Neuer Einsatz</span></a>
+  </div>
+<% } -%>
+
+<% groups.forEach(({ mission, history, timeline }) => { -%>
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title"><%= mission.title %> <%- kindBadge(mission) %></h2>
+      <div class="toolbar">
+        <a class="button" href="#/missions/<%= mission.id %>/comparisons"><%- icon('kontrolle') %><span>Vergleichsbilder</span></a>
+        <a class="button button--primary" href="#/missions/<%= mission.id %>"><%- icon('import') %><span>Bilder importieren</span></a>
+      </div>
+    </div>
+    <% if (!history.length) { -%>
+      <div class="empty empty--compact"><p class="subtle">Noch keine Bilder in diesem Einsatz.</p></div>
+    <% } else { -%>
+      <div class="history">
+        <% history.forEach((a) => { %><%- include('assignments/_history', { assignment: a, entry: timeline.get(a.id) }) %><% }) %>
+      </div>
+    <% } -%>
+  </section>
+<% }) -%>

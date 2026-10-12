@@ -1,0 +1,37 @@
+<%# locals: block, review, multiple -%>
+<% const name = (field) => `block[${block.id}][${field}]` -%>
+<div class="import-block" data-controller="import-block" data-import-block-id-value="<%= block.id %>">
+  <div class="import-block__info">
+    <% if (multiple) { -%>
+      <strong><%= formatTime(block.start) %><%= formatTime(block.end) !== formatTime(block.start) ? `–${formatTime(block.end)}` : '' %> Uhr</strong>
+      <span class="subtle"><%= pluralize(block.shots.length, 'Aufnahme', 'Aufnahmen') %><%= block.hasWaypoint ? ' · Wegpunkt-Flug' : '' %></span>
+    <% } else { -%>
+      <strong>Zuordnen zu</strong>
+    <% } -%>
+  </div>
+  <div class="import-block__target">
+    <select name="<%= name('target') %>" data-import-block-target="select" data-action="import-block#update">
+      <% if (review.openAssignments.length) { -%>
+        <optgroup label="Offene Aufträge">
+          <% review.openAssignments.forEach((a) => { -%>
+            <option value="<%= a.id %>" <%= block.target === String(a.id) ? 'selected' : '' %>><%= a.title %><%= a.dueAt ? ` (${formatTime(a.dueAt)} Uhr)` : '' %></option>
+          <% }) -%>
+        </optgroup>
+      <% } -%>
+      <% if (review.recentlyDone.length) { -%>
+        <optgroup label="Erledigt">
+          <% review.recentlyDone.forEach((a) => { %><option value="<%= a.id %>" <%= block.target === String(a.id) ? 'selected' : '' %>><%= a.title %></option><% }) %>
+        </optgroup>
+      <% } -%>
+      <option value="new" <%= block.target === 'new' ? 'selected' : '' %>>＋ Neuer Auftrag …</option>
+      <% if (multiple) { %><option value="skip">Nicht importieren</option><% } %>
+    </select>
+    <div class="import-block__new" data-import-block-target="newFields" <%= block.target === 'new' ? '' : 'hidden' %>>
+      <select name="<%= name('new_kind') %>" data-import-block-target="kind" data-action="import-block#update">
+        <% assignmentKindOptions().forEach(([k, label]) => { %><option value="<%= k %>" <%= block.newKind === k ? 'selected' : '' %>><%= label %></option><% }) %>
+      </select>
+      <input type="text" name="<%= name('new_title') %>" placeholder="Name, z. B. Bagger-Zufahrt prüfen" data-import-block-target="title"
+>
+    </div>
+  </div>
+</div>

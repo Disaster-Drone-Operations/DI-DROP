@@ -1,0 +1,31 @@
+<dialog class="gallery" tabindex="-1" data-controller="gallery" data-action="gallery:open@window->gallery#open keydown@window->gallery#key close->gallery#closed">
+  <div class="gallery__stage" data-gallery-target="stage">
+    <img class="gallery__image" data-gallery-target="image" alt="" draggable="false"
+         data-action="dblclick->gallery#toggleZoom pointerdown->gallery#panStart">
+    <p class="gallery__notice" data-gallery-target="notice" hidden></p>
+    <button type="button" class="gallery__nav gallery__nav--prev" data-gallery-target="prev" data-action="gallery#prev" title="Vorherige Aufnahme (←)"><%- icon('chevron', { size: 28, class: 'icon icon--flip' }) %></button>
+    <button type="button" class="gallery__nav gallery__nav--next" data-gallery-target="next" data-action="gallery#next" title="Nächste Aufnahme (→)"><%- icon('chevron', { size: 28 }) %></button>
+    <div class="gallery__vertical" data-gallery-target="vertical" hidden>
+      <button type="button" class="gallery__vbutton" data-gallery-target="earlier" data-action="gallery#earlier" title="Gleiche Stelle – früher (↑)"><%- icon('chevron', { size: 20, class: 'icon icon--up' }) %></button>
+      <span class="gallery__vlabel" data-gallery-target="verticalLabel"></span>
+      <button type="button" class="gallery__vbutton" data-gallery-target="later" data-action="gallery#later" title="Gleiche Stelle – später (↓)"><%- icon('chevron', { size: 20, class: 'icon icon--down' }) %></button>
+    </div>
+  </div>
+  <div class="gallery__bar">
+    <div class="gallery__info">
+      <strong data-gallery-target="caption"></strong>
+      <span class="gallery__position" data-gallery-target="position"></span>
+    </div>
+    <div class="gallery__zoom">
+      <button type="button" class="button button--dark" data-action="gallery#zoomOut" title="Verkleinern (−)">−</button>
+      <button type="button" class="button button--dark gallery__zoom-level" data-gallery-target="zoomLevel" data-action="gallery#resetZoom" title="Zoom zurücksetzen (0) – Doppelklick ins Bild zoomt auf die Stelle">100 %</button>
+      <button type="button" class="button button--dark" data-action="gallery#zoomIn" title="Vergrößern (+)">+</button>
+    </div>
+    <div class="segmented segmented--dark" data-gallery-target="variants"></div>
+    <div class="gallery__actions">
+      <button type="button" class="button button--dark" data-action="gallery#openExternal" title="Im Standardprogramm öffnen (z. B. Vorschau)">Öffnen</button>
+      <button type="button" class="button button--dark" data-action="gallery#reveal" title="Im Ordner zeigen"><%- icon('folder') %></button>
+      <button type="button" class="button button--dark" data-action="gallery#close" title="Schließen (Esc)">Schließen</button>
+    </div>
+  </div>
+</dialog>

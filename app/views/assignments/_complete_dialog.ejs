@@ -1,0 +1,48 @@
+<%# locals: assignment, completion, returnTo -%>
+<% const path = `/missions/${assignment.mission_id}/assignments/${assignment.id}` -%>
+<% const { base, interval } = completion -%>
+<% const custom = ![30, 60].includes(interval) -%>
+<% const id = `next_${assignment.id}` -%>
+<div data-controller="dialog" class="dialog-host">
+  <button type="button" class="button button--small" data-action="dialog#open"><%- icon('check') %><span>Erledigt …</span></button>
+  <dialog class="sheet" data-dialog-target="dialog">
+    <form action="#<%= path %>/complete" method="post" class="sheet__body" data-controller="choice">
+      <input type="hidden" name="_method" value="patch">
+      <input type="hidden" name="return_to" value="<%= returnTo %>">
+      <h2 class="dialog__title"><%= assignment.title %> erledigt</h2>
+      <p>Wann soll der nächste Kontrollflug starten?</p>
+      <p class="subtle">Bezug: <%= completion.fromImages ? 'Start dieses Flugs' : 'geplanter Start' %> um <%= formatTime(base) %> Uhr.</p>
+
+      <div class="choices">
+        <% [30, 60].forEach((m) => { -%>
+          <label class="choice">
+            <input type="radio" name="next[mode]" value="<%= m %>" <%= interval === m ? 'checked' : '' %>>
+            <span class="choice__label"><%= m %> Min. nach Start</span>
+            <span class="choice__result"><%= formatTime(addMinutesTo(base, m)) %> Uhr</span>
+          </label>
+        <% }) -%>
+        <label class="choice">
+          <input type="radio" id="<%= id %>_custom" name="next[mode]" value="custom" <%= custom ? 'checked' : '' %>>
+          <span class="choice__label">
+            <input type="number" class="input-inline" name="next[minutes]" min="1" max="720" value="<%= custom ? interval : 45 %>" data-choice="<%= id %>_custom"> Min. nach Start
+          </span>
+        </label>
+        <label class="choice">
+          <input type="radio" id="<%= id %>_at" name="next[mode]" value="at">
+          <span class="choice__label">
+            um <input type="time" class="input-inline" name="next[time]" value="<%= formatTime(addMinutesTo(base, interval)) %>" data-choice="<%= id %>_at"> Uhr
+          </span>
+        </label>
+        <label class="choice choice--quiet">
+          <input type="radio" name="next[mode]" value="none">
+          <span class="choice__label">Keine weiteren Kontrollflüge</span>
+        </label>
+      </div>
+
+      <div class="dialog__actions">
+        <button type="button" class="button" data-action="dialog#close">Abbrechen</button>
+        <button type="submit" class="button button--primary">Erledigt</button>
+      </div>
+    </form>
+  </dialog>
+</div>

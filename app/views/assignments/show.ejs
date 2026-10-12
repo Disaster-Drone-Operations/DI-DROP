@@ -1,0 +1,71 @@
+<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion -%>
+<% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
+<div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
+     data-media-import-assignment-id-value="<%= assignment.id %>" data-media-import-return-path-value="<%= path %>">
+  <header class="page-header">
+    <div>
+      <a class="backlink" href="#/missions/<%= mission.id %>"><%= mission.title %></a>
+      <div class="eyebrow">
+        <%- assignmentBadge(assignment) %>
+        <% if (assignment.isOpen) { -%>
+          <span class="subtle"><%= assignment.dueAt ? `geplant ${formatTime(assignment.dueAt)} Uhr` : 'sofort' %></span>
+        <% } else { -%>
+          <span class="badge badge--muted"><%- icon('check', { size: 12 }) %>Erledigt</span>
+        <% } -%>
+      </div>
+      <h1><%= assignment.title %></h1>
+      <% if (timeline) { %><div class="meta meta--large"><span><%- icon('clock', { size: 14 }) %><%= timeRange(timeline.first, timeline.last) %></span><span><%- icon('images', { size: 14 }) %><%= pluralize(shotCount, 'Aufnahme', 'Aufnahmen') %></span></div><% } %>
+      <% if (assignment.notes) { %><p class="subtle"><%= assignment.notes %></p><% } %>
+    </div>
+    <div class="toolbar" data-controller="system-open">
+      <% if (assignment.media_dir) { -%>
+        <button type="button" class="button" data-action="system-open#open" data-system-open-path-param="<%= assignment.media_dir %>"
+                title="<%= assignment.media_dir %>"><%- icon('folder') %><span><%= platformName() === 'windows' ? 'Im Explorer öffnen' : 'Im Finder öffnen' %></span></button>
+      <% } -%>
+      <% if (!shotCount) { -%>
+        <%- buttonTo('Löschen', path, { method: 'delete', icon: 'trash', class: 'button button--danger-quiet',
+              confirm: `Auftrag „${assignment.title}“ löschen?`, confirmButton: 'Löschen' }) %>
+      <% } -%>
+      <% if (assignment.isOpen && completion) { -%>
+        <%- include('assignments/_complete_dialog', { assignment, completion, returnTo: path }) %>
+      <% } else if (assignment.isOpen) { -%>
+        <%- buttonTo('Erledigt', `${path}/complete`, { method: 'patch', icon: 'check', class: 'button button--primary', params: { return_to: path } }) %>
+      <% } else { -%>
+        <%- buttonTo('Wieder öffnen', `${path}/reopen`, { method: 'patch', icon: 'reopen', params: { return_to: path } }) %>
+      <% } -%>
+    </div>
+  </header>
+
+  <% if (assignment.processing === 'vergleich' && shotCount) { -%>
+    <div class="next-step">
+      <%- icon('kontrolle', { size: 20 }) %>
+      <div class="next-step__text"><strong>Nächster Schritt:</strong> Vergleichsbilder aus diesem und früheren Kontrollflügen erstellen.</div>
+      <a class="button button--primary" href="#/missions/<%= mission.id %>/comparisons">Vergleichsbilder erstellen</a>
+    </div>
+  <% } -%>
+
+  <% if (assignment.isOpen && assignment.kind !== 'sonstiges') { %><%- include('media/_import_zone', { canImport, label: 'Bilder für diesen Auftrag importieren' }) %><% } %>
+
+  <% if (variants.length > 1) { -%>
+    <nav class="filterbar" aria-label="Kamera">
+      <span class="subtle">Anzeigen:</span>
+      <div class="segmented segmented--links">
+        <% const shown = variant ?? defaultVariantOf(variants) -%>
+        <% variants.slice().sort((a, b) => PREFERRED_VARIANTS.indexOf(a) - PREFERRED_VARIANTS.indexOf(b)).forEach((v) => { -%>
+          <a href="#<%= path %><%= v === defaultVariantOf(variants) ? '' : `?variant=${v}` %>" class="<%= shown === v ? 'is-active' : '' %>"><%= variantLabel(v) %></a>
+        <% }) -%>
+      </div>
+    </nav>
+  <% } -%>
+
+  <% if (!shots.length && assignment.kind !== 'sonstiges') { -%>
+    <div class="empty empty--compact"><p class="subtle"><%= variant ? `Keine Aufnahmen mit ${variantLabel(variant)}.` : 'Noch keine Bilder zu diesem Auftrag.' %></p></div>
+  <% } else if (shots.length) { -%>
+    <p class="hint gallery-hint">Klick auf ein Bild öffnet die große Ansicht – dort mit ← → blättern, mit ↑ ↓ dieselbe Stelle zu anderen Zeiten.</p>
+    <div class="shot-grid">
+      <% shots.forEach((shot) => { %><%- include('media/_shot', { shot, assignmentTitle: assignment.title }) %><% }) %>
+    </div>
+  <% } -%>
+
+  <dialog class="import-dialog" data-media-import-target="dialog"></dialog>
+</div>

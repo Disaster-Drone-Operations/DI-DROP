@@ -1,0 +1,69 @@
+<%# locals: mission, repeated, single, comparisons, canExport -%>
+<div data-controller="comparisons" data-comparisons-mission-id-value="<%= mission.id %>">
+  <header class="page-header">
+    <div>
+      <a class="backlink" href="#/missions/<%= mission.id %>"><%= mission.title %></a>
+      <h1>Vergleichsbilder</h1>
+      <p class="subtle">Wegpunkte auswählen – pro Wegpunkt entsteht ein Bild mit den gewählten Aufnahmen nebeneinander.</p>
+    </div>
+    <% if (canExport) { -%>
+      <div class="toolbar">
+        <button type="button" class="button button--primary" disabled data-comparisons-target="exportButton" data-action="comparisons#export">
+          <%- icon('images') %><span data-comparisons-target="exportLabel">Vergleichsbilder erstellen</span>
+        </button>
+      </div>
+    <% } -%>
+  </header>
+
+  <% if (!repeated.length && !single.length) { -%>
+    <div class="empty">
+      <%- icon('images', { size: 40, class: 'empty__icon' }) %>
+      <p><strong>Noch keine Bilder in diesem Einsatz.</strong></p>
+      <p class="subtle">Importiere zuerst die Bilder mehrerer Flüge – Wegpunkte, die mehrfach angeflogen wurden, erscheinen dann hier.</p>
+    </div>
+  <% } else { -%>
+    <div class="comparisons">
+      <aside class="viewpoint-list">
+        <h2 class="section__title">Wegpunkte <span class="count"><%= repeated.length %></span></h2>
+        <% if (!repeated.length) { -%>
+          <p class="subtle">Noch kein Wegpunkt wurde in mehreren Flügen angeflogen.</p>
+        <% } -%>
+        <% repeated.forEach((entry) => { %><%- include('comparisons/_viewpoint', { entry, mission }) %><% }) %>
+
+        <% if (single.length) { -%>
+          <details class="viewpoint-list__more">
+            <summary class="subtle">Nur in einem Flug <span class="count"><%= single.length %></span></summary>
+            <% single.forEach((entry) => { %><%- include('comparisons/_viewpoint', { entry, mission }) %><% }) %>
+          </details>
+        <% } -%>
+      </aside>
+
+      <section class="comparison-editors" data-comparisons-target="editors">
+        <div class="empty" data-comparisons-target="hint">
+          <%- icon('kontrolle', { size: 32, class: 'empty__icon' }) %>
+          <p><strong>Wähle links einen oder mehrere Wegpunkte.</strong></p>
+          <p class="subtle">Vorausgewählt werden jeweils die letzten drei Flüge – per Klick auf die Uhrzeiten änderst du die Auswahl.</p>
+        </div>
+      </section>
+    </div>
+  <% } -%>
+
+  <% if (comparisons.length) { -%>
+    <section class="section" data-controller="system-open">
+      <h2 class="section__title">Erstellt <span class="count"><%= comparisons.length %></span></h2>
+      <div class="list">
+        <% comparisons.forEach(({ comparison, viewpointName }) => { -%>
+          <div class="list__row">
+            <%- icon('images') %>
+            <div class="mission-row__main">
+              <div class="mission-row__title"><span class="truncate"><%= comparison.fileName %></span></div>
+              <div class="meta"><% if (viewpointName) { %><span><%= viewpointName %></span><% } %><span><%= variantLabel(comparison.variant) %></span></div>
+            </div>
+            <button type="button" class="button" data-action="system-open#open" data-system-open-path-param="<%= comparison.path %>">Öffnen</button>
+            <button type="button" class="button button--icon-quiet" title="Im Ordner zeigen" data-action="system-open#reveal" data-system-open-path-param="<%= comparison.path %>"><%- icon('folder') %></button>
+          </div>
+        <% }) -%>
+      </div>
+    </section>
+  <% } -%>
+</div>

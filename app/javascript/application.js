@@ -6,11 +6,14 @@ import { connect } from '/lib/db.js'
 import Router from '/lib/router.js'
 import routes from '/config/routes.js'
 import Setting from '/app/models/setting.js'
+import { install as installShortcuts } from '/app/javascript/shortcuts.js'
 
 document.documentElement.classList.add(`platform-${platform.os}`, `runtime-${platform.name}`)
 
 // Stimulus-Controller automatisch registrieren: folder_picker_controller.js → "folder-picker"
 const stimulus = Application.start()
+window.Stimulus = stimulus // zum Debuggen in der Konsole, wie in Rails
+if (import.meta.env.DEV) window.platform = platform
 const stimulusControllers = import.meta.glob('./controllers/*_controller.js', { eager: true, import: 'default' })
 for (const [file, controller] of Object.entries(stimulusControllers)) {
   stimulus.register(file.split('/').pop().replace('_controller.js', '').replaceAll('_', '-'), controller)
@@ -28,6 +31,7 @@ try {
   await connect()
   await Setting.load()
   await new Router({ routes, controllers, element }).start()
+  installShortcuts()
 } catch (error) {
   console.error(error)
   element.innerHTML = `<div class="boot boot--error"><strong>di-drop konnte nicht starten.</strong><pre></pre></div>`

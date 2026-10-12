@@ -1,4 +1,4 @@
-<%# locals: active, archived, needsSetup -%>
+<%# locals: active, archived, upcoming, needsSetup -%>
 <header class="page-header">
   <div>
     <h1>Einsätze &amp; Übungen</h1>
@@ -16,6 +16,15 @@
       dann wirst du bei neuen Einsätzen automatisch als Drone Operator eingetragen.
     </div>
   </div>
+<% } -%>
+
+<% if (upcoming.length) { -%>
+  <section class="section">
+    <h2 class="section__title">Als Nächstes zu tun <span class="count"><%= upcoming.length %></span></h2>
+    <div class="task-grid">
+      <% upcoming.forEach((a) => { %><%- include('assignments/_card', { assignment: a, counts: null, returnTo: null, showMission: active.length > 1 }) %><% }) %>
+    </div>
+  </section>
 <% } -%>
 
 <section class="section">

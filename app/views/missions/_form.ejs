@@ -1,52 +1,58 @@
 <%# locals: mission -%>
 <% const f = formFor(mission, 'mission') -%>
 <% const path = mission.isNewRecord ? '/missions' : `/missions/${mission.id}` -%>
-<form action="#<%= path %>" method="post" class="form" novalidate>
+<% const moreFields = ['reference', 'requested_by', 'coordinates', 'group_leader', 'pilot', 'observer', 'operator', 'control_interval_minutes', 'notes'] -%>
+<form action="#<%= path %>" method="post" class="form" novalidate data-shortcut="save">
   <% if (!mission.isNewRecord) { %><input type="hidden" name="_method" value="patch"><% } %>
   <%- errorSummary(mission) %>
 
   <fieldset class="card">
-    <legend class="card__title">Lage</legend>
     <div class="grid">
       <%- f.field('kind', { label: 'Art', type: 'segmented', options: missionKindOptions(), wide: true }) %>
       <%- f.field('title', { label: 'Stichwort', required: true, autofocus: mission.isNewRecord, wide: true,
             placeholder: 'z. B. Waldbrand Hohe Warte, Vermisstensuche Schneekopf' }) %>
-      <%- f.field('reference', { label: 'Einsatznummer', placeholder: 'optional' }) %>
-      <%- f.field('requested_by', { label: 'Angefordert durch', placeholder: 'z. B. ILS, Polizei, Einsatzleitung' }) %>
-    </div>
-  </fieldset>
-
-  <fieldset class="card">
-    <legend class="card__title">Zeit &amp; Ort</legend>
-    <div class="grid">
+      <%- f.field('location', { label: 'Einsatzort', required: true, wide: true, placeholder: 'Ort, Gebiet oder Sammelpunkt' }) %>
       <%- f.field('date', { label: 'Datum', type: 'date', required: true }) %>
       <%- f.field('start_time', { label: 'Beginn', type: 'time' }) %>
-      <%- f.field('location', { label: 'Einsatzort', required: true, wide: true, placeholder: 'Ort, Gebiet oder Sammelpunkt' }) %>
-      <%- f.field('coordinates', { label: 'Koordinaten', placeholder: '50.6789, 10.9876',
-            hint: 'Optional, als Dezimalgrad (Breite, Länge).' }) %>
     </div>
   </fieldset>
 
-  <fieldset class="card">
-    <legend class="card__title">Team</legend>
-    <div class="grid">
-      <% missionRoles().forEach(([attr, label]) => { %><%- f.field(attr, { label, placeholder: 'Name' }) %><% }) %>
-    </div>
-  </fieldset>
+  <%# Seltener gebraucht – aufklappbar, öffnet sich bei Fehlern von selbst -%>
+  <details class="disclosure disclosure--card" <%= moreFields.some((a) => mission.errors[a]) ? 'open' : '' %>>
+    <summary>Weitere Angaben <span class="disclosure__hint">– Einsatznummer, Drohnen-Einheit, Kontrollflug-Takt, Notizen</span></summary>
+    <div class="disclosure__body">
+      <fieldset class="card">
+        <legend class="card__title">Einsatz</legend>
+        <div class="grid">
+          <%- f.field('reference', { label: 'Einsatznummer', placeholder: 'optional' }) %>
+          <%- f.field('requested_by', { label: 'Angefordert durch', placeholder: 'z. B. ILS, Polizei, Einsatzleitung' }) %>
+          <%- f.field('coordinates', { label: 'Koordinaten', placeholder: '50.6789, 10.9876',
+                hint: 'Als Dezimalgrad (Breite, Länge).' }) %>
+        </div>
+      </fieldset>
 
-  <fieldset class="card">
-    <legend class="card__title">Flugplanung</legend>
-    <div class="grid">
-      <%- f.field('control_interval_minutes', { label: 'Kontrollflüge', type: 'select',
-            options: intervalOptions(mission.control_interval_minutes),
-            hint: 'Der Takt beginnt mit dem ersten Kontrollflug.' }) %>
-    </div>
-  </fieldset>
+      <fieldset class="card">
+        <legend class="card__title">Drohnen-Einheit</legend>
+        <div class="grid">
+          <% missionRoles().forEach(([attr, label]) => { %><%- f.field(attr, { label, placeholder: 'Name' }) %><% }) %>
+        </div>
+      </fieldset>
 
-  <fieldset class="card">
-    <legend class="card__title">Notizen</legend>
-    <%- f.field('notes', { type: 'textarea', rows: 4, placeholder: 'Lage, Besonderheiten, Ansprechpartner …', wide: true }) %>
-  </fieldset>
+      <fieldset class="card">
+        <legend class="card__title">Kontrollflüge</legend>
+        <div class="grid">
+          <%- f.field('control_interval_minutes', { label: 'Takt', type: 'select',
+                options: intervalOptions(mission.control_interval_minutes),
+                hint: 'Die App zeigt an, wann der nächste Kontrollflug fällig ist.' }) %>
+        </div>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend class="card__title">Notizen</legend>
+        <%- f.field('notes', { type: 'textarea', rows: 4, placeholder: 'Lage, Besonderheiten, Ansprechpartner …', wide: true }) %>
+      </fieldset>
+    </div>
+  </details>
 
   <div class="form-actions">
     <a class="button" href="#<%= mission.isNewRecord ? '/' : path %>">Abbrechen</a>

@@ -1,0 +1,25 @@
+<%# locals: shot, assignmentTitle -%>
+<% const viewpointId = shot.files.find((f) => f.viewpoint_id)?.viewpoint_id -%>
+<% const variant = shot.forcedVariant ?? defaultVariant(shot.files) -%>
+<% const file = shot.files.find((f) => (f.variant ?? 'other') === variant) ?? shot.files[0] -%>
+<figure class="shot" title="<%= shotTooltip(file) %>" data-controller="shot"
+        data-shot-data-value="<%= shotData(shot, { assignmentTitle: assignmentTitle ?? '' }) %>" data-shot-variant-value="<%= variant %>">
+  <button type="button" class="shot__image" data-action="shot#open" title="Groß anzeigen">
+    <% if (file.thumb_path) { -%>
+      <img src="<%= thumbUrl(file.thumb_path) %>" alt="<%= file.original_name %>" loading="lazy" draggable="false" data-shot-target="image">
+    <% } else { -%>
+      <span class="shot__placeholder"><%- icon(file.isVideo ? 'video' : 'images', { size: 28 }) %></span>
+    <% } -%>
+    <% if (file.isVideo) { %><span class="shot__video-badge"><%- icon('video', { size: 12 }) %></span><% } %>
+  </button>
+  <figcaption class="shot__caption">
+    <span class="shot__time"><%= file.takenAt ? formatTime(file.takenAt) : file.original_name %><% if (shot.viewpointName) { %> · <%- viewpointNameTag(viewpointId, shot.viewpointName, 'shot__viewpoint') %><% } %></span>
+    <span class="shot__variants">
+      <% shot.files.forEach((f) => { -%>
+        <button type="button" class="chip <%= f === file ? 'is-active' : '' %>" data-shot-target="chip" data-variant="<%= f.variant ?? 'other' %>"
+                data-action="shot#show" data-shot-variant-param="<%= f.variant ?? 'other' %>" title="<%= f.variantLabel %> zeigen"><%= f.isVideo ? 'Video' : variantShort(f.variant) %></button>
+      <% }) -%>
+      <button type="button" class="chip chip--icon" data-action="shot#reveal" title="Im Ordner zeigen"><%- icon('folder', { size: 12 }) %></button>
+    </span>
+  </figcaption>
+</figure>

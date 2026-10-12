@@ -18,6 +18,20 @@ npm run dev           # nur Browser-Variante: http://localhost:1420
 npm run tauri build   # Installer bauen (.dmg / .msi) → src-tauri/target/release/bundle/
 ```
 
+### Testen mit echten Bildern im Browser
+
+Im Dev-Server kann die Browser-Variante den echten Rust-Code nutzen – praktisch zum
+Testen von Import & Co. ohne Desktop-Fenster:
+
+```bash
+(cd src-tauri && cargo build --bin didrop-dev)
+npm run dev               # dann http://localhost:1420/?bridge öffnen
+```
+
+Importierte Dateien landen dabei in `tmp/dev-media/`. Testbilder im DJI-Format erzeugt
+`script/make_test_images.sh <ordner>`; Rust-Tests mit echten Bildern:
+`DIDROP_TEST_IMAGES=/pfad cargo test -- --ignored --nocapture` (in `src-tauri/`).
+
 ## Aufbau (Rails-Leute fühlen sich zu Hause)
 
 ```
@@ -35,7 +49,8 @@ config/
   settings.js         Schema für das Einstellungs-Menü (neue Rubrik = neuer Eintrag)
 db/migrate/           SQL-Migrations, laufen beim Start automatisch
 lib/                  Mini-Framework: Router, Controller, Record, Views, Platform-Adapter
-src-tauri/            Rust-Seite (bewusst schlank) + Tauri-Konfiguration
+app/services/         Abläufe über mehrere Models hinweg (z. B. MediaImporter)
+src-tauri/            Rust-Seite: Bild-Scan, Metadaten, Import, Vorschaubilder
 ```
 
 ### Konventionen

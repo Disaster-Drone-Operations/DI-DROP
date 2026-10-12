@@ -1,6 +1,7 @@
 import Record from '/lib/record.js'
 import { db } from '/lib/db.js'
-import { toDate, toTime, parseLocal, addMinutes } from '/lib/time.js'
+import { toDate, toTime, parseLocal } from '/lib/time.js'
+import { dateFolder, sanitizeFolderName } from '/lib/folders.js'
 import Setting from '/app/models/setting.js'
 import Flight from '/app/models/flight.js'
 
@@ -23,6 +24,7 @@ export default class Mission extends Record {
     control_interval_minutes: 'integer',
     status: 'string',
     notes: 'text',
+    media_dir: 'string',
   }
 
   static KINDS = { einsatz: 'Einsatz', uebung: 'Übung' }
@@ -87,21 +89,20 @@ export default class Mission extends Record {
     return parseLocal(this.start_time ? `${this.date}T${this.start_time}` : this.date)
   }
 
+  // Ordnername der Bilder: "2026_10_06__Waldbrand Hohe Warte"
+  get folderName() {
+    return `${dateFolder(this.date)}__${sanitizeFolderName(this.title)}`
+  }
+
   flights() {
     return Flight.where('mission_id = ?', [this.id], { order: 'number ASC' })
   }
 
-  // Wann ist der nächste Kontrollflug fällig? Basis ist der letzte Kontrollflug.
-  // Ohne bisherigen Kontrollflug gibt es (noch) keinen Takt → null.
-  nextControlFlightAt(flights) {
-    if (!this.isActive || !this.control_interval_minutes) return null
-    const last = flights.filter((f) => f.kind === 'kontrolle').at(-1)
-    if (!last) return null
-    return addMinutes(parseLocal(last.flown_at), this.control_interval_minutes)
-  }
-
   async destroy() {
-    await db.execute('DELETE FROM flights WHERE mission_id = ?', [this.id])
+    // Bilddateien auf der Festplatte bleiben erhalten
+    for (const table of ['comparisons', 'media_files', 'viewpoints', 'assignments', 'assignment_series', 'flights']) {
+      await db.execute(`DELETE FROM ${table} WHERE mission_id = ?`, [this.id])
+    }
     await super.destroy()
   }
 }

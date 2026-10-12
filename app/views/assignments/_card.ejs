@@ -1,0 +1,34 @@
+<%# locals: assignment, counts, returnTo, showMission -%>
+<% const c = counts?.get(assignment.id) -%>
+<% const path = `/missions/${assignment.mission_id}/assignments/${assignment.id}` -%>
+<% const dropTarget = assignment.isOpen && returnTo && assignment.kind !== 'sonstiges' -%>
+<article class="task-card task-card--<%= assignment.kind %> <%= assignment.isOpen ? '' : 'is-done' %>"
+  <% if (dropTarget) { %>data-media-import-target="zone" data-assignment-id="<%= assignment.id %>"<% } %>
+  <% if (assignment.isOpen && assignment.dueAt) { %>data-controller="countdown" data-countdown-at-value="<%= assignment.dueAt.toISOString() %>"<% } %>>
+  <div class="task-card__head">
+    <%- assignmentBadge(assignment) %>
+    <span class="task-card__due">
+      <% if (!assignment.isOpen) { -%>
+        <%- icon('check', { size: 12 }) %> erledigt
+      <% } else if (assignment.dueAt) { -%>
+        <%= formatTime(assignment.dueAt) %> Uhr · <span data-countdown-target="label"></span>
+      <% } else { -%>
+        sofort
+      <% } -%>
+    </span>
+  </div>
+  <a class="task-card__title" href="#<%= path %>"><%= assignment.title %></a>
+  <% if (showMission) { %><div class="task-card__mission subtle"><%- icon('pin', { size: 12 }) %><%= assignment.mission_title %></div><% } %>
+  <% if (assignment.notes) { %><p class="task-card__notes subtle"><%= assignment.notes %></p><% } %>
+  <% if (counts && assignment.kind !== 'sonstiges') { %><div class="task-card__meta subtle"><%= c ? pluralize(c.shots, 'Aufnahme', 'Aufnahmen') : 'noch keine Bilder' %></div><% } %>
+  <% if (dropTarget) { %><div class="task-card__drop"><%- icon('import', { size: 14 }) %> Bilder hier ablegen</div><% } %>
+  <% if (assignment.isOpen && returnTo) { -%>
+    <div class="task-card__actions">
+      <% if (assignment.completion) { -%>
+        <%- include('assignments/_complete_dialog', { assignment, completion: assignment.completion, returnTo }) %>
+      <% } else { -%>
+        <%- buttonTo('Erledigt', `${path}/complete`, { method: 'patch', icon: 'check', class: 'button button--small', params: { return_to: returnTo } }) %>
+      <% } -%>
+    </div>
+  <% } -%>
+</article>

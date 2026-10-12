@@ -1,0 +1,23 @@
+<%# locals: id, name, shots, variants -%>
+<article class="card comparison-editor" data-controller="comparison-editor" data-viewpoint-id="<%= id %>"
+         data-comparison-editor-viewpoint-id-value="<%= id %>" data-comparison-editor-name-value="<%= name %>"
+         data-comparison-editor-shots-value="<%= JSON.stringify(shots) %>" data-comparison-editor-variants-value="<%= JSON.stringify(variants) %>">
+  <header class="comparison-editor__header">
+    <h3><%= name %></h3>
+    <select data-comparison-editor-target="variant" data-action="comparison-editor#changeVariant">
+      <% variants.forEach((v) => { %><option value="<%= v %>"><%= variantLabel(v) %></option><% }) %>
+    </select>
+  </header>
+  <div class="comparison-editor__shots">
+    <% shots.forEach((shot, i) => { -%>
+      <button type="button" class="chip-toggle" data-index="<%= i %>" data-comparison-editor-target="chip" data-action="comparison-editor#toggleShot">
+        <span class="chip-toggle__time"><%= formatTime(shot.taken_at) %></span><span class="chip-toggle__flight"><%= shot.label %></span>
+      </button>
+    <% }) -%>
+  </div>
+  <div class="comparison-editor__preview">
+    <canvas data-comparison-editor-target="canvas"></canvas>
+    <p class="comparison-editor__message subtle" data-comparison-editor-target="message" hidden></p>
+  </div>
+  <p class="comparison-editor__file mono subtle" data-comparison-editor-target="fileName"></p>
+</article>

@@ -12,14 +12,24 @@
     </div>
 
     <nav class="nav">
+      <div class="nav__heading">Module</div>
       <a href="#/" class="nav__item <%= isCurrent(currentPath, '/', { exact: true }) || currentPath === '/missions/new' ? 'is-active' : '' %>">
         <%- icon('missions') %><span>Einsätze</span>
       </a>
+      <a href="#/media" class="nav__item <%= isCurrent(currentPath, '/media') || /^\/missions\/\d+\/(flights|comparisons)/.test(currentPath) ? 'is-active' : '' %>">
+        <%- icon('images') %><span>Bilddaten</span>
+      </a>
+      <span class="nav__item is-disabled" title="Kommt später">
+        <%- icon('radar') %><span>Luftraum</span><span class="badge badge--muted badge--tiny">bald</span>
+      </span>
+      <span class="nav__item is-disabled" title="Kommt später">
+        <%- icon('protocol') %><span>Protokolle</span><span class="badge badge--muted badge--tiny">bald</span>
+      </span>
 
       <% if (activeMissions.length) { -%>
-        <div class="nav__heading">Aktiv</div>
+        <div class="nav__heading">Aktive Einsätze</div>
         <% activeMissions.forEach((m) => { -%>
-          <a href="#/missions/<%= m.id %>" class="nav__item nav__item--sub <%= isCurrent(currentPath, `/missions/${m.id}`) ? 'is-active' : '' %>" title="<%= m.title %>">
+          <a href="#/missions/<%= m.id %>" class="nav__item nav__item--sub <%= currentPath === `/missions/${m.id}` || currentPath === `/missions/${m.id}/edit` ? 'is-active' : '' %>" title="<%= m.title %>">
             <span class="dot dot--<%= m.kind %>"></span><span class="truncate"><%= m.title %></span>
           </a>
         <% }) -%>
@@ -36,12 +46,16 @@
   <main class="content">
     <div class="titlebar" data-tauri-drag-region></div>
     <% if (flash.notice || flash.alert) { -%>
-      <div class="toast <%= flash.alert ? 'toast--alert' : '' %>" data-controller="flash" role="status">
+      <div class="toast <%= flash.alert ? 'toast--alert' : '' %>" data-controller="flash" role="status"
+           <% if (flash.undo) { %>data-flash-delay-value="7000"<% } %>>
         <%- icon(flash.alert ? 'alert' : 'check') %><span><%= flash.notice || flash.alert %></span>
+        <% if (flash.undo) { %><button type="button" class="toast__undo" data-action="flash#undo" title="<%= shortcut('Mod+Z') %>">Widerrufen</button><% } %>
       </div>
     <% } -%>
     <div class="page">
       <%- body %>
     </div>
   </main>
+  <%- include('layouts/_gallery') %>
+  <%- include('layouts/_shortcuts') %>
 </div>

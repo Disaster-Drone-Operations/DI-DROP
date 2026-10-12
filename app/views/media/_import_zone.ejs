@@ -1,0 +1,16 @@
+<%# locals: canImport, label -%>
+<% if (canImport) { -%>
+  <div class="dropzone" data-media-import-target="zone">
+    <%- icon('import', { size: 22, class: 'icon dropzone__icon' }) %>
+    <div class="dropzone__text">
+      <strong><%= label ?? 'Bilder nach dem Flug importieren' %></strong>
+      <span class="subtle">SD-Karte oder Ordner hierher ziehen<%= label ? '' : ' – oder direkt auf einen Auftrag' %>. Bereits importierte Bilder werden übersprungen.</span>
+    </div>
+    <div class="dropzone__actions">
+      <button type="button" class="button button--primary" data-action="media-import#pickFolder"><%- icon('folder') %><span>Ordner wählen …</span></button>
+      <button type="button" class="button button--quiet" data-action="media-import#pickFiles">Einzelne Bilder …</button>
+    </div>
+  </div>
+<% } else { -%>
+  <div class="callout callout--subtle"><%- icon('alert') %><span>Bilder importieren geht nur in der Desktop-App.</span></div>
+<% } -%>

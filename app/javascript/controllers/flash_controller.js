@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus'
+import { runUndo } from '/app/javascript/shortcuts.js'
 
 // Blendet Hinweise nach ein paar Sekunden aus
 export default class extends Controller {
@@ -10,6 +11,11 @@ export default class extends Controller {
 
   disconnect() {
     clearTimeout(this.timeout)
+  }
+
+  undo() {
+    clearTimeout(this.timeout)
+    runUndo()
   }
 
   dismiss() {

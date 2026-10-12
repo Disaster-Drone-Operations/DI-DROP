@@ -1,0 +1,8 @@
+<%# locals: k, kind -%>
+<label class="kind-option">
+  <input type="radio" name="assignment[kind]" value="<%= k.key %>" <%= k.key === kind ? 'checked' : '' %>>
+  <span class="kind-option__text">
+    <span class="kind-option__label"><%= k.label %></span>
+    <span class="kind-option__desc"><%= k.description %></span>
+  </span>
+</label>

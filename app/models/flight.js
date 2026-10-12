@@ -1,7 +1,10 @@
 import Record from '/lib/record.js'
 import { db } from '/lib/db.js'
-import { toLocalDateTime, parseLocal } from '/lib/time.js'
+import { parseLocal } from '/lib/time.js'
 
+// Ein Flug – entsteht beim Import (ein Import nach der Landung = ein Flug).
+// Start und Ende ergeben sich aus der ersten und letzten Aufnahme.
+// Ein Flug kann mehrere Aufträge bedienen.
 export default class Flight extends Record {
   static tableName = 'flights'
 
@@ -10,32 +13,23 @@ export default class Flight extends Record {
     number: 'integer',
     kind: 'string',
     flown_at: 'datetime',
+    landed_at: 'datetime',
     task: 'text',
     notes: 'text',
+    media_dir: 'string',
   }
 
-  static KINDS = {
-    initial: 'Initialflug',
-    kontrolle: 'Kontrollflug',
-    spezial: 'Spezialauftrag',
-  }
-
-  static DESCRIPTIONS = {
-    initial: 'Erster Überblick, ad hoc ohne viel Vorplanung',
-    kontrolle: 'Regelmäßiger Flug im festen Zeitfenster, gleiche Stellen auf Veränderung prüfen',
-    spezial: 'Einzelauftrag außerhalb der Zeitplanung',
-  }
+  // Bilder innerhalb dieses Abstands zu einem bestehenden Flug gehören zu ihm
+  static MERGE_MINUTES = 10
 
   static defaults() {
-    return { flown_at: toLocalDateTime() }
+    return { kind: 'flug' }
   }
 
   validate() {
-    this.validatesPresenceOf('mission_id', 'kind', 'flown_at')
-    this.validatesInclusionOf('kind', Object.keys(Flight.KINDS))
-    if (this.kind === 'spezial') this.validatesPresenceOf('task')
-    if (this.flown_at && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(this.flown_at)) {
-      this.addError('flown_at', 'ist kein gültiger Zeitpunkt')
+    this.validatesPresenceOf('mission_id', 'flown_at')
+    for (const attr of ['flown_at', 'landed_at']) {
+      if (this[attr] && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(this[attr])) this.addError(attr, 'ist kein gültiger Zeitpunkt')
     }
   }
 
@@ -46,11 +40,33 @@ export default class Flight extends Record {
     }
   }
 
-  get kindLabel() {
-    return Flight.KINDS[this.kind] ?? this.kind
-  }
-
   get flownAt() {
     return parseLocal(this.flown_at)
+  }
+
+  get landedAt() {
+    return parseLocal(this.landed_at)
+  }
+
+  // Aufträge, die in diesem Flug bedient wurden → [{ id, title, kind, shots }]
+  static async assignmentsByFlight(missionId) {
+    const rows = await db.select(
+      `SELECT media_files.flight_id, assignments.id, assignments.title, assignments.kind, COUNT(DISTINCT media_files.shot_key) AS shots
+         FROM media_files JOIN assignments ON assignments.id = media_files.assignment_id
+        WHERE media_files.mission_id = ?
+        GROUP BY media_files.flight_id, assignments.id ORDER BY MIN(media_files.taken_at)`, [missionId])
+    const map = new Map()
+    for (const r of rows) {
+      const id = Number(r.flight_id)
+      if (!map.has(id)) map.set(id, [])
+      map.get(id).push({ id: Number(r.id), title: r.title, kind: r.kind, shots: Number(r.shots) })
+    }
+    return map
+  }
+
+  // Dateien auf der Festplatte bleiben erhalten – nur die Einträge verschwinden
+  async destroy() {
+    await db.execute('DELETE FROM media_files WHERE flight_id = ?', [this.id])
+    await super.destroy()
   }
 }

@@ -1,0 +1,81 @@
+<%# locals: state, review, progress, error -%>
+<div class="dialog">
+  <% if (state === 'scanning') { -%>
+    <div class="dialog__center">
+      <div class="spinner"></div>
+      <p>Dateien werden gelesen …</p>
+    </div>
+
+  <% } else if (state === 'error') { -%>
+    <h2 class="dialog__title">Import nicht möglich</h2>
+    <p class="selectable"><%= error %></p>
+    <div class="dialog__actions"><button type="button" class="button" data-action="media-import#close">Schließen</button></div>
+
+  <% } else if (state === 'importing') { -%>
+    <h2 class="dialog__title">Importiere …</h2>
+    <progress class="progress" max="<%= progress.total %>" value="<%= progress.done %>"></progress>
+    <p class="subtle"><%= progress.done %> von <%= progress.total %> Dateien<% if (progress.name) { %> · <span class="mono"><%= progress.name %></span><% } %></p>
+
+  <% } else if (state === 'review') { -%>
+    <% const newShots = review.shots.filter((s) => !s.isDuplicate).length -%>
+    <h2 class="dialog__title">Bilder importieren</h2>
+
+    <% if (review.newCount === 0) { -%>
+      <div class="callout callout--info"><%- icon('check') %><span>Alle <%= review.duplicateCount %> Dateien sind in diesem Einsatz schon importiert – es gibt nichts Neues.</span></div>
+      <div class="dialog__actions"><button type="button" class="button button--primary" data-action="media-import#close">OK</button></div>
+    <% } else { -%>
+      <% const first = review.blocks[0]?.start; const last = review.blocks.at(-1)?.end -%>
+      <p class="lead"><strong><%= pluralize(newShots, 'neue Aufnahme', 'neue Aufnahmen') %></strong><% if (first) { %> von <%= formatTime(first) %><%= last && formatTime(last) !== formatTime(first) ? `–${formatTime(last)}` : '' %> Uhr<% } %> (<%= pluralize(review.newCount, 'Datei', 'Dateien') %>).</p>
+      <% if (review.duplicateCount) { %><p class="subtle"><%= review.duplicateCount %> Dateien sind in diesem Einsatz schon importiert und werden übersprungen.</p><% } %>
+      <% if (review.skipped.length) { %><p class="subtle"><%= review.skipped.length %> Dateien konnten nicht gelesen werden.</p><% } %>
+
+      <form data-action="submit->media-import#import" class="dialog__form" novalidate>
+        <div class="import-blocks">
+          <% review.blocks.forEach((block) => { -%>
+            <%- include('media/_import_block', { block, review, multiple: review.blocks.length > 1 }) %>
+          <% }) -%>
+        </div>
+
+        <details class="disclosure">
+          <summary>Auswahl anpassen <span class="disclosure__hint">– nur bestimmte Aufnahmen oder Bildtypen</span></summary>
+          <div class="disclosure__body dialog__form">
+            <fieldset class="import-variants">
+              <legend class="field__label">Bildtypen</legend>
+              <% review.variants.forEach((v) => { -%>
+                <label class="checkbox"><input type="checkbox" name="variant" value="<%= v %>" checked> <%= variantLabel(v) %></label>
+              <% }) -%>
+            </fieldset>
+    
+            <div class="import-list" data-controller="select-all">
+              <label class="import-list__head checkbox">
+                <input type="checkbox" checked data-select-all-target="toggle" data-action="select-all#toggleAll">
+                <span>Aufnahme</span><span>Zeit</span><span>Bilder</span>
+              </label>
+              <div class="import-list__rows">
+                <% review.shots.forEach((shot) => { -%>
+                  <label class="import-list__row checkbox <%= shot.isDuplicate ? 'is-duplicate' : '' %>">
+                    <input type="checkbox" name="shot" value="<%= shot.key %>" <%= shot.isDuplicate ? 'disabled' : 'checked' %>
+                           data-select-all-target="item" data-action="select-all#sync">
+                    <span class="mono truncate"><%= shot.key %></span>
+                    <span><%= shot.taken_at ? formatTime(shot.taken_at) : '–' %></span>
+                    <span class="import-list__files">
+                      <% shot.files.forEach((f) => { -%>
+                        <span class="chip <%= f.duplicate ? 'is-duplicate' : '' %>" title="<%= f.name %><%= f.duplicate ? ` – bereits importiert (${f.duplicate.label})` : '' %>"><%= f.kind === 'video' ? 'Video' : variantShort(f.variant) %></span>
+                      <% }) -%>
+                      <% if (shot.isDuplicate) { %><span class="subtle">bereits importiert</span><% } %>
+                    </span>
+                  </label>
+                <% }) -%>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div class="dialog__actions">
+          <button type="button" class="button" data-action="media-import#close">Abbrechen</button>
+          <button type="submit" class="button button--primary" autofocus>Importieren</button>
+        </div>
+      </form>
+    <% } -%>
+  <% } -%>
+</div>

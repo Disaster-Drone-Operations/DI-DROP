@@ -1,0 +1,16 @@
+<%# locals: assignment, entry -%>
+<a class="history-item" href="#/missions/<%= assignment.mission_id %>/assignments/<%= assignment.id %>">
+  <div class="history-item__head">
+    <%- assignmentBadge(assignment) %>
+    <strong class="truncate"><%= assignment.title %></strong>
+    <span class="subtle history-item__time"><%= timeRange(entry.first, entry.last) %></span>
+    <span class="history-item__count subtle"><%= pluralize(entry.shots, 'Aufnahme', 'Aufnahmen') %></span>
+    <% if (!assignment.isOpen) { %><span class="history-item__done" title="Erledigt"><%- icon('check', { size: 14 }) %></span><% } %>
+  </div>
+  <% if (entry.thumbs.length) { -%>
+    <div class="history-item__thumbs">
+      <% entry.thumbs.forEach((t) => { %><img src="<%= thumbUrl(t) %>" alt="" loading="lazy" draggable="false"><% }) %>
+      <% if (entry.shots > entry.thumbs.length) { %><span class="history-item__more">+<%= entry.shots - entry.thumbs.length %></span><% } %>
+    </div>
+  <% } -%>
+</a>

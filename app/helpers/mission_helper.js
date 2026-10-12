@@ -1,11 +1,10 @@
 import Mission from '/app/models/mission.js'
-import Flight from '/app/models/flight.js'
+import Assignment from '/app/models/assignment.js'
 import { escapeHtml, icon } from '/app/helpers/application_helper.js'
+import { addMinutes } from '/lib/time.js'
 
 export const missionKindOptions = () => Object.entries(Mission.KINDS)
 export const missionRoles = () => Object.entries(Mission.ROLES)
-export const flightKindOptions = () => Object.entries(Flight.KINDS)
-export const flightKindDescription = (kind) => Flight.DESCRIPTIONS[kind] ?? ''
 
 export const intervalOptions = (current) => {
   const options = [15, 20, 30, 45, 60, 90, 120].map((m) => [String(m), m < 120 ? `alle ${m} Min.` : 'alle 2 Std.'])
@@ -17,6 +16,29 @@ export function kindBadge(mission) {
   return `<span class="badge badge--${escapeHtml(mission.kind)}">${escapeHtml(mission.kindLabel)}</span>`
 }
 
-export function flightKindBadge(flight) {
-  return `<span class="badge badge--flight-${escapeHtml(flight.kind)}">${icon(flight.kind, { size: 12 })}${escapeHtml(flight.kindLabel)}</span>`
+// ── Aufträge ────────────────────────────────────────────────────────────────
+
+const ASSIGNMENT_ICONS = { initial: 'initial', kontrolle: 'kontrolle', spezial: 'spezial', sonstiges: 'clock', kartierung: 'images', position: 'pin', gebiet: 'pin' }
+
+export const assignmentKind = (kind) => ({ key: kind, label: Assignment.KINDS[kind], description: Assignment.DESCRIPTIONS[kind] })
+export const assignmentKindOptions = () => Object.entries(Assignment.KINDS)
+export const commonAssignmentKinds = () => Assignment.COMMON_KINDS.map(assignmentKind)
+export const moreAssignmentKinds = () => Assignment.MORE_KINDS.map(assignmentKind)
+export const namedAssignmentKinds = () => Assignment.NAMED_KINDS
+
+// Badge mit Art des Auftrags. Heißt der Auftrag wie seine Art ("Lageerkundung"),
+// reicht das Symbol – sonst stünde es doppelt da.
+export function assignmentBadge(assignment) {
+  const kind = assignment.kind
+  const label = Assignment.KINDS[kind] ?? kind
+  const text = assignment.title === label || assignment.title?.startsWith(`${label} `) ? '' : escapeHtml(label)
+  return `<span class="badge badge--task-${escapeHtml(kind)}" title="${escapeHtml(label)}">${icon(ASSIGNMENT_ICONS[kind] ?? 'missions', { size: 12 })}${text}</span>`
+}
+
+export const addMinutesTo = (date, minutes) => addMinutes(date, minutes)
+
+// Name eines Wegpunkts – per Doppelklick umbenennbar (überall, wo er angezeigt wird)
+export function viewpointNameTag(id, name, cls = '') {
+  if (!id) return escapeHtml(name)
+  return `<span class="renamable ${escapeHtml(cls)}" data-controller="viewpoint-name" data-viewpoint-name-id-value="${escapeHtml(id)}" title="Doppelklick zum Umbenennen">${escapeHtml(name)}</span>`
 }
