@@ -10,9 +10,11 @@ export default class extends Controller {
   static values = { missionId: Number }
 
   connect() {
-    // Auswahl merken, damit sie z. B. nach dem Umbenennen eines Wegpunkts erhalten bleibt
+    // Auswahl merken, damit sie z. B. nach dem Umbenennen eines Wegpunkts erhalten bleibt.
+    // Noch keine Auswahl → wie beim letzten Mal: Wegpunkte der zuletzt erstellten Vergleichsbilder
     const saved = this.loadSelection()
-    this.checkboxTargets.forEach((c) => (c.checked = saved.includes(c.value)))
+    this.checkboxTargets.forEach((c) => (c.checked = saved ? saved.includes(c.value) : c.dataset.last === '1'))
+    if (!saved && this.checkboxTargets.some((c) => c.checked)) this.saveSelection()
     this.sync()
   }
 
@@ -101,9 +103,10 @@ export default class extends Controller {
 
   loadSelection() {
     try {
-      return JSON.parse(sessionStorage.getItem(this.storageKey) ?? '[]')
+      const raw = sessionStorage.getItem(this.storageKey)
+      return raw ? JSON.parse(raw) : null // null = noch nie ausgewählt
     } catch {
-      return []
+      return null
     }
   }
 

@@ -43,6 +43,21 @@ export default class ComparisonsController extends ApplicationController {
       }
     })
 
+    // Schon erstellte Vergleichsbilder je Wegpunkt (neuestes) und die letzte „Runde“:
+    // alles, was bis 15 Minuten vor dem neuesten Vergleichsbild erstellt wurde → wird vorausgewählt
+    const lastCreated = new Map()
+    for (const c of comparisons) {
+      if (c.viewpoint_id && (!lastCreated.has(c.viewpoint_id) || c.created_at > lastCreated.get(c.viewpoint_id))) lastCreated.set(c.viewpoint_id, c.created_at)
+    }
+    const newest = comparisons.map((c) => Date.parse(c.created_at)).filter(Number.isFinite).sort((a, b) => b - a)[0]
+    const lastRound = new Set(comparisons
+      .filter((c) => c.viewpoint_id && newest - Date.parse(c.created_at) <= 15 * 60_000)
+      .map((c) => c.viewpoint_id))
+    for (const e of entries) {
+      e.lastCreated = lastCreated.get(e.viewpoint.id) ?? null
+      e.inLastRound = lastRound.has(e.viewpoint.id)
+    }
+
     await this.render('comparisons/index', {
       mission,
       repeated: entries.filter((e) => e.flightCount > 1),

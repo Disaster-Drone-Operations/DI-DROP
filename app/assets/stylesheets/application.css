@@ -1130,3 +1130,16 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .assignment-provision { margin-top: 8px; }
 .provision--wide { font-size: 12px; gap: 8px; }
 .provision--wide .provision__bar { width: 220px; height: 5px; }
+
+/* Hochladen: drehender Ring, dessen Länge den Fortschritt zeigt (30 % … 100 % des Kreises) */
+@property --arc { syntax: "<number>"; inherits: true; initial-value: 30; }
+.provision { transition: --arc .6s ease; }
+.provision--running .provision__icon::after {
+  border: 0;
+  background: conic-gradient(var(--accent) calc(var(--arc) * 1%), transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  animation: spin 1.2s linear infinite;
+}
+.viewpoint-row__last { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-3); }
+.viewpoint-row__last.is-last-round { color: var(--info); }

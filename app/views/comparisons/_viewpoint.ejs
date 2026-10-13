@@ -1,14 +1,17 @@
 <%# locals: entry, mission -%>
-<% const { viewpoint, shots, flightCount, variants, latest } = entry -%>
+<% const { viewpoint, shots, flightCount, variants, latest, lastCreated, inLastRound } = entry -%>
 <% const preview = latest && (latest.files.T ?? latest.files.V ?? Object.values(latest.files)[0]) -%>
 <div class="viewpoint-row">
   <label class="viewpoint-row__select">
     <input type="checkbox" value="<%= viewpoint.id %>" data-comparisons-target="checkbox" data-action="comparisons#toggle"
-           data-name="<%= viewpoint.name %>" data-shots="<%= JSON.stringify(shots) %>" data-variants="<%= JSON.stringify(variants) %>">
+           data-name="<%= viewpoint.name %>" data-last="<%= inLastRound ? '1' : '' %>" data-shots="<%= JSON.stringify(shots) %>" data-variants="<%= JSON.stringify(variants) %>">
     <% if (preview?.thumb) { %><img class="viewpoint-row__thumb" src="<%= thumbUrl(preview.thumb) %>" alt="" loading="lazy" draggable="false"><% } else { %><span class="viewpoint-row__thumb"></span><% } %>
     <span class="viewpoint-row__text">
       <strong class="truncate"><%= viewpoint.name %></strong>
       <span class="subtle"><%= pluralize(flightCount, 'Flug', 'Flüge') %> · <%= pluralize(shots.length, 'Aufnahme', 'Aufnahmen') %></span>
+      <% if (lastCreated) { -%>
+        <span class="viewpoint-row__last <%= inLastRound ? 'is-last-round' : '' %>" title="Für diesen Wegpunkt gibt es schon ein Vergleichsbild"><%- icon('reopen', { size: 11 }) %> zuletzt erstellt <%= formatTime(new Date(lastCreated)) %> Uhr</span>
+      <% } -%>
     </span>
   </label>
   <details class="rename">
