@@ -3,6 +3,7 @@ name = "di-drop"
 version = "0.1.0"
 description = "Disaster Drone Operator – Werkzeug für Drone Operator im Katastrophenschutz"
 edition = "2021"
+license = "MIT"
 default-run = "di-drop"
 
 [lib]

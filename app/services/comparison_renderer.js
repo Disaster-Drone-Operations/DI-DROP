@@ -1,5 +1,5 @@
 // Zeichnet ein Vergleichsbild: Aufnahmen nebeneinander, darüber ein weißer Streifen
-// mit Datum und Uhrzeit (Vorlage: Einsatz Musterdorf, 3840×1064 aus 3 Wärmebildern).
+// mit Datum und Uhrzeit (Vorlage aus der Praxis: 3840×1064 aus 3 Wärmebildern).
 //
 // Dieselbe Funktion dient für die Live-Vorschau (mit Vorschaubildern) und für den
 // Export (mit Originalbildern) – das Ergebnis sieht deshalb identisch aus.

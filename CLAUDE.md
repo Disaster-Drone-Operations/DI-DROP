@@ -103,4 +103,5 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   `cargo build` allein baut eine Variante, die die Oberfläche von `localhost:1420` lädt.
 - Desktop-App per Skript bedienen: `script/ui/` (Fenster-Screenshots, Klicks).
   Nur das di-drop-Fenster fotografieren, nie den ganzen Bildschirm.
-- Echte Beispieldaten (DJI M4TD) liegen beim Entwickler unter `~/Downloads/drohne-beispieldaten`.
+- Echte Einsatzbilder gehören nie ins Repository (Datenschutz). Zum Testen eigene DJI-Aufnahmen
+  verwenden oder mit `script/make_test_images.sh` Testbilder erzeugen.

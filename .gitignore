@@ -3,3 +3,7 @@ dist/
 node_modules/
 relay/.dev/
 tmp/
+# Lokaler Test-Relay (wrangler dev): enthält u. a. Standortdaten der eigenen Internetverbindung
+.wrangler/
+# Persönliche Einstellungen von Claude Code
+.claude/settings.local.json

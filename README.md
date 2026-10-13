@@ -126,3 +126,8 @@ Pausieren, Abbrechen, „An den Anfang“ und „Ans Ende“.
 - Ordner: beliebiger Ordner/USB-Stick; darin Einsatzordner und Auftragsordner wie auf der Festplatte.
 - Rust: `src-tauri/src/transfer/` (Kopieren mit Fortschritt/Abbruch, WebDAV-Upload als Datenstrom).
 - Test-Nextcloud: `node test/support/nextcloud_mock.mjs 8088 tmp/nextcloud-mock 500`.
+
+## Lizenz
+
+di-drop steht unter der [MIT-Lizenz](LICENSE). Verwendete Bibliotheken und Daten (OpenStreetMap,
+GeoNames) behalten ihre eigenen Lizenzen – siehe „Über di-drop“ in der App.
