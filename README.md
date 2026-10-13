@@ -113,3 +113,16 @@ den App-Daten). Mitgelieferte Fassung neu erzeugen: `node script/build_places.mj
 „Über di-drop“ (App-Menü bzw. Einstellungen) zeigt Quellenangaben für OpenStreetMap und GeoNames
 sowie alle Bibliotheken mit Lizenztexten aus `public/data/licenses.json`
 (neu erzeugen: `node script/build_licenses.mjs`).
+
+## Bereitstellen (Nextcloud, USB-Stick)
+
+Auf der Seite eines Auftrags „Bereitstellen …“: Ziel wählen, Bilder auswählen (Wärme- und
+Sichtbild getrennt), hochladen. Die Warteschlange läuft im Hintergrund weiter; links unten zeigt
+ein Balken Fortschritt, Geschwindigkeit und Restzeit, ein Klick öffnet die Übersicht mit
+Pausieren, Abbrechen, „An den Anfang“ und „Ans Ende“.
+
+- Nextcloud: *Einstellungen → Nextcloud* (Anmeldung im Browser per Login Flow v2 oder App-Passwort;
+  Zugang im Schlüsselbund). Pro Einsatz ein Basisordner, darin ein Ordner pro Auftrag.
+- Ordner: beliebiger Ordner/USB-Stick; darin Einsatzordner und Auftragsordner wie auf der Festplatte.
+- Rust: `src-tauri/src/transfer/` (Kopieren mit Fortschritt/Abbruch, WebDAV-Upload als Datenstrom).
+- Test-Nextcloud: `node test/support/nextcloud_mock.mjs 8088 tmp/nextcloud-mock 500`.

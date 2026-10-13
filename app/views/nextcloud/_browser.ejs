@@ -1,0 +1,30 @@
+<%# locals: path, folders, loading, error, suggestion -%>
+<% const parts = path.split('/').filter(Boolean) -%>
+<h2 class="dialog__title">Nextcloud-Ordner für diesen Einsatz wählen</h2>
+<nav class="provide-browser__crumbs">
+  <button type="button" class="button button--small button--quiet" data-action="nextcloud-folder#browse" data-nextcloud-folder-path-param="/"><%- icon('cloud', { size: 14 }) %></button>
+  <% parts.forEach((p, i) => { -%>
+    <span class="subtle">/</span><button type="button" class="button button--small button--quiet" data-action="nextcloud-folder#browse" data-nextcloud-folder-path-param="/<%= parts.slice(0, i + 1).join('/') %>"><%= p %></button>
+  <% }) -%>
+</nav>
+<div class="provide-browser__list">
+  <% if (loading) { -%>
+    <p class="update-item__status"><span class="spinner"></span><span>Wird geladen …</span></p>
+  <% } else if (error) { -%>
+    <p class="update-item__status update-item__status--error"><%- icon('alert') %><span><%= error %></span></p>
+  <% } else if (!folders.length) { -%>
+    <p class="hint">Keine Unterordner.</p>
+  <% } else { -%>
+    <% folders.forEach((f) => { -%>
+      <button type="button" class="provide-browser__item" data-action="nextcloud-folder#browse" data-nextcloud-folder-path-param="<%= f.path %>"><%- icon('folder', { size: 14 }) %><span class="truncate"><%= f.name %></span><%- icon('chevron', { size: 14 }) %></button>
+    <% }) -%>
+  <% } -%>
+</div>
+<div class="input-with-button provide-browser__new">
+  <input type="text" placeholder="Neuer Ordner" value="<%= suggestion %>" data-nextcloud-folder-target="newFolder" data-action="keydown.enter->nextcloud-folder#createFolder:prevent">
+  <button type="button" class="button" data-action="nextcloud-folder#createFolder">Anlegen</button>
+</div>
+<div class="dialog__actions">
+  <button type="button" class="button" data-action="nextcloud-folder#closeBrowser">Abbrechen</button>
+  <button type="button" class="button button--primary" data-action="nextcloud-folder#useFolder" <%= path === '/' ? 'disabled' : '' %>>Diesen Ordner verwenden</button>
+</div>

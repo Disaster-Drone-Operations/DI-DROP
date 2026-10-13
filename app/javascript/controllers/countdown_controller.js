@@ -19,8 +19,11 @@ export default class extends Controller {
     const overdue = minutes < 0
     const abs = Math.abs(minutes)
     const span = abs >= 60 ? `${Math.floor(abs / 60)} Std. ${abs % 60} Min.` : `${abs} Min.`
+    // Lange überfällig: in Tagen statt "seit 769 Std. 44 Min."
+    const days = Math.floor(abs / 1440)
+    const since = days >= 1 ? `${days} ${days === 1 ? 'Tag' : 'Tagen'}` : span
 
-    this.labelTarget.textContent = minutes === 0 ? 'jetzt fällig' : overdue ? `seit ${span} fällig` : `in ${span}`
+    this.labelTarget.textContent = minutes === 0 ? 'jetzt fällig' : overdue ? `seit ${since} fällig` : `in ${span}`
     this.element.classList.toggle('is-due', minutes <= 5 && !overdue)
     this.element.classList.toggle('is-overdue', overdue)
   }

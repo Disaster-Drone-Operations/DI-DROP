@@ -1,12 +1,14 @@
 // Sprechende Dateinamen für importierte Bilder:
 //
-//   2026_09_11__13_31_Ost 1_Wärmebild.JPG
-//   └ Datum ┘  └Zeit┘ └Wegpunkt┘ └Bildtyp┘
+//   2026_09_11__13_31_Ost_1_Wärmebild.JPG
+//   └ Datum ┘  └Zeit┘ └Wegp.┘ └Bildtyp┘
+//
+// Keine Leerzeichen in Datei- und Ordnernamen (sanitizeFolderName macht daraus "_").
 //
 // Mehrere Aufnahmen derselben Stelle in derselben Minute → "_2", "_3" …
 //
 // Die Namen werden nachgezogen, sobald sich der Wegpunkt-Name ändert (Umbenennen,
-// oder "Ost" → "Ost 1", weil ein zweiter Ost-Wegpunkt dazukam). Vergleichsbilder ebenso.
+// oder "Ost" → "Ost_1", weil ein zweiter Ost-Wegpunkt dazukam). Vergleichsbilder ebenso.
 // Den Originalnamen der Drohne behält die Datenbank (original_name).
 
 import platform from '/lib/platform/index.js'
@@ -46,12 +48,14 @@ function fits(current, wanted) {
   return current.startsWith(`${stem}_`) && current.endsWith(ext) && /^\d+$/.test(current.slice(stem.length + 1, current.length - ext.length))
 }
 
-// Ordner der Aufträge: "2026_09_11__13_57_Kontrollflug 3" (Zeit der ersten Aufnahme + Auftrag).
+// Einsatzordner "2026_09_11__B3_Musterdorf" (Datum + Stichwort) und Ordner der Aufträge
+// "2026_09_11__13_57_Kontrollflug_3" (Zeit der ersten Aufnahme + Auftrag).
 // Umbenannt werden nur Ordner, die die App selbst angelegt hat: direkt im Einsatzordner
 // und mit Datum am Anfang. Alle gespeicherten Pfade ziehen mit.
 async function syncFolderNames(missionId, changes) {
   const mission = await Mission.find(missionId)
   if (!mission.media_dir) return
+  await syncMissionFolder(mission, changes)
   const titles = new Map((await Assignment.forMission(missionId)).map((a) => [a.id, a.title]))
   const files = await MediaFile.where('mission_id = ?', [missionId], { order: 'taken_at ASC' })
 
@@ -92,6 +96,42 @@ async function syncFolderNames(missionId, changes) {
     }
     await db.execute('UPDATE assignments SET media_dir = ? WHERE mission_id = ? AND media_dir = ?', [target, missionId, dir])
   }
+}
+
+// Einsatzordner nachziehen (Stichwort/Datum geändert, alte Namen mit Leerzeichen).
+// Nur Ordner, die die App selbst angelegt hat (Datum am Anfang). Alle Pfade ziehen mit.
+async function syncMissionFolder(mission, changes) {
+  const dir = mission.media_dir
+  const { dir: parent, sep, name: folder } = splitPath(dir)
+  const wanted = mission.folderName
+  if (!/^\d{4}_\d{2}_\d{2}__/.test(folder) || folder === wanted || new RegExp(`^${escapeRegExp(wanted)}_\\d+$`).test(folder)) return
+
+  let target
+  try {
+    target = await platform.renameDir(dir, `${parent}${sep}${wanted}`)
+  } catch (error) {
+    console.warn('[Einsatzordner]', dir, '→', wanted, error)
+    return
+  }
+  const now = new Date().toISOString()
+  const inside = (path) => path === dir || path?.startsWith(dir + sep)
+  const move = (path) => target + path.slice(dir.length)
+  for (const f of await MediaFile.where('mission_id = ?', [mission.id])) {
+    if (!inside(f.path)) continue
+    await db.execute('UPDATE media_files SET path = ?, updated_at = ? WHERE id = ?', [move(f.path), now, f.id])
+    changes.push({ from: f.path, to: move(f.path) })
+  }
+  for (const c of await Comparison.forMission(mission.id)) {
+    if (!inside(c.path)) continue
+    await c.update({ path: move(c.path) })
+    changes.push({ from: c.path, to: move(c.path) })
+  }
+  for (const table of ['assignments', 'flights']) {
+    for (const row of await db.select(`SELECT id, media_dir FROM ${table} WHERE mission_id = ?`, [mission.id])) {
+      if (inside(row.media_dir)) await db.execute(`UPDATE ${table} SET media_dir = ? WHERE id = ?`, [move(row.media_dir), row.id])
+    }
+  }
+  await mission.update({ media_dir: target })
 }
 
 const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -139,14 +179,20 @@ export async function syncFileNames(missionId) {
 }
 
 // Ordner und danach Datei umbenannt → für offene Ansichten direkt alt → endgültig
+// (Kreise wie A → B → A und "Umbenennungen" auf denselben Namen werden ignoriert – nie endlos laufen)
 function collapse(changes) {
-  const next = new Map(changes.map((c) => [c.from, c.to]))
-  const targets = new Set(changes.map((c) => c.to))
-  return changes
+  const real = changes.filter((c) => c.from !== c.to)
+  const next = new Map(real.map((c) => [c.from, c.to]))
+  const targets = new Set(real.map((c) => c.to))
+  return real
     .filter((c) => !targets.has(c.from))
     .map((c) => {
       let to = c.to
-      while (next.has(to)) to = next.get(to)
+      const seen = new Set([c.from])
+      while (next.has(to) && !seen.has(to)) {
+        seen.add(to)
+        to = next.get(to)
+      }
       return { from: c.from, to }
     })
 }

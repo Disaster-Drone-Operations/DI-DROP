@@ -46,6 +46,14 @@ export default [
     ],
   },
   {
+    key: 'nextcloud',
+    title: 'Nextcloud',
+    icon: 'cloud',
+    description: 'Bilder eines Auftrags direkt in die Nextcloud laden, damit Einsatzleitung und Kameraden sie sofort sehen.',
+    partial: 'settings/_nextcloud',
+    fields: [],
+  },
+  {
     key: 'relay',
     title: 'Standort-Übertragung',
     icon: 'pin',
@@ -63,18 +71,5 @@ export default [
     description: 'Daten, die di-drop bei Bedarf aus dem Internet nachlädt. Alles funktioniert auch ohne – die Aktualisierung macht es nur genauer.',
     partial: 'settings/_updates',
     fields: [],
-  },
-  {
-    key: 'nextcloud',
-    title: 'Nextcloud',
-    icon: 'cloud',
-    badge: 'Vorschau',
-    description: 'Upload von Einsatzbildern in eine Nextcloud. Die Verbindung wird in einer späteren Version eingerichtet.',
-    fields: [
-      { key: 'url', label: 'Server-Adresse', type: 'url', default: '', placeholder: 'https://cloud.example.de' },
-      { key: 'username', label: 'Benutzername', type: 'text', default: '' },
-      { key: 'remote_path', label: 'Zielordner in der Nextcloud', type: 'text', default: '/Einsätze',
-        hint: 'App-Passwort und Verbindungstest folgen – Zugangsdaten werden dann im Schlüsselbund des Betriebssystems gespeichert, nicht in der Datenbank.' },
-    ],
   },
 ]

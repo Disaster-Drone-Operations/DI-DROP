@@ -39,11 +39,17 @@
       <% } -%>
     </nav>
 
-    <nav class="nav nav--bottom">
-      <a href="#/settings" class="nav__item <%= isCurrent(currentPath, '/settings') ? 'is-active' : '' %>">
-        <%- icon('settings') %><span>Einstellungen</span>
-      </a>
-    </nav>
+    <% if (!hasNativeMenu()) { -%>
+      <%# macOS: Einstellungen nur im App-Menü „di-drop“ (wie Mail) -%>
+      <nav class="nav nav--bottom">
+        <a href="#/settings" class="nav__item <%= isCurrent(currentPath, '/settings') ? 'is-active' : '' %>">
+          <%- icon('settings') %><span>Einstellungen</span>
+        </a>
+      </nav>
+    <% } -%>
+
+    <%# Uploads ganz unten links in der Ecke (wie die Aktivitätsanzeige in Mail) -%>
+    <a href="#/uploads" class="upload-status <%= isCurrent(currentPath, '/uploads') ? 'is-active' : '' %>" data-controller="upload-status" hidden></a>
   </aside>
 
   <main class="content">
@@ -55,7 +61,7 @@
         <% if (flash.undo) { %><button type="button" class="toast__undo" data-action="flash#undo" title="<%= shortcut('Mod+Z') %>">Widerrufen</button><% } %>
       </div>
     <% } -%>
-    <div class="page">
+    <div class="page" data-controller="provision">
       <%- body %>
     </div>
   </main>

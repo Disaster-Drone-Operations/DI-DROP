@@ -1,0 +1,55 @@
+<%# locals: s -%>
+<% if (!s.available) { -%>
+  <div class="callout callout--subtle"><%- icon('alert') %><span>Die Nextcloud lässt sich nur in der Desktop-App verbinden.</span></div>
+<% } else if (s.account) { -%>
+  <div class="relay-status">
+    <div class="relay-status__line">
+      <span class="relay-status__ok"><%- icon('cloud') %></span>
+      <strong>Verbunden als <%= s.account.login_name %></strong>
+    </div>
+    <div class="mono subtle selectable"><%= s.account.server %></div>
+    <% if (s.test === 'running') { -%>
+      <p class="update-item__status"><span class="spinner"></span><span>Verbindung wird getestet …</span></p>
+    <% } else if (s.test?.ok) { -%>
+      <p class="update-item__status update-item__status--ok"><%- icon('check') %><span>Verbindung in Ordnung<%= s.test.display_name ? ` · ${s.test.display_name}` : '' %><%= s.test.free ? ` · ${s.test.free} frei` : '' %></span></p>
+    <% } else if (s.test?.error) { -%>
+      <p class="update-item__status update-item__status--error"><%- icon('alert') %><span><%= s.test.error %></span></p>
+    <% } -%>
+  </div>
+  <div class="toolbar relay-actions">
+    <button type="button" class="button button--primary" data-action="nextcloud-setup#test" <%= s.test === 'running' ? 'disabled' : '' %>>Testen</button>
+    <button type="button" class="button button--danger-quiet" data-action="nextcloud-setup#logout">Abmelden</button>
+  </div>
+<% } else if (s.waiting) { -%>
+  <div class="relay-status">
+    <p class="update-item__status"><span class="spinner"></span><span>Warte auf die Anmeldung im Browser …</span></p>
+    <p class="hint">Im Browser bei der Nextcloud anmelden und „Zugriff gewähren“ bestätigen. Danach geht es hier von selbst weiter.</p>
+  </div>
+  <div class="toolbar relay-actions">
+    <button type="button" class="button" data-action="nextcloud-setup#openLogin">Anmeldeseite erneut öffnen</button>
+    <button type="button" class="button button--quiet" data-action="nextcloud-setup#cancel">Abbrechen</button>
+  </div>
+<% } else { -%>
+  <form class="nextcloud-login" data-action="submit->nextcloud-setup#login">
+    <div class="field">
+      <label class="field__label" for="nextcloud_server">Adresse der Nextcloud</label>
+      <div class="input-with-button">
+        <input type="text" id="nextcloud_server" name="server" value="<%= s.server ?? '' %>" placeholder="cloud.bergwacht-thueringen.de" autocomplete="url" spellcheck="false" <%= s.busy ? 'disabled' : '' %>>
+        <button type="submit" class="button button--primary" <%= s.busy ? 'disabled' : '' %>>Anmelden …</button>
+      </div>
+      <p class="hint">Es öffnet sich die Anmeldeseite deiner Nextcloud im Browser. Dort anmelden und di-drop den Zugriff erlauben – dein Passwort bekommt di-drop dabei nicht zu sehen.</p>
+    </div>
+  </form>
+  <details class="disclosure" <%= s.manual ? 'open' : '' %>>
+    <summary>Mit App-Passwort anmelden <span class="disclosure__hint">– falls die Anmeldung im Browser nicht klappt</span></summary>
+    <form class="disclosure__body grid" data-action="submit->nextcloud-setup#loginManual">
+      <div class="field"><label class="field__label" for="nextcloud_login">Benutzername</label><input type="text" id="nextcloud_login" name="login" autocomplete="username" spellcheck="false"></div>
+      <div class="field"><label class="field__label" for="nextcloud_password">App-Passwort</label><input type="password" id="nextcloud_password" name="password" autocomplete="off"></div>
+      <p class="hint field--wide">App-Passwort erstellen: in der Nextcloud unter Einstellungen → Sicherheit → „Neues App-Passwort erstellen“.</p>
+      <div class="form-actions form-actions--inline field--wide"><button type="submit" class="button" <%= s.busy ? 'disabled' : '' %>>Anmelden</button></div>
+    </form>
+  </details>
+<% } -%>
+<% if (s.error) { -%>
+  <div class="callout callout--danger"><%- icon('alert') %><span><%= s.error %></span></div>
+<% } -%>

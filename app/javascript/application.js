@@ -7,6 +7,7 @@ import Router from '/lib/router.js'
 import routes from '/config/routes.js'
 import Setting from '/app/models/setting.js'
 import { install as installShortcuts } from '/app/javascript/shortcuts.js'
+import { start as startUploads } from '/app/services/upload_queue.js'
 
 document.documentElement.classList.add(`platform-${platform.os}`, `runtime-${platform.name}`)
 
@@ -32,6 +33,7 @@ try {
   await Setting.load()
   await new Router({ routes, controllers, element }).start()
   installShortcuts()
+  startUploads().catch((error) => console.error('Upload-Warteschlange:', error))
 } catch (error) {
   console.error(error)
   element.innerHTML = `<div class="boot boot--error"><strong>di-drop konnte nicht starten.</strong><pre></pre></div>`

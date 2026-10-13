@@ -6,6 +6,9 @@
 //   GET  /__didrop/file?path=…                     → Bilddatei (für Vorschaubilder)
 //   POST /__didrop/write?path=…  (Bilddaten)       → { path }
 //   POST /__didrop/open    { path, reveal }        → öffnet im Finder/Programm
+//   POST /__didrop/nc      { action, … }           → Nextcloud-Verwaltung (Zugang in tmp/dev-nextcloud.json)
+//   POST /__didrop/transfer?kind=copy|nc-upload&id=…  → NDJSON-Strom mit Fortschritt, letzte Zeile = Ergebnis
+//   POST /__didrop/cancel  { id }                  → bricht eine Übertragung ab
 
 import { spawn, execFile } from 'node:child_process'
 import fs from 'node:fs'
@@ -16,8 +19,10 @@ export default function devBridge({ root }) {
   const thumbsDir = path.join(root, 'tmp/dev-thumbs')
   const mediaDir = path.join(root, 'tmp/dev-media')
 
+  const env = { ...process.env, DIDROP_NC_ACCOUNT_FILE: path.join(root, 'tmp/dev-nextcloud.json') }
+  const transfers = new Map()
   const run = (command, input) => new Promise((resolve, reject) => {
-    const child = spawn(binary, [command])
+    const child = spawn(binary, [command], { env })
     let out = ''
     let err = ''
     child.stdout.on('data', (d) => (out += d))
@@ -43,6 +48,35 @@ export default function devBridge({ root }) {
           if (url.pathname === '/info') {
             res.setHeader('Content-Type', 'application/json')
             return res.end(JSON.stringify({ mediaDir }))
+          }
+          if (url.pathname === '/thumb') {
+            res.setHeader('Content-Type', 'application/json')
+            return res.end(await run('thumb', { ...(await body(req)), thumbs_dir: thumbsDir }))
+          }
+          if (url.pathname === '/nc') {
+            res.setHeader('Content-Type', 'application/json')
+            return res.end(await run('nc', await body(req)))
+          }
+          if (url.pathname === '/transfer') {
+            const id = url.searchParams.get('id')
+            const child = spawn(binary, [url.searchParams.get('kind') === 'copy' ? 'copy' : 'nc-upload'], { env })
+            transfers.set(id, child)
+            res.setHeader('Content-Type', 'application/x-ndjson')
+            let out = ''
+            child.stdout.on('data', (d) => (out += d))
+            child.stderr.on('data', (d) => res.write(d)) // Fortschrittszeilen direkt weiterreichen
+            child.on('close', (code) => {
+              transfers.delete(id)
+              res.end(code === 0 ? out : `${JSON.stringify({ error: child.killed ? 'CANCELED' : `Exit ${code}` })}\n`)
+            })
+            child.stdin.end(JSON.stringify(await body(req)))
+            return
+          }
+          if (url.pathname === '/cancel') {
+            const { id } = await body(req)
+            transfers.get(id)?.kill()
+            res.setHeader('Content-Type', 'application/json')
+            return res.end(JSON.stringify(transfers.has(id)))
           }
           if (url.pathname === '/scan') {
             res.setHeader('Content-Type', 'application/json')

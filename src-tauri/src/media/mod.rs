@@ -495,3 +495,20 @@ mod integration {
         let _ = fs::remove_dir_all(out);
     }
 }
+
+/// Vorschaubild für eine einzelne Bilddatei (z. B. ein Vergleichsbild) im Vorschau-Ordner.
+/// Der Name hängt von Pfad, Größe und Änderungszeit ab – eine geänderte Datei bekommt ein neues.
+pub fn thumbnail_for(src: &Path, thumbs_dir: &Path) -> Result<PathBuf, String> {
+    let ext = src.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase());
+    if !matches!(ext.as_deref(), Some("jpg") | Some("jpeg")) {
+        return Err("Vorschau nur für JPEG-Bilder".into());
+    }
+    let meta = std::fs::metadata(src).map_err(|_| format!("Datei fehlt: {}", src.display()))?;
+    let modified = meta.modified().ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs()).unwrap_or(0);
+    let key = blake3::hash(format!("{}|{}|{}", src.display(), meta.len(), modified).as_bytes()).to_hex();
+    let dest = thumbs_dir.join(format!("file-{}.jpg", &key[..24]));
+    if !dest.exists() {
+        thumbnail::create_sized(src, &dest, 960)?;
+    }
+    Ok(dest)
+}

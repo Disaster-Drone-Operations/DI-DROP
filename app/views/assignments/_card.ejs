@@ -20,10 +20,16 @@
   <a class="task-card__title" href="#<%= path %>"><%= assignment.title %></a>
   <% if (showMission) { %><div class="task-card__mission subtle"><%- icon('pin', { size: 12 }) %><%= assignment.mission_title %></div><% } %>
   <% if (assignment.notes) { %><p class="task-card__notes subtle"><%= assignment.notes %></p><% } %>
-  <% if (counts && assignment.kind !== 'sonstiges') { %><div class="task-card__meta subtle"><%= c ? pluralize(c.shots, 'Aufnahme', 'Aufnahmen') : 'noch keine Bilder' %></div><% } %>
+  <% if (counts && assignment.kind !== 'sonstiges') { -%>
+    <div class="task-card__meta subtle">
+      <span><%= c ? pluralize(c.shots, 'Aufnahme', 'Aufnahmen') : 'noch keine Bilder' %></span>
+      <% if (c) { %><span data-provision-assignment="<%= assignment.id %>"></span><% } %>
+    </div>
+  <% } -%>
   <% if (dropTarget) { %><div class="task-card__drop"><%- icon('import', { size: 14 }) %> Bilder hier ablegen</div><% } %>
   <% if (assignment.isOpen && returnTo) { -%>
-    <div class="task-card__actions">
+    <%# Mit Bildern: „Erledigt“ fragt nach, solange nichts bereitgestellt ist (provision_controller) -%>
+    <div class="task-card__actions" <% if (c?.shots) { %>data-provision-complete="<%= assignment.id %>" data-provision-title="<%= assignment.title %>"<% } %>>
       <% if (assignment.completion) { -%>
         <%- include('assignments/_complete_dialog', { assignment, completion: assignment.completion, returnTo }) %>
       <% } else { -%>

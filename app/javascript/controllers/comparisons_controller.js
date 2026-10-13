@@ -72,13 +72,14 @@ export default class extends Controller {
       this.exportLabelTarget.textContent = `Erstelle ${i + 1} von ${specs.length} …`
       try {
         const path = await exportComparison({ ...spec, joinPath: platform.joinPath })
-        await Comparison.create({
+        const comparison = await Comparison.create({
           mission_id: this.missionIdValue,
           viewpoint_id: spec.viewpointId,
           variant: spec.variant,
           path,
           media_file_ids: JSON.stringify(spec.shots.map((s) => s.files[spec.variant].id)),
         })
+        await comparison.ensureThumbnail()
         created.push(path)
       } catch (error) {
         console.error(error)

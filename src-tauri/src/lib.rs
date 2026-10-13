@@ -6,6 +6,7 @@ pub mod media;
 mod cloudflare;
 mod geocode;
 mod places;
+pub mod transfer;
 mod menu;
 
 use std::path::{Path, PathBuf};
@@ -37,6 +38,16 @@ async fn import_media(
     })
     .await
     .map_err(|e| e.to_string())
+}
+
+/// Vorschaubild für eine einzelne Bilddatei (Vergleichsbilder) → Pfad im Vorschau-Ordner
+#[tauri::command]
+async fn make_thumbnail(app: AppHandle, path: String) -> Result<String, String> {
+    let thumbs_dir = app.path().app_cache_dir().map_err(|e| e.to_string())?.join("thumbs");
+    tauri::async_runtime::spawn_blocking(move || media::thumbnail_for(Path::new(&path), &thumbs_dir))
+        .await
+        .map_err(|e| e.to_string())?
+        .map(|p| p.to_string_lossy().into_owned())
 }
 
 /// Öffnet eine Datei oder einen Ordner mit dem Standardprogramm (Vorschau, Fotos, Finder, Explorer)
@@ -157,7 +168,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![scan_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir, open_url,
             cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
             geocode::reverse_geocode,
+            make_thumbnail,
             places::places_info, places::places_read, places::places_update,
+            transfer::commands::transfer_copy, transfer::commands::transfer_nextcloud, transfer::commands::transfer_cancel,
+            transfer::commands::nc_account, transfer::commands::nc_login_start, transfer::commands::nc_login_poll,
+            transfer::commands::nc_login_manual, transfer::commands::nc_test, transfer::commands::nc_forget,
+            transfer::commands::nc_list, transfer::commands::nc_mkdir,
             cloudflare::cf_api, cloudflare::cf_upload_worker])
         .run(tauri::generate_context!())
         .expect("Fehler beim Starten von di-drop");

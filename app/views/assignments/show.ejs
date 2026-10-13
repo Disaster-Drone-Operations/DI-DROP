@@ -1,4 +1,4 @@
-<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion -%>
+<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions -%>
 <% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
      data-media-import-assignment-id-value="<%= assignment.id %>" data-media-import-return-path-value="<%= path %>">
@@ -15,6 +15,14 @@
       </div>
       <h1><%= assignment.title %></h1>
       <% if (timeline) { %><div class="meta meta--large"><span><%- icon('clock', { size: 14 }) %><%= timeRange(timeline.first, timeline.last) %></span><span><%- icon('images', { size: 14 }) %><%= pluralize(shotCount, 'Aufnahme', 'Aufnahmen') %></span></div><% } %>
+      <% if (shotCount) { %><div class="assignment-provision" data-provision-assignment="<%= assignment.id %>" data-wide></div><% } %>
+      <% if (provisions.length) { -%>
+        <div class="meta provisions-meta">
+          <% provisions.forEach((p) => { -%>
+            <span title="<%= p.running ? 'Wird gerade bereitgestellt' : 'Bereitgestellt' %>"><%- icon(p.running ? 'clock' : 'check', { size: 12 }) %><%= p.label %>: <%= p.done %><%= p.running ? ` von ${p.total}` : '' %> <%= p.total === 1 ? 'Datei' : 'Dateien' %></span>
+          <% }) -%>
+        </div>
+      <% } -%>
       <% if (assignment.notes) { %><p class="subtle"><%= assignment.notes %></p><% } %>
     </div>
     <div class="toolbar" data-controller="system-open">
@@ -22,14 +30,21 @@
         <button type="button" class="button" data-action="system-open#open" data-system-open-path-param="<%= assignment.media_dir %>"
                 title="<%= assignment.media_dir %>"><%- icon('folder') %><span><%= platformName() === 'windows' ? 'Im Explorer öffnen' : 'Im Finder öffnen' %></span></button>
       <% } -%>
+      <% if (shotCount) { -%>
+        <a class="button" href="#<%= path %>/provide" title="In die Nextcloud laden oder als Dateien exportieren"><%- icon('upload') %><span>Bereitstellen …</span></a>
+      <% } -%>
       <% if (!shotCount) { -%>
         <%- buttonTo('Löschen', path, { method: 'delete', icon: 'trash', class: 'button button--danger-quiet',
               confirm: `Auftrag „${assignment.title}“ löschen?`, confirmButton: 'Löschen' }) %>
       <% } -%>
-      <% if (assignment.isOpen && completion) { -%>
-        <%- include('assignments/_complete_dialog', { assignment, completion, returnTo: path }) %>
-      <% } else if (assignment.isOpen) { -%>
-        <%- buttonTo('Erledigt', `${path}/complete`, { method: 'patch', icon: 'check', class: 'button button--primary', params: { return_to: path } }) %>
+      <% if (assignment.isOpen) { -%>
+        <span class="dialog-host" <% if (shotCount) { %>data-provision-complete="<%= assignment.id %>" data-provision-title="<%= assignment.title %>"<% } %>>
+          <% if (completion) { -%>
+            <%- include('assignments/_complete_dialog', { assignment, completion, returnTo: path }) %>
+          <% } else { -%>
+            <%- buttonTo('Erledigt', `${path}/complete`, { method: 'patch', icon: 'check', class: shotCount ? 'button' : 'button button--primary', params: { return_to: path } }) %>
+          <% } -%>
+        </span>
       <% } else { -%>
         <%- buttonTo('Wieder öffnen', `${path}/reopen`, { method: 'patch', icon: 'reopen', params: { return_to: path } }) %>
       <% } -%>

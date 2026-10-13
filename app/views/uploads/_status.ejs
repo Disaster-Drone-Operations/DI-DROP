@@ -1,0 +1,18 @@
+<%# locals: s -%>
+<div class="upload-status__line">
+  <%- icon(s.finished ? 'check' : s.failed && !s.running && !s.queued ? 'alert' : 'upload', { size: 14 }) %>
+  <span class="upload-status__title">
+    <% if (s.finished) { %>Uploads fertig<% } else if (!s.running && !s.queued && s.paused) { %>Uploads pausiert<% } else if (!s.running && !s.queued && s.failed) { %>Uploads fehlgeschlagen<% } else { %>Upload <%= percent(s.done, s.total) %> %<% } %>
+  </span>
+  <span class="upload-status__count"><%= s.filesDone %>/<%= s.files %></span>
+</div>
+<div class="progress-bar <%= s.finished ? 'is-done' : '' %>"><span style="width: <%= percent(s.done, s.total) %>%"></span></div>
+<div class="upload-status__meta">
+  <% if (s.finished) { -%>
+    <%= formatBytes(s.total) %> übertragen
+  <% } else if (s.running) { -%>
+    <%= s.speed ? formatSpeed(s.speed) : 'startet …' %><%= s.eta != null ? ` · noch ${formatDuration(s.eta)}` : '' %>
+  <% } else { -%>
+    <%= [s.paused ? `${s.paused} pausiert` : '', s.failed ? `${s.failed} fehlgeschlagen` : '', s.queued ? `${s.queued} warten` : ''].filter(Boolean).join(' · ') %>
+  <% } -%>
+</div>

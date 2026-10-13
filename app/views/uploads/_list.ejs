@@ -1,0 +1,78 @@
+<%# locals: s, active, finished, batches, retries, progressOf -%>
+<% const labelOf = (item) => batches.get(item.batch_id)?.label ?? '' -%>
+<% const statusText = { queued: 'wartet', running: 'läuft', paused: 'pausiert', failed: 'fehlgeschlagen', done: 'fertig', canceled: 'abgebrochen' } -%>
+<% if (!active.length && !finished.length) { -%>
+  <div class="empty">
+    <%- icon('upload', { size: 40, class: 'empty__icon' }) %>
+    <p><strong>Keine Uploads.</strong></p>
+    <p class="subtle">Auf der Seite eines Auftrags „Bereitstellen …“ wählen, um Bilder in die Nextcloud zu laden oder zu exportieren.</p>
+  </div>
+<% } -%>
+
+<% if (active.length || s.finished) { -%>
+  <section class="card uploads-summary">
+    <div class="uploads-summary__text">
+      <strong><%= s.finished ? 'Alle Uploads fertig' : `${percent(s.done, s.total)} % – ${formatBytes(s.done)} von ${formatBytes(s.total)}` %></strong>
+      <span class="subtle"><%= s.filesDone %> von <%= s.files %> Dateien<% if (s.running && s.speed) { %> · <%= formatSpeed(s.speed) %><% } %><% if (!s.finished && s.eta != null) { %> · noch <%= formatDuration(s.eta) %><% } %></span>
+    </div>
+    <div class="progress-bar progress-bar--large <%= s.finished ? 'is-done' : '' %>"><span style="width: <%= percent(s.done, s.total) %>%"></span></div>
+    <div class="toolbar uploads-summary__actions">
+      <% if (s.failed) { %><button type="button" class="button button--small" data-action="uploads#retryFailed">Fehlgeschlagene erneut versuchen</button><% } %>
+      <% if (s.paused || s.failed) { %><button type="button" class="button button--small" data-action="uploads#resumeAll"><%- icon('play', { size: 12 }) %><span>Alle fortsetzen</span></button><% } %>
+      <% if (s.queued || s.running) { %><button type="button" class="button button--small" data-action="uploads#pauseAll"><%- icon('pause', { size: 12 }) %><span>Alle pausieren</span></button><% } %>
+    </div>
+  </section>
+<% } -%>
+
+<% if (active.length) { -%>
+  <h2 class="section__title">Warteschlange <span class="count"><%= active.length %></span></h2>
+  <ol class="upload-list">
+    <% active.forEach((item, index) => { -%>
+      <% const done = progressOf(item) ?? 0; const retry = retries.get(item.id) -%>
+      <li class="upload-row upload-row--<%= item.status %>">
+        <span class="upload-row__kind upload-row__kind--<%= item.category %>" title="<%= categoryLabel(item.category) %>"><%= categoryLabel(item.category).slice(0, 1) %></span>
+        <div class="upload-row__main">
+          <div class="upload-row__head">
+            <span class="truncate upload-row__name selectable" title="<%= item.dest_path %>"><%= item.fileName %></span>
+            <span class="upload-row__state"><%= retry && item.status === 'queued' ? 'neuer Versuch gleich' : statusText[item.status] %></span>
+          </div>
+          <div class="progress-bar <%= item.status === 'paused' ? 'is-paused' : '' %> <%= item.status === 'failed' ? 'is-failed' : '' %>"><span style="width: <%= percent(done, item.size) %>%"></span></div>
+          <div class="upload-row__meta">
+            <span class="truncate"><%= labelOf(item) %></span>
+            <span><%= item.status === 'running' || done ? `${formatBytes(done)} von ` : '' %><%= formatBytes(item.size) %></span>
+          </div>
+          <% if (item.error) { %><p class="upload-row__error"><%= item.error %></p><% } %>
+        </div>
+        <div class="upload-row__actions">
+          <% if (['queued', 'running'].includes(item.status)) { -%>
+            <button type="button" class="button button--icon-quiet" title="Pausieren" data-action="uploads#pause" data-uploads-id-param="<%= item.id %>"><%- icon('pause', { size: 14 }) %></button>
+          <% } else { -%>
+            <button type="button" class="button button--icon-quiet" title="<%= item.status === 'failed' ? 'Erneut versuchen' : 'Fortsetzen' %>" data-action="uploads#resume" data-uploads-id-param="<%= item.id %>"><%- icon(item.status === 'failed' ? 'reopen' : 'play', { size: 14 }) %></button>
+          <% } -%>
+          <button type="button" class="button button--icon-quiet" title="An den Anfang" data-action="uploads#toFront" data-uploads-id-param="<%= item.id %>" <%= index === 0 ? 'disabled' : '' %>><%- icon('toTop', { size: 14 }) %></button>
+          <button type="button" class="button button--icon-quiet" title="Ans Ende (läuft er gerade, wird er angehalten, bis er dran ist)" data-action="uploads#toEnd" data-uploads-id-param="<%= item.id %>" <%= index === active.length - 1 ? 'disabled' : '' %>><%- icon('toBottom', { size: 14 }) %></button>
+          <button type="button" class="button button--icon-quiet upload-row__cancel" title="Abbrechen" data-action="uploads#cancel" data-uploads-id-param="<%= item.id %>"><%- icon('x', { size: 14 }) %></button>
+        </div>
+      </li>
+    <% }) -%>
+  </ol>
+<% } -%>
+
+<% if (finished.length) { -%>
+  <details class="disclosure uploads-finished" <%= active.length ? '' : 'open' %>>
+    <summary>Erledigt <span class="count"><%= finished.length %></span></summary>
+    <div class="disclosure__body">
+      <ol class="upload-list upload-list--compact">
+        <% finished.slice(0, 300).forEach((item) => { -%>
+          <li class="upload-row upload-row--<%= item.status %>">
+            <span class="upload-row__kind upload-row__kind--<%= item.category %>" title="<%= categoryLabel(item.category) %>"><%= categoryLabel(item.category).slice(0, 1) %></span>
+            <span class="truncate upload-row__name" title="<%= item.dest_path %>"><%= item.fileName %></span>
+            <span class="truncate subtle"><%= labelOf(item) %></span>
+            <span class="upload-row__state"><%= item.status === 'done' ? (item.skipped ? 'war schon da' : formatBytes(item.size)) : 'abgebrochen' %></span>
+          </li>
+        <% }) -%>
+      </ol>
+      <div class="toolbar relay-actions"><button type="button" class="button button--small" data-action="uploads#clearFinished">Liste leeren</button></div>
+    </div>
+  </details>
+<% } -%>

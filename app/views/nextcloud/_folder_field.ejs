@@ -1,0 +1,13 @@
+<%# locals: name, value, suggestion, inputTarget, inputAction -%>
+<%# Nextcloud-Ordner wählen (Basisordner eines Einsatzes) -%>
+<div class="nextcloud-folder" data-controller="nextcloud-folder" data-nextcloud-folder-suggestion-value="<%= suggestion ?? '' %>">
+  <div class="input-with-button">
+    <input type="text" name="<%= name %>" value="<%= value ?? '' %>" placeholder="z. B. /Einsätze/<%= suggestion ?? '' %>" spellcheck="false"
+           data-nextcloud-folder-target="input" <%- inputTarget ?? '' %>
+           data-action="keydown.enter->nextcloud-folder#ignore:prevent <%= inputAction ?? '' %>">
+    <button type="button" class="button" data-action="nextcloud-folder#open"><%- icon('folder') %><span>Auswählen …</span></button>
+  </div>
+  <dialog class="sheet provide-browser" data-nextcloud-folder-target="dialog">
+    <div class="sheet__body" data-nextcloud-folder-target="body"></div>
+  </dialog>
+</div>

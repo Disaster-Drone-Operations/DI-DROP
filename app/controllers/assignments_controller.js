@@ -10,6 +10,8 @@ import { syncFileNames } from '/app/services/file_namer.js'
 import { toDate, parseLocal } from '/lib/time.js'
 import { completionOptions, completeAssignment, revertCompletion } from '/app/services/control_planner.js'
 import undo from '/lib/undo.js'
+import { db } from '/lib/db.js'
+import { TARGETS } from '/app/services/upload_targets.js'
 
 export default class AssignmentsController extends ApplicationController {
   async beforeAction() {
@@ -47,7 +49,20 @@ export default class AssignmentsController extends ApplicationController {
       timeline: (await Assignment.timeline(this.mission.id)).get(this.assignment.id),
       canImport: platform.capabilities.media,
       completion: await completionOptions(this.assignment),
+      provisions: await this.provisions(),
     }, { title: `${this.assignment.title} – ${this.mission.title}` })
+  }
+
+  // Wohin wurde dieser Auftrag schon bereitgestellt? [{ label, done, total, running }]
+  async provisions() {
+    const rows = await db.select(
+      `SELECT target, SUM(status = 'done') AS done, SUM(status IN ('queued', 'running', 'paused', 'failed')) AS open
+         FROM upload_items WHERE assignment_id = ? GROUP BY target`,
+      [this.assignment.id],
+    )
+    return rows
+      .filter((r) => r.done || r.open)
+      .map((r) => ({ label: TARGETS[r.target]?.label ?? r.target, done: r.done, total: r.done + r.open, running: r.open > 0 }))
   }
 
   // Neuer Auftrag (aus dem Dialog auf der Einsatzseite)

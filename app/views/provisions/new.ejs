@@ -1,0 +1,130 @@
+<%# locals: mission, assignment, path, targets, target, status, base, folderRoot, assignmentFolder, shots, comparisons, provided, previous, lastKeys, selected, pending, speed, canPickFolder -%>
+<% const rank = (f) => ({ T: 0 }[f.variant] ?? 1) -%>
+<% const categoryOf = (f) => (f.variant === 'T' ? 'thermal' : ['V', 'W', 'Z'].includes(f.variant) ? 'visible' : 'other') -%>
+<% const totalFiles = shots.reduce((n, s) => n + s.files.length, 0) + comparisons.length -%>
+<header class="page-header">
+  <div>
+    <a class="backlink" href="#<%= path %>"><%= assignment.title %></a>
+    <h1>Bereitstellen</h1>
+    <p class="subtle">Bilder dieses Auftrags in die Nextcloud laden oder als Dateien exportieren – auch beides nacheinander.</p>
+  </div>
+</header>
+
+<% if (!target) { -%>
+  <div class="callout callout--subtle"><%- icon('alert') %><span>Bereitstellen geht nur in der Desktop-App.</span></div>
+<% } else { -%>
+<form class="provide" action="#<%= path %>/provide" method="post" data-controller="provide"
+      data-provide-target-value="<%= target.key %>" data-provide-pending-value="<%= pending %>" data-provide-speed-value="<%= speed ?? 0 %>"
+      data-provide-mission-folder-value="<%= mission.folderName %>" data-provide-assignment-folder-value="<%= assignmentFolder %>"
+      data-action="change->provide#update submit->provide#submit">
+  <input type="hidden" name="target" value="<%= target.key %>">
+  <input type="hidden" name="selection" data-provide-target="selection">
+
+  <section class="card provide__target">
+    <div class="provide__row">
+      <span class="provide__label">Wohin?</span>
+      <div class="segmented segmented--links">
+        <% targets.forEach((t) => { -%>
+          <a href="#<%= path %>/provide?target=<%= t.key %>" class="<%= t.key === target.key ? 'is-active' : '' %>"><%- icon(t.icon, { size: 14 }) %> <%= t.label %></a>
+        <% }) -%>
+      </div>
+    </div>
+
+    <% if (!status.ready) { -%>
+      <div class="callout callout--info"><%- icon('cloud') %><span><%= status.text %> <a href="#<%= status.setupPath %>">Jetzt einrichten</a></span></div>
+    <% } else { -%>
+      <% if (target.key === 'nextcloud') { -%>
+        <div class="provide__row">
+          <span class="provide__label">Ordner</span>
+          <div class="provide__dest">
+            <% if (!base) { %><p class="provide__missing"><%- icon('alert', { size: 14 }) %> Für diesen Einsatz ist noch kein Nextcloud-Ordner festgelegt.</p><% } %>
+            <%- include('nextcloud/_folder_field', { name: 'base', value: base, suggestion: mission.folderName,
+                  inputTarget: 'data-provide-target="base"', inputAction: 'input->provide#update' }) %>
+            <span class="hint">Ordner des Einsatzes – gilt für alle seine Aufträge. <%= status.text %></span>
+          </div>
+        </div>
+      <% } else { -%>
+        <div class="provide__row">
+          <span class="provide__label">Ordner</span>
+          <div class="provide__dest">
+            <input type="hidden" name="base" value="<%= folderRoot %>" data-provide-target="base">
+            <% if (!canPickFolder) { -%>
+              <input type="text" class="provide__base-input" placeholder="Zielordner, z. B. /Volumes/USB-STICK" value="<%= folderRoot %>" data-action="input->provide#typeBase keydown.enter->provide#ignore:prevent">
+            <% } else { -%>
+              <span class="mono"><%= folderRoot || 'Noch kein Ordner gewählt' %></span>
+              <button type="button" class="button button--small" data-action="provide#changeBase">Ordner wählen …</button>
+            <% } -%>
+          </div>
+        </div>
+      <% } -%>
+      <div class="provide__row">
+        <span class="provide__label">Ziel</span>
+        <span class="mono selectable provide__destination" data-provide-target="destination"></span>
+      </div>
+    <% } -%>
+  </section>
+
+  <% if (previous) { -%>
+    <div class="callout callout--info provide__previous">
+      <%- icon('reopen') %>
+      <span>Beim <strong><%= previous.title %></strong> (<%= formatTime(new Date(previous.at)) %> Uhr) bereitgestellt:
+        <%= previous.viewpoints ? pluralize(previous.viewpoints, 'Wegpunkt', 'Wegpunkte') : 'Aufnahmen' %><%= previous.comparisons ? ' und Vergleichsbilder' : '' %>.
+        Diese Auswahl ist vorbelegt und mit <span class="provide-badge provide-badge--last">zuletzt</span> markiert.</span>
+      <button type="button" class="button button--small" data-action="provide#selectLast">Wie beim letzten Mal</button>
+    </div>
+  <% } -%>
+  <% if (provided.size) { -%>
+    <p class="hint provide__provided"><%- icon('check', { size: 12 }) %> <%= pluralize(provided.size, 'Datei ist', 'Dateien sind') %> hier schon bereitgestellt (<span class="provide-badge provide-badge--done">✓</span>) und nicht vorausgewählt.</p>
+  <% } -%>
+
+  <div class="toolbar provide__quick">
+    <span class="subtle">Auswählen:</span>
+    <button type="button" class="button button--small" data-action="provide#toggleKind" data-provide-kind-param="thermal">Alle Wärmebilder</button>
+    <% if (comparisons.length) { %><button type="button" class="button button--small" data-action="provide#toggleKind" data-provide-kind-param="comparison">Alle Vergleichsbilder</button><% } %>
+    <button type="button" class="button button--small" data-action="provide#toggleKind" data-provide-kind-param="visible">Alle Sichtbilder</button>
+    <button type="button" class="button button--small button--quiet" data-action="provide#selectNone">Keine</button>
+  </div>
+
+  <% if (comparisons.length) { -%>
+    <h2 class="section__title">Vergleichsbilder</h2>
+    <div class="provide-grid provide-grid--wide">
+      <% comparisons.forEach((c) => { -%>
+        <label class="provide-file <%= provided.has(`c${c.id}`) ? 'is-provided' : '' %>">
+          <% if (c.thumb_path) { %><img src="<%= thumbUrl(c.thumb_path) %>" alt="" loading="lazy" draggable="false"><% } else { %><span class="shot__placeholder"><%- icon('images', { size: 22 }) %></span><% } %>
+          <input type="checkbox" data-provide-target="item" data-key="c<%= c.id %>" data-kind="comparison" data-size="0" data-path="<%= c.path %>" <%= selected.has(`c${c.id}`) ? 'checked' : '' %>>
+          <span class="provide-file__label"><span class="truncate"><%= c.fileName %></span><% if (provided.has(`c${c.id}`)) { %><span class="provide-badge provide-badge--done">✓</span><% } %></span>
+        </label>
+      <% }) -%>
+    </div>
+  <% } -%>
+
+  <h2 class="section__title">Aufnahmen <span class="count"><%= shots.length %></span></h2>
+  <div class="provide-grid">
+    <% shots.forEach((shot) => { -%>
+      <div class="provide-shot">
+        <div class="provide-shot__head"><span><%= shot.taken_at ? formatTime(shot.taken_at) : '' %></span><% if (shot.viewpointName) { %><span class="truncate">· <%= shot.viewpointName %></span><% } %></div>
+        <div class="provide-shot__files">
+          <% shot.files.slice().sort((a, b) => rank(a) - rank(b)).forEach((f) => { -%>
+            <% const key = `m${f.id}`; const last = lastKeys.has(`${f.viewpoint_id ?? ''}|${f.variant ?? ''}`) -%>
+            <label class="provide-file <%= provided.has(key) ? 'is-provided' : '' %>" title="<%= f.path.split(/[\\/]/).pop() %>">
+              <% if (f.thumb_path) { %><img src="<%= thumbUrl(f.thumb_path) %>" alt="" loading="lazy" draggable="false"><% } else { %><span class="shot__placeholder"><%- icon('images', { size: 22 }) %></span><% } %>
+              <input type="checkbox" data-provide-target="item" data-key="<%= key %>" data-kind="<%= categoryOf(f) %>" data-size="<%= f.size ?? 0 %>" data-last="<%= last ? '1' : '' %>" <%= selected.has(key) ? 'checked' : '' %>>
+              <span class="provide-file__label">
+                <span><%= variantShort(f.variant) %> · <%= formatBytes(f.size) %></span>
+                <% if (provided.has(key)) { %><span class="provide-badge provide-badge--done" title="Schon bereitgestellt">✓</span><% } else if (last) { %><span class="provide-badge provide-badge--last">zuletzt</span><% } %>
+              </span>
+            </label>
+          <% }) -%>
+        </div>
+      </div>
+    <% }) -%>
+  </div>
+
+  <footer class="provide__footer">
+    <div class="provide__summary" data-provide-target="summary"><%= totalFiles %> Dateien</div>
+    <a class="button" href="#<%= path %>">Abbrechen</a>
+    <button type="submit" class="button button--primary" data-provide-target="submit" data-blocked="<%= status.ready ? "" : "1" %>" <%= status.ready ? '' : 'disabled' %>><%- icon(target.icon) %><span><%= target.action %></span></button>
+  </footer>
+
+</form>
+<% } -%>

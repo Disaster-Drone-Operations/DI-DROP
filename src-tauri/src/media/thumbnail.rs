@@ -18,11 +18,16 @@ use jpeg_decoder::{Decoder, PixelFormat};
 pub const MAX_EDGE: u32 = 480;
 
 pub fn create(src: &Path, dest: &Path) -> Result<(), String> {
+    create_sized(src, dest, MAX_EDGE)
+}
+
+/// Wie `create`, mit eigener Kantenlänge (Vergleichsbilder sind sehr breit → größer)
+pub fn create_sized(src: &Path, dest: &Path, max_edge: u32) -> Result<(), String> {
     let bytes = fs::read(src).map_err(|e| e.to_string())?;
     let jpeg = mpf_preview(&bytes).unwrap_or(&bytes);
     let mut decoder = Decoder::new(Cursor::new(jpeg));
     decoder.read_info().map_err(|e| e.to_string())?;
-    decoder.scale(MAX_EDGE as u16, MAX_EDGE as u16).map_err(|e| e.to_string())?;
+    decoder.scale(max_edge as u16, max_edge as u16).map_err(|e| e.to_string())?;
     let pixels = decoder.decode().map_err(|e| e.to_string())?;
     let info = decoder.info().ok_or("Keine Bildinformationen")?;
     let (w, h) = (u32::from(info.width), u32::from(info.height));
@@ -47,7 +52,7 @@ pub fn create(src: &Path, dest: &Path) -> Result<(), String> {
     }
     .ok_or("Unerwartete Bildgröße")?;
 
-    let scale = (MAX_EDGE as f32 / w.max(h) as f32).min(1.0);
+    let scale = (max_edge as f32 / w.max(h) as f32).min(1.0);
     let (tw, th) = (((w as f32 * scale).round() as u32).max(1), ((h as f32 * scale).round() as u32).max(1));
     let thumb = if scale < 1.0 { imageops::thumbnail(&rgb, tw, th) } else { rgb };
 

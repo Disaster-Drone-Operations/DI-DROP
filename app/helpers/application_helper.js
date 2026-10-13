@@ -2,6 +2,7 @@
 // direkt zur Verfügung, z. B. <%= formatDate(mission.date) %>
 
 import { parseLocal } from '/lib/time.js'
+import platform from '/lib/platform/index.js'
 
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 export function escapeHtml(value) {
@@ -70,6 +71,9 @@ export function shortcut(keys) {
   return [has('Mod') || has('Ctrl') ? 'Strg' : null, has('Alt') ? 'Alt' : null, has('Shift') ? 'Umschalt' : null, key].filter(Boolean).join('+')
 }
 
+// macOS-Desktop: App-Menü mit Einstellungen, Uploads … (Windows/Browser: alles in der Seitenleiste)
+export const hasNativeMenu = () => platform.name === 'tauri' && platform.os === 'macos'
+
 // ── Links & Buttons ───────────────────────────────────────────────────────
 
 // Wie Rails' button_to: kleines Formular, das per PATCH/DELETE abschickt
@@ -113,6 +117,12 @@ const ICONS = {
   video: '<path d="m16 13 5.22 3.48a.5.5 0 0 0 .78-.42V7.87a.5.5 0 0 0-.75-.43L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
   radar: '<path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 6h.01"/><path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"/><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"/><path d="M12 18h.01"/><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"/><circle cx="12" cy="12" r="2"/><path d="m13.41 10.59 5.66-5.66"/>',
   protocol: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8M16 13H8M16 17H8"/>',
+  upload: '<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/>',
+  pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+  play: '<path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  toTop: '<path d="M5 3h14"/><path d="m18 13-6-6-6 6"/><path d="M12 7v14"/>',
+  toBottom: '<path d="M19 21H5"/><path d="m6 11 6 6 6-6"/><path d="M12 17V3"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
   copy: '<rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   map: '<path d="M14.1 5.9 9.9 3.1a2 2 0 0 0-1.8-.1L3.6 5A1 1 0 0 0 3 6v14a1 1 0 0 0 1.4.9l4.5-2a2 2 0 0 1 1.8.1l4.2 2.8a2 2 0 0 0 1.8.1l4.7-2A1 1 0 0 0 21 18V4a1 1 0 0 0-1.4-.9l-4.5 2a2 2 0 0 1-1.8-.1Z"/><path d="M15 5.8v15M9 3.2v15"/>',

@@ -1,0 +1,13 @@
+<%# locals: s, compact, wide, label -%>
+<%# compact: nur Symbol (+ Kürzel wie „W“/„S“), z. B. auf Bildkacheln · wide: Text + langer Balken (Auftragsseite) -%>
+<% if (s && s.state !== 'none') { -%>
+  <% const text = { done: 'bereitgestellt', running: `wird bereitgestellt · ${s.percent} %`, queued: 'wartet auf Upload', paused: 'Upload pausiert', failed: 'Upload fehlgeschlagen' }[s.state] -%>
+  <% const symbol = { done: 'check', running: 'upload', queued: 'clock', paused: 'pause', failed: 'alert' }[s.state] -%>
+  <span class="provision provision--<%= s.state %> <%= compact ? 'provision--compact' : '' %> <%= wide ? 'provision--wide' : '' %>"
+        title="<%= label ? `${label}: ` : '' %><%= s.state === 'done' ? `${s.done} ${s.done === 1 ? 'Datei' : 'Dateien'} bereitgestellt` : text %>">
+    <span class="provision__icon"><%- icon(symbol, { size: compact ? 12 : 11 }) %></span>
+    <% if (compact && label) { %><span class="provision__tag"><%= label %></span><% } %>
+    <% if (!compact) { %><span class="provision__label"><%= text %><% if (wide) { %> · <%= s.done %> von <%= s.files %> Dateien<% } %></span><% } %>
+    <% if (!compact && s.state !== 'done') { %><span class="provision__bar"><span style="width: <%= s.percent %>%"></span></span><% } %>
+  </span>
+<% } -%>

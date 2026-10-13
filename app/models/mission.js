@@ -25,6 +25,7 @@ export default class Mission extends Record {
     status: 'string',
     notes: 'text',
     media_dir: 'string',
+    nextcloud_path: 'string',
   }
 
   static KINDS = { einsatz: 'Einsatz', uebung: 'Übung' }
@@ -65,6 +66,9 @@ export default class Mission extends Record {
 
   validate() {
     this.validatesPresenceOf('title', 'date', 'location')
+    // Nextcloud-Ordner immer als "/Ordner/Unterordner"
+    if (this.nextcloud_path) this.nextcloud_path = `/${this.nextcloud_path.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')}`.replace(/\/{2,}/g, '/')
+    if (this.nextcloud_path === '/') this.nextcloud_path = null
     this.validatesInclusionOf('kind', Object.keys(Mission.KINDS))
     this.validatesInclusionOf('status', Object.keys(Mission.STATUSES))
     if (this.date && !/^\d{4}-\d{2}-\d{2}$/.test(this.date)) this.addError('date', 'ist kein gültiges Datum')

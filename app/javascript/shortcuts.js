@@ -55,6 +55,7 @@ export async function runRedo() {
 export const commands = {
   settings: () => router().redirectTo('/settings'),
   about: () => router().redirectTo('/about'),
+  uploads: () => router().redirectTo('/uploads'),
   new_mission: () => router().redirectTo('/missions/new'),
 
   async new_assignment() {
@@ -110,6 +111,7 @@ function commandFor(event) {
   const key = event.key.toLowerCase()
   if (event.key === 'F11' || (event.ctrlKey && event.metaKey && key === 'f')) return 'fullscreen'
   if (event.key === 'F1') return 'shortcuts'
+  if (mod && event.altKey && event.code === 'KeyU') return 'uploads'
   if (!mod || event.altKey) return null
   if (event.shiftKey && (key === '?' || key === '/' || key === 'ß')) return 'shortcuts'
   return {

@@ -52,6 +52,7 @@
           <dt>Ort</dt><dd><%= mission.location %></dd>
           <% if (mission.coordinates) { %><dt>Koordinaten</dt><dd class="mono selectable"><%= mission.coordinates %></dd><% } %>
           <% if (mission.requested_by) { %><dt>Angefordert</dt><dd><%= mission.requested_by %></dd><% } %>
+          <dt>Nextcloud-Ordner</dt><dd class="mono selectable"><%= mission.nextcloud_path || '–' %></dd>
         </dl>
         <% if (mission.notes) { %><p class="notes selectable"><%= mission.notes %></p><% } %>
         <div class="danger-zone">

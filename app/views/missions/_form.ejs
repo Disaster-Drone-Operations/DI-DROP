@@ -1,7 +1,7 @@
 <%# locals: mission -%>
 <% const f = formFor(mission, 'mission') -%>
 <% const path = mission.isNewRecord ? '/missions' : `/missions/${mission.id}` -%>
-<% const moreFields = ['reference', 'requested_by', 'coordinates', 'group_leader', 'pilot', 'observer', 'operator', 'control_interval_minutes', 'notes'] -%>
+<% const moreFields = ['reference', 'requested_by', 'coordinates', 'group_leader', 'pilot', 'observer', 'operator', 'control_interval_minutes', 'nextcloud_path', 'notes'] -%>
 <form action="#<%= path %>" method="post" class="form" novalidate data-shortcut="save"
       data-controller="mission-location" data-mission-location-configured-value="<%= relayConfigured() ? 'true' : 'false' %>">
   <% if (!mission.isNewRecord) { %><input type="hidden" name="_method" value="patch"><% } %>
@@ -22,7 +22,7 @@
 
   <%# Seltener gebraucht – aufklappbar, öffnet sich bei Fehlern von selbst -%>
   <details class="disclosure disclosure--card" <%= moreFields.some((a) => mission.errors[a]) ? 'open' : '' %>>
-    <summary>Weitere Angaben <span class="disclosure__hint">– Einsatznummer, Drohnen-Einheit, Kontrollflug-Takt, Notizen</span></summary>
+    <summary>Weitere Angaben <span class="disclosure__hint">– Einsatznummer, Drohnen-Einheit, Nextcloud-Ordner, Kontrollflug-Takt, Notizen</span></summary>
     <div class="disclosure__body">
       <fieldset class="card">
         <legend class="card__title">Einsatz</legend>
@@ -38,6 +38,15 @@
         <legend class="card__title">Drohnen-Einheit</legend>
         <div class="grid">
           <% missionRoles().forEach(([attr, label]) => { %><%- f.field(attr, { label, placeholder: 'Name' }) %><% }) %>
+        </div>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend class="card__title">Bereitstellen</legend>
+        <div class="field field--wide">
+          <label class="field__label" for="mission_nextcloud_path">Nextcloud-Ordner dieses Einsatzes</label>
+          <%- include('nextcloud/_folder_field', { name: 'mission[nextcloud_path]', value: mission.nextcloud_path, suggestion: mission.title ? mission.folderName : '' }) %>
+          <p class="hint">Darin legt di-drop beim Hochladen pro Auftrag einen eigenen Ordner an. Kann auch später beim ersten Hochladen gewählt werden.</p>
         </div>
       </fieldset>
 

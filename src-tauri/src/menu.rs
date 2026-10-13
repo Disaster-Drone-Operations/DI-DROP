@@ -52,6 +52,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item("module_missions", "Einsätze", "CmdOrCtrl+1")?)
         .item(&item("module_media", "Bilddaten", "CmdOrCtrl+2")?)
         .separator()
+        .item(&item("uploads", "Uploads", "CmdOrCtrl+Alt+U")?)
+        .separator()
         .item(&item("back", "Zurück", "CmdOrCtrl+[")?)
         .item(&item("forward", "Vorwärts", "CmdOrCtrl+]")?)
         .separator()

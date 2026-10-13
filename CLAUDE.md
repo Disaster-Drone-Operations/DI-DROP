@@ -14,7 +14,10 @@ Einsatz (missions)
  │                              in der Oberfläche nicht sichtbar – dort zählt nur der Auftrag
  ├─ Bilder (media_files)        gehören zu einem Auftrag; Duplikate werden pro Einsatz erkannt
  ├─ Wegpunkte (viewpoints)      gleiche Kameraposition über mehrere Flüge → Vergleichsbilder
- └─ Vergleichsbilder (comparisons)
+ ├─ Vergleichsbilder (comparisons)
+ └─ Bereitstellungen (upload_batches → upload_items)
+                                pro Auftrag + Ziel (Nextcloud, Ordner …); Warteschlange in
+                                app/services/upload_queue.js, Ziele in app/services/upload_targets.js
 ```
 
 Neuer Einsatz → Auftrag „Lageerkundung“ wird automatisch angelegt.
@@ -69,6 +72,21 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Ansichten, die oft neu gezeichnet werden, mit `morph()` aus `lib/morph.js` aktualisieren
   (sonst gehen Klicks verloren).
 
+## Bereitstellen / Uploads
+
+- Reihenfolge: Wärmebilder → Vergleichsbilder → Sichtbilder (über alle Aufträge).
+- Neues Ziel: Eintrag in `app/services/upload_targets.js` + Übertragung in
+  `src-tauri/src/transfer/` + `lib/platform/*`. Die Warteschlange bleibt unverändert.
+- Zugangsdaten (Nextcloud-App-Passwort) nur im Schlüsselbund, nie in der Datenbank.
+- Sicherheitsregeln (in Rust erzwungen, `src-tauri/src/transfer/`): Nextcloud nur PROPFIND (Ordnernamen),
+  HEAD, MKCOL, PUT – nie DELETE/MOVE/COPY/GET. Hochladen nur in den übergebenen Ordner (nie in `/`,
+  kein `..`), reiner Dateiname; vorhandene Dateien werden nie überschrieben (`If-None-Match: *`,
+  sonst Ausweichname `…_2.JPG`). Gilt genauso für den Ordner-Export.
+- Nie selbst in die echte Nextcloud der Desktop-App hochladen – nur Browser-Brücke + Test-Nextcloud.
+- Testen ohne echte Nextcloud: `node test/support/nextcloud_mock.mjs 8088 tmp/nextcloud-mock 500`
+  (Adresse `http://127.0.0.1:8088`, letzter Wert = KB/s-Drossel); Browser-Brücke speichert
+  den Zugang in `tmp/dev-nextcloud.json`.
+
 ## Lizenzen & Quellenangaben
 
 - Nach jeder Änderung an Abhängigkeiten (package.json, Cargo.toml):
@@ -79,6 +97,10 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 ## Testen
 
 - Browser + echter Rust-Code: `http://localhost:1420/?bridge` (siehe README).
+- Desktop-App für den Entwickler bauen: `npx tauri build --debug --no-bundle`, dann
+  `src-tauri/target/debug/di-drop` neu starten. So ist die Oberfläche fest eingebaut und die App
+  läuft auch ohne Vite-Server (den beendet die Claude-App am Ende jeder Antwort).
+  `cargo build` allein baut eine Variante, die die Oberfläche von `localhost:1420` lädt.
 - Desktop-App per Skript bedienen: `script/ui/` (Fenster-Screenshots, Klicks).
   Nur das di-drop-Fenster fotografieren, nie den ganzen Bildschirm.
 - Echte Beispieldaten (DJI M4TD) liegen beim Entwickler unter `~/Downloads/drohne-beispieldaten`.
