@@ -10,8 +10,12 @@ export default class extends Controller {
     this.paint()
     updates.forEach(async (u) => {
       const status = await u.status().catch(() => null)
-      this.update(u.key, { status })
+      if (!this.states[u.key].busy) this.update(u.key, { status })
     })
+    // Aus dem Menü „Nach Updates suchen …“ bzw. nach „Installieren“ beim Start
+    if (/[?&](check|install)=1/.test(location.hash) && updates.find((u) => u.key === 'app')?.available()) {
+      this.run({ params: { key: 'app' } })
+    }
   }
 
   update(key, changes) {
@@ -25,9 +29,10 @@ export default class extends Controller {
 
   async run({ params: { key } }) {
     const item = updates.find((u) => u.key === key)
-    this.update(key, { busy: true, error: null, done: false })
+    this.update(key, { busy: true, error: null, done: false, status: null })
     try {
-      this.update(key, { busy: false, done: true, status: await item.run() })
+      const report = (status) => this.update(key, { status })
+      this.update(key, { busy: false, done: true, status: await item.run(report) })
     } catch (error) {
       this.update(key, { busy: false, error: String(error?.message ?? error) })
     }

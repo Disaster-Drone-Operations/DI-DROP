@@ -34,6 +34,8 @@ roxmltree = "0.20"
 percent-encoding = "2"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 keyring = { version = "3", features = ["apple-native", "windows-native"] }
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 
 # Abhängigkeiten auch im Debug-Build optimieren – Bild-Dekodierung wäre sonst sehr langsam
 [profile.dev.package."*"]

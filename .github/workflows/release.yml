@@ -1,0 +1,67 @@
+# Baut di-drop für macOS (Apple Silicon + Intel) und Windows und legt einen Release-Entwurf an.
+# Auslöser: ein Tag "v1.2.3" (siehe docs/release.md) oder von Hand unter Actions → "Release".
+# Der Release enthält die Installer und latest.json für das Auto-Update der installierten Apps.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+            label: macOS
+          - platform: windows-latest
+            args: ''
+            label: Windows
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # macOS: eine App für Apple Silicon und Intel
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signatur der Updates (Schlüssel: ~/.tauri/di-drop-updater.key, siehe docs/release.md)
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: di-drop __VERSION__
+          releaseBody: |
+            Installieren:
+            - **macOS:** `di-drop_…_universal.dmg` öffnen und di-drop in „Programme“ ziehen.
+              Beim ersten Start: Rechtsklick auf di-drop → „Öffnen“ (die App ist noch nicht von Apple signiert).
+            - **Windows:** `di-drop_…_x64-setup.exe` ausführen. Erscheint „Windows hat den PC geschützt“:
+              „Weitere Informationen“ → „Trotzdem ausführen“ (die App ist noch nicht signiert).
+
+            Bereits installierte Versionen aktualisieren sich von selbst.
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          args: ${{ matrix.args }}

@@ -165,6 +165,9 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        // Auto-Update aus den GitHub-Releases (signiert, siehe docs/release.md) + Neustart danach
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![scan_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir, open_url,
             cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
             geocode::reverse_geocode,

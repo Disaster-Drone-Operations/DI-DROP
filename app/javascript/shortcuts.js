@@ -56,6 +56,7 @@ export const commands = {
   settings: () => router().redirectTo('/settings'),
   about: () => router().redirectTo('/about'),
   uploads: () => router().redirectTo('/uploads'),
+  check_updates: () => router().redirectTo('/settings/updates?check=1'),
   new_mission: () => router().redirectTo('/missions/new'),
 
   async new_assignment() {

@@ -87,6 +87,15 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   (Adresse `http://127.0.0.1:8088`, letzter Wert = KB/s-Drossel); Browser-Brücke speichert
   den Zugang in `tmp/dev-nextcloud.json`.
 
+## Releases & Auto-Update
+
+- Ablauf: `docs/release.md` – `node script/bump_version.mjs X.Y.Z`, Tag `vX.Y.Z` pushen,
+  GitHub Actions baut macOS (universal) + Windows, Release-Entwurf veröffentlichen.
+- Update-Signatur: privater Schlüssel nur in `~/.tauri/di-drop-updater.key` bzw. GitHub-Secret
+  `TAURI_SIGNING_PRIVATE_KEY` – nie ins Repository. Öffentlicher Schlüssel in `tauri.conf.json`.
+- `app.security.csp` gilt für Releases (ohne lokale Test-Adressen), `devCsp` für die Entwicklung.
+- Lokal wird kein DMG gebaut (das Skript braucht Finder-Fernsteuerung); `--bundles app` genügt zum Prüfen.
+
 ## Lizenzen & Quellenangaben
 
 - Nach jeder Änderung an Abhängigkeiten (package.json, Cargo.toml):

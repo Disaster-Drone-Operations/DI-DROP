@@ -14,6 +14,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let app_menu = SubmenuBuilder::new(app, "di-drop")
         // Eigene Seite statt Systemfenster: dort stehen auch Quellenangaben und Lizenzen
         .item(&MenuItemBuilder::with_id("about", "Über di-drop").build(app)?)
+        .item(&MenuItemBuilder::with_id("check_updates", "Nach Updates suchen …").build(app)?)
         .separator()
         .item(&item("settings", "Einstellungen …", "CmdOrCtrl+,")?)
         .separator()

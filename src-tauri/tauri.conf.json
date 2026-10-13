@@ -31,18 +31,23 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; connect-src 'self' ipc: http://ipc.localhost https: wss: http://127.0.0.1:8787 ws://127.0.0.1:8787",
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; connect-src 'self' ipc: http://ipc.localhost https: wss:",
       "assetProtocol": {
         "enable": true,
         "scope": [
           "$APPCACHE/thumbs/**"
         ]
-      }
+      },
+      "devCsp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; connect-src 'self' ipc: http://ipc.localhost https: wss: http://127.0.0.1:8787 ws://127.0.0.1:8787"
     }
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "app",
+      "dmg",
+      "nsis"
+    ],
     "category": "Utility",
     "shortDescription": "Disaster Drone Operator",
     "icon": [
@@ -51,6 +56,40 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true,
+    "publisher": "Disaster Drone Operations",
+    "homepage": "https://github.com/Disaster-Drone-Operations/DI-DROP",
+    "license": "MIT",
+    "licenseFile": "../LICENSE",
+    "copyright": "© 2026 René Rauch – MIT-Lizenz",
+    "longDescription": "Werkzeug für Drone Operator im Katastrophenschutz: Einsätze und Aufträge, Bildimport, Vergleichsbilder, Bereitstellen in Nextcloud oder auf USB-Stick, Standort vom Smartphone.",
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "German",
+          "English"
+        ],
+        "displayLanguageSelector": false
+      },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgwMzM4OEMyNDQ5NDQ4NkIKUldSclNKUkV3b2d6Z05jeVNaRXJMSnNJeTl1N0MwdEdSTWZDU2tubjJVWjJmcG5ub09UcFI1K2kK",
+      "endpoints": [
+        "https://github.com/Disaster-Drone-Operations/DI-DROP/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

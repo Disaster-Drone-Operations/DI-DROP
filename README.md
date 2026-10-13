@@ -7,6 +7,11 @@ SD-Karte übernehmen und bereitstellen (USB-Stick, Ordner, Nextcloud).
 Läuft als native Desktop-App unter **macOS und Windows** (Tauri 2) und – mit
 eingeschränkten Funktionen – auch im **Browser**. Komplett offline.
 
+## Installieren
+
+Installer für macOS und Windows: [Releases](https://github.com/Disaster-Drone-Operations/DI-DROP/releases/latest).
+di-drop aktualisiert sich danach selbst. Wie ein Release entsteht: [docs/release.md](docs/release.md).
+
 ## Entwickeln
 
 Voraussetzungen: Node 22 (`nvm use`), Rust (`rustup`), unter macOS die Xcode Command Line Tools.

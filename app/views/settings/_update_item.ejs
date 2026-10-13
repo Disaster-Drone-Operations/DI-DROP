@@ -6,13 +6,13 @@
     <% if (state.error) { -%>
       <p class="update-item__status update-item__status--error"><%- icon('alert') %><span><%= state.error %></span></p>
     <% } else if (state.busy) { -%>
-      <p class="update-item__status"><span class="spinner"></span><span>Wird geladen …</span></p>
+      <p class="update-item__status"><span class="spinner"></span><span><%= state.status || 'Wird geladen …' %></span></p>
     <% } else if (state.status) { -%>
       <p class="update-item__status <%= state.done ? 'update-item__status--ok' : '' %>"><% if (state.done) { %><%- icon('check') %><% } %><span><%= state.status %></span></p>
     <% } -%>
   </div>
   <% if (item.available()) { -%>
-    <button type="button" class="button" data-action="updates#run" data-updates-key-param="<%= item.key %>" <%= state.busy ? 'disabled' : '' %>>Jetzt aktualisieren</button>
+    <button type="button" class="button" data-action="updates#run" data-updates-key-param="<%= item.key %>" <%= state.busy ? 'disabled' : '' %>><%= item.action ?? 'Jetzt aktualisieren' %></button>
   <% } else { -%>
     <span class="hint">Nur in der Desktop-App</span>
   <% } -%>
