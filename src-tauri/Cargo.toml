@@ -1,6 +1,6 @@
 [package]
 name = "di-drop"
-version = "0.1.0"
+version = "0.2.1"
 description = "Disaster Drone Operator – Werkzeug für Drone Operator im Katastrophenschutz"
 edition = "2021"
 license = "MIT"
