@@ -1,7 +1,7 @@
 <%# locals: mission -%>
 <% const f = formFor(mission, 'mission') -%>
 <% const path = mission.isNewRecord ? '/missions' : `/missions/${mission.id}` -%>
-<% const moreFields = ['reference', 'requested_by', 'coordinates', 'group_leader', 'pilot', 'observer', 'operator', 'control_interval_minutes', 'nextcloud_path', 'notes'] -%>
+<% const moreFields = ['reference', 'requested_by', 'coordinates', 'group_leader', 'pilot', 'observer', 'operator', 'start_time', 'nextcloud_path', 'notes'] -%>
 <form action="#<%= path %>" method="post" class="form" novalidate data-shortcut="save"
       data-controller="mission-location" data-mission-location-configured-value="<%= relayConfigured() ? 'true' : 'false' %>">
   <% if (!mission.isNewRecord) { %><input type="hidden" name="_method" value="patch"><% } %>
@@ -16,17 +16,17 @@
             button: `<button type="button" class="button" data-action="mission-location#here" title="Standort vom Smartphone übernehmen">${icon('pin')}<span>Hier</span></button>` }) %>
       <p class="hint field--wide mission-location-hint" data-mission-location-target="hint" hidden></p>
       <%- f.field('date', { label: 'Datum', type: 'date', required: true }) %>
-      <%- f.field('start_time', { label: 'Beginn', type: 'time' }) %>
     </div>
   </fieldset>
 
   <%# Seltener gebraucht – aufklappbar, öffnet sich bei Fehlern von selbst -%>
   <details class="disclosure disclosure--card" <%= moreFields.some((a) => mission.errors[a]) ? 'open' : '' %>>
-    <summary>Weitere Angaben <span class="disclosure__hint">– Einsatznummer, Drohnen-Einheit, Nextcloud-Ordner, Kontrollflug-Takt, Notizen</span></summary>
+    <summary>Weitere Angaben <span class="disclosure__hint">– Alarmierung, Einsatznummer, Drohnen-Einheit, Nextcloud-Ordner, Notizen</span></summary>
     <div class="disclosure__body">
       <fieldset class="card">
         <legend class="card__title">Einsatz</legend>
         <div class="grid">
+          <%- f.field('start_time', { label: 'Alarmierung', type: 'time' }) %>
           <%- f.field('reference', { label: 'Einsatznummer', placeholder: 'optional' }) %>
           <%- f.field('requested_by', { label: 'Angefordert durch', placeholder: 'z. B. ILS, Polizei, Einsatzleitung' }) %>
           <%- f.field('coordinates', { label: 'Koordinaten', placeholder: '50.6789, 10.9876',
@@ -47,15 +47,6 @@
           <label class="field__label" for="mission_nextcloud_path">Nextcloud-Ordner dieses Einsatzes</label>
           <%- include('nextcloud/_folder_field', { name: 'mission[nextcloud_path]', value: mission.nextcloud_path, suggestion: mission.title ? mission.folderName : '' }) %>
           <p class="hint">Darin legt di-drop beim Hochladen pro Auftrag einen eigenen Ordner an. Kann auch später beim ersten Hochladen gewählt werden.</p>
-        </div>
-      </fieldset>
-
-      <fieldset class="card">
-        <legend class="card__title">Kontrollflüge</legend>
-        <div class="grid">
-          <%- f.field('control_interval_minutes', { label: 'Takt', type: 'select',
-                options: intervalOptions(mission.control_interval_minutes),
-                hint: 'Die App zeigt an, wann der nächste Kontrollflug fällig ist.' }) %>
         </div>
       </fieldset>
 

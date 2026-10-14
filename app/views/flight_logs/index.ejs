@@ -1,4 +1,5 @@
-<%# locals: logs, available, dir, canPickFolder -%>
+<%# locals: logs, groups, names, available, dir, canPickFolder -%>
+<% const named = (kind, sn) => names.get(`${kind}:${sn}`) -%>
 <div class="flightlogs" data-controller="flight-logs">
   <header class="page-header">
     <div>
@@ -38,25 +39,43 @@
             <th>Akku</th>
           </tr>
         </thead>
-        <tbody>
-          <% let month = null -%>
-          <% logs.forEach((log) => { -%>
-            <% const m = localMonth(log.started_at) -%>
-            <% if (m !== month) { month = m -%>
-              <tr class="flightlogs__month"><td colspan="7"><%= m %></td></tr>
-            <% } -%>
-            <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>"
-                data-action="click->flight-logs#select" title="<%= log.file_name %>">
-              <td class="flightlogs__check"><input type="checkbox" tabindex="-1" aria-label="Flug auswählen"></td>
-              <td><%= localDate(log.started_at) %></td>
-              <td class="num"><%= localTime(log.started_at) %></td>
-              <td class="num"><%= localTime(log.landed_at) %></td>
-              <td class="num"><%= formatFlightDuration(log.duration_s) %></td>
-              <td class="num"><%= formatDistance(log.distance_m) %></td>
-              <td class="mono flightlogs__battery" title="Akku-Seriennummer"><%= log.battery_sn ?? '–' %></td>
+        <% groups.forEach((group) => { -%>
+          <tbody class="flightlogs__group">
+            <tr class="flightlogs__drone">
+              <td colspan="7">
+                <%- icon('drone', { size: 14 }) %>
+                <span class="flightlogs__model"><%= group.model %></span>
+                <% if (group.sn) { -%>
+                  <span class="renamable flightlogs__name <%= named('aircraft', group.sn) ? 'is-named' : '' %>" data-controller="device-name"
+                        data-device-name-kind-value="aircraft" data-device-name-serial-value="<%= group.sn %>"><%= named('aircraft', group.sn) ?? group.sn %></span>
+                <% } -%>
+                <span class="subtle"><%= pluralize(group.logs.length, 'Flug', 'Flüge') %></span>
+              </td>
             </tr>
-          <% }) -%>
-        </tbody>
+            <% let month = null -%>
+            <% group.logs.forEach((log) => { -%>
+              <% const m = localMonth(log.started_at) -%>
+              <% if (m !== month) { month = m -%>
+                <tr class="flightlogs__month"><td colspan="7"><%= m %></td></tr>
+              <% } -%>
+              <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>"
+                  data-action="click->flight-logs#select">
+                <td class="flightlogs__check"><input type="checkbox" tabindex="-1" aria-label="Flug auswählen"></td>
+                <td title="<%= log.file_name %>"><%= localDate(log.started_at) %></td>
+                <td class="num"><%= localTime(log.started_at) %></td>
+                <td class="num"><%= localTime(log.landed_at) %></td>
+                <td class="num"><%= formatFlightDuration(log.duration_s) %></td>
+                <td class="num"><%= formatDistance(log.distance_m) %></td>
+                <td>
+                  <% if (log.battery_sn) { -%>
+                    <span class="renamable flightlogs__battery <%= named('battery', log.battery_sn) ? 'is-named' : '' %>" data-controller="device-name"
+                          data-device-name-kind-value="battery" data-device-name-serial-value="<%= log.battery_sn %>"><%= named('battery', log.battery_sn) ?? log.battery_sn %></span>
+                  <% } else { %>–<% } %>
+                </td>
+              </tr>
+            <% }) -%>
+          </tbody>
+        <% }) -%>
       </table>
     </div>
 

@@ -240,6 +240,20 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            // Erst wenn das Menü an der laufenden App hängt (kurz nach dem Start, im Hauptthread)
+            #[cfg(target_os = "macos")]
+            {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(800));
+                    let inner = handle.clone();
+                    let _ = handle.run_on_main_thread(move || {
+                        if let Err(error) = menu::register_special_menus(&inner) {
+                            eprintln!("[Menü] Hilfe-/Fenstermenü nicht angemeldet: {error}");
+                        }
+                    });
+                });
+            }
             watch_flightlog_devices(app.handle().clone());
             Ok(())
         })

@@ -122,8 +122,11 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 ## Testen
 
 - Browser + echter Rust-Code: `http://localhost:1420/?bridge` (siehe README).
-- Desktop-App für den Entwickler bauen: `npx tauri build --debug --no-bundle`, dann
-  `src-tauri/target/debug/di-drop` neu starten. So ist die Oberfläche fest eingebaut und die App
+- Desktop-App für den Entwickler bauen: als App-Paket (nur so wirken `src-tauri/Info.plist` –
+  deutsche App – und das Suchfeld im Hilfe-Menü):
+  `TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/di-drop-updater.key)" npx tauri build --debug --bundles app`,
+  dann `open -n src-tauri/target/debug/bundle/macos/di-drop.app`. Schneller ohne Paket:
+  `npx tauri build --debug --no-bundle` und `src-tauri/target/debug/di-drop` starten. So ist die Oberfläche fest eingebaut und die App
   läuft auch ohne Vite-Server (den beendet die Claude-App am Ende jeder Antwort).
   `cargo build` allein baut eine Variante, die die Oberfläche von `localhost:1420` lädt.
 - Desktop-App per Skript bedienen: `script/ui/` (Fenster-Screenshots, Klicks).

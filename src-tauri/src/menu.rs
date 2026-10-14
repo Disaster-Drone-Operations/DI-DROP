@@ -75,3 +75,21 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
 
     Menu::with_items(app, &[&app_menu, &file, &edit, &view, &window, &help])
 }
+
+/// Nach dem Start (das Menü hängt dann an der App): „Fenster“ und „Hilfe“ bei macOS anmelden.
+/// macOS listet dann die Fenster und ergänzt im Hilfe-Menü das übliche Suchfeld für alle Menübefehle.
+#[cfg(target_os = "macos")]
+pub fn register_special_menus<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+    use tauri::menu::MenuItemKind;
+    let Some(menu) = app.menu() else { return Ok(()) };
+    for item in menu.items()? {
+        if let MenuItemKind::Submenu(submenu) = item {
+            match submenu.text()?.as_str() {
+                "Fenster" => submenu.set_as_windows_menu_for_nsapp()?,
+                "Hilfe" => submenu.set_as_help_menu_for_nsapp()?,
+                _ => {}
+            }
+        }
+    }
+    Ok(())
+}

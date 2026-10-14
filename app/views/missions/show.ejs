@@ -83,7 +83,7 @@
               <%- icon('check', { size: 14 }) %>
               <a href="#<%= path %>/assignments/<%= a.id %>" class="truncate"><%= a.title %></a>
               <span class="subtle"><%= counts.get(a.id) ? `${counts.get(a.id).shots} Aufn.` : '' %></span>
-              <%- buttonTo('Wieder öffnen', `${path}/assignments/${a.id}/reopen`, { method: 'patch', icon: 'reopen', class: 'button button--icon-quiet', params: { return_to: path } }) %>
+              <%- buttonTo('Wieder öffnen', `${path}/assignments/${a.id}/reopen`, { method: 'patch', icon: 'reopen', class: 'button button--icon-quiet', title: 'Wieder öffnen', params: { return_to: path } }) %>
             </div>
           <% }) -%>
         </div>

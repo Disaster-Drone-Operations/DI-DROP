@@ -23,6 +23,8 @@ export default class extends Controller {
   // ── Auswahl ──────────────────────────────────────────────────────────
 
   select(event) {
+    if (event.detail >= 2) return // zweiter Klick eines Doppelklicks (z. B. zum Benennen)
+    if (event.target.closest('.renamable__input')) return
     const row = event.currentTarget
     const index = this.rowTargets.indexOf(row)
     const onCheckbox = event.target.matches('input[type=checkbox]')

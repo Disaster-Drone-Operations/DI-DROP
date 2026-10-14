@@ -78,7 +78,7 @@ export const hasNativeMenu = () => platform.name === 'tauri' && platform.os === 
 
 // Wie Rails' button_to: kleines Formular, das per PATCH/DELETE abschickt
 //   <%- buttonTo('Löschen', `/missions/${id}`, { method: 'delete', confirm: 'Sicher?' }) %>
-export function buttonTo(label, path, { method = 'post', confirm, confirmButton, params = {}, class: cls = 'button', icon: iconName } = {}) {
+export function buttonTo(label, path, { method = 'post', confirm, confirmButton, params = {}, class: cls = 'button', icon: iconName, title } = {}) {
   const hidden = Object.entries({ _method: method, ...params })
     .map(([name, value]) => `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(value)}">`)
     .join('')
@@ -86,7 +86,7 @@ export function buttonTo(label, path, { method = 'post', confirm, confirmButton,
     ? ` data-confirm="${escapeHtml(confirm)}"${confirmButton ? ` data-confirm-button="${escapeHtml(confirmButton)}"` : ''}`
     : ''
   const content = iconName ? `${icon(iconName)}<span>${escapeHtml(label)}</span>` : escapeHtml(label)
-  return `<form class="button-to" action="#${escapeHtml(path)}" method="post"${confirmAttrs}>${hidden}<button type="submit" class="${escapeHtml(cls)}">${content}</button></form>`
+  return `<form class="button-to" action="#${escapeHtml(path)}" method="post"${confirmAttrs}>${hidden}<button type="submit" class="${escapeHtml(cls)}"${title ? ` title="${escapeHtml(title)}"` : ''}>${content}</button></form>`
 }
 
 // ── Icons (Strichzeichnungen im Stil von Lucide, 24×24) ───────────────────

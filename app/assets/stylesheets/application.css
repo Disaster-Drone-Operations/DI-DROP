@@ -1175,3 +1175,14 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .sidebar > .nav--bottom ~ .flightlog-progress, .sidebar > .nav--bottom ~ .upload-status { margin-top: 6px; }
 .flightlog-progress--done .icon { color: var(--success); }
 .flightlog-progress--error { color: var(--danger); }
+.button--icon-quiet > span { display: none; } /* reine Symbol-Knöpfe: Beschriftung nur als Tooltip */
+.flightlogs__drone td { position: sticky; top: 31px; z-index: 1; background: var(--surface-2); padding: 9px 10px; font-weight: 600; border-bottom: 1px solid var(--border); }
+.flightlogs__drone .icon { vertical-align: -2px; color: var(--text-2); margin-right: 4px; }
+.flightlogs__drone .subtle { font-weight: 400; margin-left: 8px; }
+.flightlogs__model { margin-right: 8px; }
+.flightlogs__name { font-family: var(--font-mono); font-weight: 500; color: var(--text-2); }
+.flightlogs__name.is-named, .flightlogs__battery.is-named { font-family: var(--font); color: var(--text); font-weight: 600; }
+.flightlogs__month td { top: 70px; }
+.flightlogs__battery { font-family: var(--font-mono); }
+.flightlogs .renamable { cursor: text; border-radius: 4px; padding: 1px 3px; margin: -1px -3px; text-decoration: none; }
+.flightlogs .renamable:hover { background: var(--hover); text-decoration: none; }
