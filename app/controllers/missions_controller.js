@@ -6,6 +6,7 @@ import Setting from '/app/models/setting.js'
 import platform from '/lib/platform/index.js'
 import { syncFileNames } from '/app/services/file_namer.js'
 import { completionOptions } from '/app/services/control_planner.js'
+import { hasDraft } from '/lib/drafts.js'
 
 export default class MissionsController extends ApplicationController {
   async beforeAction() {
@@ -15,6 +16,8 @@ export default class MissionsController extends ApplicationController {
   }
 
   async index() {
+    // Angefangener "Neuer Einsatz"? → dorthin zurück (Entwurf, siehe form_draft_controller)
+    if (hasDraft('mission-new')) return this.redirectTo('/missions/new')
     await this.render('missions/index', {
       active: await Mission.active(),
       archived: await Mission.archived(),

@@ -60,7 +60,7 @@
   <%- include('location/_transfer_dialog') %>
 
   <div class="form-actions">
-    <a class="button" href="#<%= mission.isNewRecord ? '/' : path %>">Abbrechen</a>
+    <a class="button" href="#<%= mission.isNewRecord ? '/' : path %>" <% if (mission.isNewRecord) { %>data-action="form-draft#discard"<% } %>>Abbrechen</a>
     <button type="submit" class="button button--primary"><%= mission.isNewRecord ? 'Anlegen' : 'Speichern' %></button>
   </div>
 </form>

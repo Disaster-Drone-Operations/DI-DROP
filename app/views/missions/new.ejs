@@ -1,8 +1,12 @@
 <%# locals: mission -%>
-<header class="page-header">
-  <div>
-    <a class="backlink" href="#/">Einsätze</a>
-    <h1>Neuer Einsatz</h1>
-  </div>
-</header>
-<%- include('missions/_form', { mission }) %>
+<%# Angefangene Eingaben bleiben als Entwurf erhalten, auch wenn man zwischendurch ein anderes Modul öffnet -%>
+<div data-controller="form-draft" data-form-draft-key-value="mission-new"
+     data-action="input->form-draft#save change->form-draft#save submit->form-draft#submitted">
+  <header class="page-header">
+    <div>
+      <a class="backlink" href="#/" data-action="form-draft#discard">Einsätze</a>
+      <h1>Neuer Einsatz</h1>
+    </div>
+  </header>
+  <%- include('missions/_form', { mission }) %>
+</div>
