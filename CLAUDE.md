@@ -18,6 +18,10 @@ Einsatz (missions)
  └─ Bereitstellungen (upload_batches → upload_items)
                                 pro Auftrag + Ziel (Nextcloud, Ordner …); Warteschlange in
                                 app/services/upload_queue.js, Ziele in app/services/upload_targets.js
+
+Flugprotokolle (flight_logs)    Flüge aus den Protokollen der DJI-Fernsteuerung (unabhängig von Einsätzen;
+                                mission_id für eine spätere Zuordnung). Originaldateien unverändert in
+                                <Bildablage>/Flugprotokolle (src-tauri/src/flightlogs.rs)
 ```
 
 Neuer Einsatz → Auftrag „Lageerkundung“ wird automatisch angelegt.
@@ -86,6 +90,18 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Testen ohne echte Nextcloud: `node test/support/nextcloud_mock.mjs 8088 tmp/nextcloud-mock 500`
   (Adresse `http://127.0.0.1:8088`, letzter Wert = KB/s-Drossel); Browser-Brücke speichert
   den Zugang in `tmp/dev-nextcloud.json`.
+
+## Flugprotokolle
+
+- DJI Pilot 2 legt `DJIFlightRecord_*.txt` auf der Fernsteuerung unter
+  `DJI/com.dji.industry.pilot/FlightRecord` ab. Zugriff per MTP mit `mtp-rs` (Windows: WPD,
+  macOS: USB – dort kann der Systemdienst `ptpcamerad` das Gerät blockieren).
+- Ab Format 13 sind die Messreihen verschlüsselt (DJI-Schlüssel nötig); die Eckdaten
+  (Start, Dauer, Strecke in km, Akku-SN …) nicht – nur diese werden bisher ausgewertet.
+- Immer alle übernehmen, nie überschreiben (gleicher Name + Größe = schon da).
+- Mit übernommen (gleiche Ordnerstruktur): `FlightTaskReplay/` immer, `MCDatFlightRecords/`
+  (Rohdaten des Flugcontrollers, ~20 MB je Flug) nur mit Einstellung `flightlogs.include_dat`.
+- Testen ohne Fernsteuerung: Ordner-Import in der Browser-Brücke (`flightlogs-import` im Hilfsprogramm).
 
 ## Releases & Auto-Update
 

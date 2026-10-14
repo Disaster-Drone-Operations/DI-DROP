@@ -49,6 +49,10 @@ export default function devBridge({ root }) {
             res.setHeader('Content-Type', 'application/json')
             return res.end(JSON.stringify({ mediaDir }))
           }
+          if (url.pathname === '/cli' && ['flightlogs-import', 'flightlogs-scan'].includes(url.searchParams.get('command'))) {
+            res.setHeader('Content-Type', 'application/json')
+            return res.end(await run(url.searchParams.get('command'), await body(req)))
+          }
           if (url.pathname === '/thumb') {
             res.setHeader('Content-Type', 'application/json')
             return res.end(await run('thumb', { ...(await body(req)), thumbs_dir: thumbsDir }))

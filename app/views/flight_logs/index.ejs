@@ -1,0 +1,73 @@
+<%# locals: logs, available, dir, canPickFolder -%>
+<div class="flightlogs" data-controller="flight-logs">
+  <header class="page-header">
+    <div>
+      <h1>Flugprotokolle</h1>
+      <p class="subtle">Alle Flüge aus den Protokollen der DJI-Fernsteuerung. Fernsteuerung per USB anschließen – di-drop fragt dann, ob es die neuen übernehmen soll.</p>
+    </div>
+    <% if (available) { -%>
+      <div class="toolbar">
+        <button type="button" class="button" data-action="flight-logs#importFolder" title="z. B. ein USB-Stick mit dem Ordner „FlightRecord“"><%- icon('folder') %><span>Aus Ordner übernehmen …</span></button>
+        <button type="button" class="button button--primary" data-action="flight-logs#importDevice" data-flight-logs-target="deviceButton" hidden><%- icon('import') %><span>Von Fernsteuerung übernehmen</span></button>
+      </div>
+    <% } -%>
+  </header>
+
+  <% if (!available) { -%>
+    <div class="callout callout--subtle"><%- icon('alert') %><span>Flugprotokolle lassen sich nur in der Desktop-App übernehmen.</span></div>
+  <% } -%>
+
+  <% if (!logs.length) { -%>
+    <div class="empty">
+      <%- icon('protocol', { size: 40, class: 'empty__icon' }) %>
+      <p><strong>Noch keine Flugprotokolle.</strong></p>
+      <p class="subtle">DJI-Fernsteuerung (z. B. DJI RC Plus 2) per USB-Kabel an den Rechner anschließen. di-drop erkennt sie und übernimmt alle neuen Flugprotokolle.</p>
+      <p class="subtle">Alternativ: Ordner <span class="mono">FlightRecord</span> (auf der Fernsteuerung unter <span class="mono">DJI/com.dji.industry.pilot</span>) auf einen USB-Stick kopieren und „Aus Ordner übernehmen …“ wählen.</p>
+    </div>
+  <% } else { -%>
+    <div class="flightlogs__table-wrap">
+      <table class="flightlogs__table" data-flight-logs-target="table">
+        <thead>
+          <tr>
+            <th class="flightlogs__check"><input type="checkbox" aria-label="Alle auswählen" data-flight-logs-target="all" data-action="change->flight-logs#toggleAll"></th>
+            <th>Datum</th>
+            <th class="num">Start</th>
+            <th class="num">Landung</th>
+            <th class="num">Flugdauer</th>
+            <th class="num">Strecke</th>
+            <th>Akku</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% let month = null -%>
+          <% logs.forEach((log) => { -%>
+            <% const m = localMonth(log.started_at) -%>
+            <% if (m !== month) { month = m -%>
+              <tr class="flightlogs__month"><td colspan="7"><%= m %></td></tr>
+            <% } -%>
+            <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>"
+                data-action="click->flight-logs#select" title="<%= log.file_name %>">
+              <td class="flightlogs__check"><input type="checkbox" tabindex="-1" aria-label="Flug auswählen"></td>
+              <td><%= localDate(log.started_at) %></td>
+              <td class="num"><%= localTime(log.started_at) %></td>
+              <td class="num"><%= localTime(log.landed_at) %></td>
+              <td class="num"><%= formatFlightDuration(log.duration_s) %></td>
+              <td class="num"><%= formatDistance(log.distance_m) %></td>
+              <td class="mono flightlogs__battery" title="Akku-Seriennummer"><%= log.battery_sn ?? '–' %></td>
+            </tr>
+          <% }) -%>
+        </tbody>
+      </table>
+    </div>
+
+    <%# Summenleiste wie in Numbers: Auswahl oder – ohne Auswahl – alle Flüge -%>
+    <footer class="flightlogs__sum" data-flight-logs-target="sum"></footer>
+  <% } -%>
+
+  <% if (dir && logs.length) { -%>
+    <p class="hint flightlogs__dir" data-controller="system-open">
+      Originaldateien: <span class="mono selectable"><%= dir %></span>
+      <button type="button" class="button button--small button--quiet" data-action="system-open#reveal" data-system-open-path-param="<%= dir %>"><%= platformName() === 'windows' ? 'Im Explorer zeigen' : 'Im Finder zeigen' %></button>
+    </p>
+  <% } -%>
+</div>

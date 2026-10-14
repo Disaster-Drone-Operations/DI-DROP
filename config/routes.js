@@ -18,6 +18,9 @@ export default (r) => {
   // "Mein Standort": Position vom Smartphone über den eigenen Relay
   r.get('/location', 'location#show')
 
+  // Modul "Flugprotokolle" (DJI-Fernsteuerung)
+  r.get('/flightlogs', 'flight_logs#index')
+
   r.get('/uploads', 'uploads#index')
   r.get('/about', 'about#show')
 

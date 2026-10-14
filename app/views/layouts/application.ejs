@@ -25,9 +25,9 @@
       <span class="nav__item is-disabled" title="Kommt später">
         <%- icon('radar') %><span>Luftraum</span><span class="badge badge--muted badge--tiny">bald</span>
       </span>
-      <span class="nav__item is-disabled" title="Kommt später">
-        <%- icon('protocol') %><span>Protokolle</span><span class="badge badge--muted badge--tiny">bald</span>
-      </span>
+      <a href="#/flightlogs" class="nav__item <%= isCurrent(currentPath, '/flightlogs') ? 'is-active' : '' %>">
+        <%- icon('protocol') %><span>Flugprotokolle</span>
+      </a>
 
       <% if (activeMissions.length) { -%>
         <div class="nav__heading">Aktive Einsätze</div>
@@ -47,6 +47,8 @@
         </a>
       </nav>
     <% } -%>
+
+    <div class="flightlog-progress" data-controller="flightlog-progress" hidden></div>
 
     <%# Uploads ganz unten links in der Ecke (wie die Aktivitätsanzeige in Mail) -%>
     <a href="#/uploads" class="upload-status <%= isCurrent(currentPath, '/uploads') ? 'is-active' : '' %>" data-controller="upload-status" hidden></a>

@@ -92,6 +92,16 @@ fn main() {
             let dir = std::path::PathBuf::from(req["thumbs_dir"].as_str().unwrap_or(""));
             result(media::thumbnail_for(req["path"].as_str().unwrap_or("").as_ref(), &dir).map(|p| p.to_string_lossy().into_owned()))
         }
+        Some("flightlogs-import") | Some("flightlogs-scan") => {
+            let req: Value = serde_json::from_str(&input).expect("JSON");
+            let known = req["known"].as_array().map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect()).unwrap_or_default();
+            let dest = std::path::PathBuf::from(req["dest"].as_str().unwrap_or(""));
+            if std::env::args().nth(1).as_deref() == Some("flightlogs-scan") {
+                result(Ok::<_, String>(di_drop_lib::flightlogs::scan_local(&dest, &known)))
+            } else {
+                result(di_drop_lib::flightlogs::import_folder(req["src"].as_str().unwrap_or("").as_ref(), &dest, &known, req["include_dat"].as_bool().unwrap_or(false)))
+            }
+        }
         Some("nc") => result(nc(serde_json::from_str(&input).expect("JSON"))),
         _ => {
             eprintln!("Aufruf: didrop-dev scan|import|copy|nc-upload|nc < anfrage.json");

@@ -36,6 +36,8 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 keyring = { version = "3", features = ["apple-native", "windows-native"] }
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+dji-log-parser = "0.5.7"
+mtp-rs = "0.33"
 
 # Abhängigkeiten auch im Debug-Build optimieren – Bild-Dekodierung wäre sonst sehr langsam
 [profile.dev.package."*"]

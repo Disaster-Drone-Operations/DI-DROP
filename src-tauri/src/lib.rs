@@ -7,6 +7,7 @@ mod cloudflare;
 mod geocode;
 mod places;
 pub mod transfer;
+pub mod flightlogs;
 mod menu;
 
 use std::path::{Path, PathBuf};
@@ -48,6 +49,76 @@ async fn make_thumbnail(app: AppHandle, path: String) -> Result<String, String> 
         .await
         .map_err(|e| e.to_string())?
         .map(|p| p.to_string_lossy().into_owned())
+}
+
+// ── Flugprotokolle (src/flightlogs.rs) ──────────────────────────────────
+
+#[derive(serde::Serialize, Clone)]
+struct FlightLogProgress {
+    done: usize,
+    total: usize,
+}
+
+/// Aus einem Ordner übernehmen (USB-Stick, kopierter FlightRecord-Ordner)
+#[tauri::command]
+async fn flightlogs_import_folder(src: String, dest: String, known: Vec<String>, include_dat: bool) -> Result<flightlogs::ImportReport, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        flightlogs::import_folder(Path::new(&src), Path::new(&dest), &known.into_iter().collect(), include_dat)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Protokolle im eigenen Ordner, die die Datenbank noch nicht kennt
+#[tauri::command]
+async fn flightlogs_scan_local(dest: String, known: Vec<String>) -> Result<flightlogs::ImportReport, String> {
+    tauri::async_runtime::spawn_blocking(move || Ok(flightlogs::scan_local(Path::new(&dest), &known.into_iter().collect())))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn flightlogs_devices() -> Result<Vec<flightlogs::DeviceInfo>, String> {
+    flightlogs::list_devices()
+}
+
+#[tauri::command]
+async fn flightlogs_device_status(key: String, dest: String) -> Result<flightlogs::DeviceStatus, String> {
+    flightlogs::device_status(&key, Path::new(&dest)).await
+}
+
+#[tauri::command]
+async fn flightlogs_device_import(
+    key: String,
+    dest: String,
+    known: Vec<String>,
+    include_dat: bool,
+    on_progress: Channel<FlightLogProgress>,
+) -> Result<flightlogs::ImportReport, String> {
+    let known = known.into_iter().collect();
+    flightlogs::device_import(&key, Path::new(&dest), &known, include_dat, |done, total| {
+        let _ = on_progress.send(FlightLogProgress { done, total });
+    })
+    .await
+}
+
+/// Fernsteuerung angesteckt? → Ereignis "flightlogs:device" an die Oberfläche
+fn watch_flightlog_devices(app: AppHandle) {
+    use futures_util::StreamExt;
+    use tauri::Emitter;
+    tauri::async_runtime::spawn(async move {
+        let mut watch = match mtp_rs::mtp::watch_devices() {
+            Ok(watch) => watch,
+            Err(error) => return eprintln!("[Flugprotokolle] Geräteüberwachung nicht möglich: {error}"),
+        };
+        while let Some(event) = watch.next().await {
+            if let mtp_rs::mtp::HotplugEvent::Arrived(info) = event {
+                if flightlogs::is_dji(&info) {
+                    let _ = app.emit("flightlogs:device", flightlogs::device_info(&info));
+                }
+            }
+        }
+    });
 }
 
 /// Öffnet eine Datei oder einen Ordner mit dem Standardprogramm (Vorschau, Fotos, Finder, Explorer)
@@ -168,10 +239,16 @@ pub fn run() {
         // Auto-Update aus den GitHub-Releases (signiert, siehe docs/release.md) + Neustart danach
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .setup(|app| {
+            watch_flightlog_devices(app.handle().clone());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![scan_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir, open_url,
             cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
             geocode::reverse_geocode,
             make_thumbnail,
+            flightlogs_import_folder, flightlogs_scan_local, flightlogs_devices,
+            flightlogs_device_status, flightlogs_device_import,
             places::places_info, places::places_read, places::places_update,
             transfer::commands::transfer_copy, transfer::commands::transfer_nextcloud, transfer::commands::transfer_cancel,
             transfer::commands::nc_account, transfer::commands::nc_login_start, transfer::commands::nc_login_poll,

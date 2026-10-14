@@ -46,6 +46,17 @@ export default [
     ],
   },
   {
+    key: 'flightlogs',
+    title: 'Flugprotokolle',
+    icon: 'protocol',
+    description: 'Was beim Anschließen der DJI-Fernsteuerung übernommen wird. Flugprotokolle und Flugwiedergaben (FlightTaskReplay) kommen immer mit.',
+    fields: [
+      { key: 'include_dat', label: 'Rohdaten des Flugcontrollers mitsichern', type: 'select', default: 'no',
+        options: [['no', 'Nein'], ['yes', 'Ja – Ordner „MCDatFlightRecords“ mit übernehmen']],
+        hint: 'Sehr genaue Aufzeichnung der Drohne (ca. 20 MB je Flug), z. B. für den DJI-Support oder Versicherungen nach einem Zwischenfall. Die Fernsteuerung behält nur die jüngsten – wer sie braucht, sollte sie mitsichern.' },
+    ],
+  },
+  {
     key: 'nextcloud',
     title: 'Nextcloud',
     icon: 'cloud',

@@ -1143,3 +1143,35 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 }
 .viewpoint-row__last { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-3); }
 .viewpoint-row__last.is-last-round { color: var(--info); }
+
+/* Flugprotokolle */
+.flightlogs { display: flex; flex-direction: column; gap: 14px; }
+.flightlogs__table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: auto; max-height: calc(100vh - 290px); }
+.flightlogs__table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.flightlogs__table th { position: sticky; top: 0; z-index: 1; background: var(--surface-2); text-align: left; font-weight: 600; font-size: 12px; color: var(--text-2); padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.flightlogs__table td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.flightlogs__table .num { text-align: right; }
+.flightlogs__table th.num { text-align: right; }
+.flightlogs__check { width: 28px; padding-right: 0 !important; }
+.flightlogs__check input { margin: 0; accent-color: var(--accent); }
+.flightlogs__row { cursor: default; user-select: none; -webkit-user-select: none; }
+.flightlogs__row:hover { background: var(--hover); }
+.flightlogs__row.is-selected { background: var(--accent-soft); }
+.flightlogs__month td { position: sticky; top: 31px; background: var(--bg); font-weight: 600; font-size: 12px; color: var(--text-2); padding-top: 12px; }
+.flightlogs__battery { font-size: 12px; color: var(--text-2); }
+.flightlogs__sum {
+  position: sticky; bottom: 0; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2);
+  font-variant-numeric: tabular-nums;
+}
+.flightlogs__sum-label { flex: 1; color: var(--text-2); }
+.flightlogs__sum-value { display: inline-flex; align-items: baseline; gap: 6px; }
+.flightlogs__sum-value span { font-size: 12px; color: var(--text-2); }
+.flightlogs__sum-value strong { font-size: 15px; }
+.flightlogs__dir { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.flightlog-progress { display: flex; flex-direction: column; gap: 5px; margin: 0 8px 6px; padding: 8px 10px; border-radius: var(--radius); background: var(--hover); font-size: 12px; }
+.sidebar > .flightlog-progress { margin-top: auto; }
+.sidebar > .flightlog-progress:not([hidden]) + .upload-status { margin-top: 0; }
+.sidebar > .nav--bottom ~ .flightlog-progress, .sidebar > .nav--bottom ~ .upload-status { margin-top: 6px; }
+.flightlog-progress--done .icon { color: var(--success); }
+.flightlog-progress--error { color: var(--danger); }
