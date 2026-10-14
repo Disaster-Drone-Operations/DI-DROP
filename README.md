@@ -29,7 +29,7 @@ Im Dev-Server kann die Browser-Variante den echten Rust-Code nutzen – praktisc
 Testen von Import & Co. ohne Desktop-Fenster:
 
 ```bash
-(cd src-tauri && cargo build --bin didrop-dev)
+(cd src-tauri && cargo build --example didrop-dev)
 npm run dev               # dann http://localhost:1420/?bridge öffnen
 ```
 

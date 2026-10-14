@@ -1,5 +1,5 @@
 // Nur im Vite-Dev-Server: verbindet die Browser-Variante mit dem echten Rust-Code
-// (src-tauri/src/bin/didrop-dev.rs). Aktiv mit http://localhost:1420/?bridge
+// (src-tauri/examples/didrop-dev.rs). Aktiv mit http://localhost:1420/?bridge
 //
 //   POST /__didrop/scan    ["/pfad", …]            → ScanResult
 //   POST /__didrop/import  [{ src, dest_dir, … }]  → ImportResult[]
@@ -15,7 +15,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 export default function devBridge({ root }) {
-  const binary = path.join(root, 'src-tauri/target/debug/didrop-dev')
+  const binary = path.join(root, 'src-tauri/target/debug/examples/didrop-dev')
   const thumbsDir = path.join(root, 'tmp/dev-thumbs')
   const mediaDir = path.join(root, 'tmp/dev-media')
 
@@ -27,7 +27,7 @@ export default function devBridge({ root }) {
     let err = ''
     child.stdout.on('data', (d) => (out += d))
     child.stderr.on('data', (d) => (err += d))
-    child.on('error', (e) => reject(new Error(`${e.message} – erst "cargo build --bin didrop-dev" ausführen`)))
+    child.on('error', (e) => reject(new Error(`${e.message} – erst "cargo build --example didrop-dev" (in src-tauri) ausführen`)))
     child.on('close', (code) => (code === 0 ? resolve(out) : reject(new Error(err || `Exit ${code}`))))
     child.stdin.end(JSON.stringify(input))
   })

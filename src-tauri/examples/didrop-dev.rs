@@ -1,4 +1,6 @@
-//! Nur für die Entwicklung: macht Scan und Import über die Kommandozeile verfügbar,
+//! Nur für die Entwicklung (als Beispielprogramm, damit es nie in die App-Pakete gelangt):
+//!   cargo build --example didrop-dev
+//! macht Scan und Import über die Kommandozeile verfügbar,
 //! damit die Browser-Variante (Vite-Dev-Server, siehe config/vite/dev_bridge.js)
 //! mit echten Dateien und echtem Rust-Code getestet werden kann.
 //!
