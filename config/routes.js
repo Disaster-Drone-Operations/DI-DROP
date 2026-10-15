@@ -21,6 +21,11 @@ export default (r) => {
   // Module "Flugprotokolle" (DJI remote controller)
   r.get('/flightlogs', 'flight_logs#index')
 
+  // Module "Akkunutzung"
+  r.get('/batteries', 'batteries#index')
+  r.patch('/batteries/:serial/retire', 'batteries#retire')
+  r.patch('/batteries/:serial/activate', 'batteries#activate')
+
   r.get('/uploads', 'uploads#index')
   r.get('/about', 'about#show')
 

@@ -8,7 +8,10 @@ import { flightLogDir, syncLocal, isAvailable } from '/app/services/flightlog_im
 export default class FlightLogsController extends ApplicationController {
   async index() {
     if (isAvailable()) await syncLocal().catch((e) => console.warn('[flight logs]', e))
-    const logs = await FlightLog.all({ order: 'started_at DESC' })
+    const battery = this.params.battery || null // "Flüge" link in the battery module
+    const logs = battery
+      ? await FlightLog.where('battery_sn = ?', [battery], { order: 'started_at DESC' })
+      : await FlightLog.all({ order: 'started_at DESC' })
     // Grouped by drone (serial number), most recently flown first
     const groups = []
     for (const log of logs) {
@@ -21,6 +24,7 @@ export default class FlightLogsController extends ApplicationController {
       logs,
       groups,
       names: await DeviceName.all(),
+      battery,
       available: isAvailable(),
       dir: isAvailable() ? await flightLogDir() : null,
       canPickFolder: platform.capabilities.folders,

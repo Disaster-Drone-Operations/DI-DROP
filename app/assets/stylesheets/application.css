@@ -1190,3 +1190,44 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .update-channel { display: flex; gap: 10px; align-items: flex-start; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
 .update-channel input { margin-top: 3px; accent-color: var(--accent); }
 .update-channel > span { display: flex; flex-direction: column; gap: 2px; }
+
+/* Battery usage */
+.batteries { display: flex; flex-direction: column; gap: 14px; }
+.battery-recommendation { display: flex; flex-direction: column; gap: 10px; border-left: 3px solid var(--success); }
+.battery-recommendation__head { display: flex; align-items: center; gap: 8px; }
+.battery-recommendation__head .icon { color: var(--success); }
+.battery-recommendation__items { display: flex; gap: 12px; flex-wrap: wrap; }
+.battery-recommendation .hint { margin: 0; }
+.battery-chip { display: flex; flex-direction: column; gap: 2px; padding: 8px 14px; border-radius: var(--radius); background: var(--success-soft); min-width: 180px; }
+.battery-chip strong { font-size: 15px; }
+.battery-warning { margin: 0; align-items: center; }
+.battery-chart { display: flex; flex-direction: column; gap: 12px; }
+.battery-chart__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.battery-chart__head .card__title { margin: 0; }
+.battery-bars { position: relative; display: flex; flex-direction: column; gap: 8px; padding-bottom: 18px; --label: 160px; --value: 70px; }
+.battery-bar { display: grid; grid-template-columns: var(--label) 1fr var(--value); align-items: center; gap: 10px; }
+.battery-bar__label { font-weight: 600; }
+.battery-bar__track { height: 18px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.battery-bar__fill { position: relative; display: block; height: 100%; border-radius: 4px; background: var(--info); transition: width .3s ease; }
+.battery-bar__recent { position: absolute; right: 0; top: 0; bottom: 0; background: rgba(255, 255, 255, .35); }
+.battery-bar.is-recommended .battery-bar__fill { background: var(--success); }
+.battery-bar.is-retired { opacity: .45; }
+.battery-bar__value { text-align: right; font-variant-numeric: tabular-nums; }
+.battery-bars__average {
+  position: absolute; top: 0; bottom: 0; pointer-events: none;
+  left: calc(var(--label) + 10px + (100% - var(--label) - var(--value) - 20px) * var(--avg) / 100);
+  border-left: 2px dashed var(--text-2);
+}
+.battery-bars__average span { position: absolute; bottom: -2px; left: 4px; font-size: 11px; color: var(--text-2); white-space: nowrap; }
+.battery-chart__legend { margin: 0; }
+.battery-legend { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; }
+.battery-legend--recent { background: var(--info); box-shadow: inset 0 0 0 10px rgba(255, 255, 255, .35); }
+.battery-legend--recommended { background: var(--success); }
+.battery-badge--recommended { background: var(--success-soft); color: var(--success); margin-left: 6px; }
+.battery-badge--warning { background: var(--warning-soft); color: var(--warning); margin-left: 6px; }
+.battery-table-wrap { max-height: none; }
+.batteries tr.is-retired td { color: var(--text-3); }
+.battery-actions { text-align: right; }
+.battery-actions .button-to { display: inline-block; }
+.flightlogs__filter { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius); background: var(--info-soft); }
+.flightlogs__filter > span { flex: 1; }

@@ -28,6 +28,9 @@
       <a href="#/flightlogs" class="nav__item <%= isCurrent(currentPath, '/flightlogs') ? 'is-active' : '' %>">
         <%- icon('protocol') %><span>Flugprotokolle</span>
       </a>
+      <a href="#/batteries" class="nav__item <%= isCurrent(currentPath, '/batteries') ? 'is-active' : '' %>">
+        <%- icon('battery') %><span>Akkunutzung</span>
+      </a>
 
       <% if (activeMissions.length) { -%>
         <div class="nav__heading">Aktive Einsätze</div>

@@ -107,6 +107,14 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   (Rohdaten des Flugcontrollers, ~20 MB je Flug) nur mit Einstellung `flightlogs.include_dat`.
 - Testen ohne Fernsteuerung: Ordner-Import in der Browser-Brücke (`flightlogs-import` im Hilfsprogramm).
 
+## Akkunutzung
+
+- `app/services/battery_usage.js`: Flugstunden je Akku aus `flight_logs`, verglichen als
+  Flugstunden je Einsatzjahr (erster Flug → heute bzw. → Ausmusterung; mind. 30 Tage).
+  Empfehlung: die 2 aktiven Akkus mit den wenigsten Stunden je Einsatzjahr. Lagerhinweis ab 60 Tagen.
+- Starts werden nur angezeigt (ein Akku kann mehrere kurze Flüge mit einer Ladung machen).
+- Ausmustern: `battery_states.retired_at`; Namen in `device_names`.
+
 ## Releases & Auto-Update
 
 - Ablauf: `docs/release.md` – `node script/bump_version.mjs X.Y.Z`, Tag `vX.Y.Z` pushen,

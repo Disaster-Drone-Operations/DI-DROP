@@ -21,3 +21,10 @@ export function formatDistance(meters) {
 export const localTime = (iso) => (iso ? new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '')
 export const localDate = (iso) => (iso ? new Date(iso).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }) : '')
 export const localMonth = (iso) => new Date(iso).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
+
+// 7.46 → "7,5 h", 0.4 → "24 min"
+export function formatHours(hours) {
+  if (hours == null) return ''
+  if (hours < 1) return `${Math.round(hours * 60)} min`
+  return `${hours.toFixed(1).replace('.', ',')} h`
+}

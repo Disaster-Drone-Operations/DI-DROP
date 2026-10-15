@@ -1,0 +1,129 @@
+<%# locals: batteries, recommended, averages, storageWarningDays -%>
+<% const label = (b) => b.name ?? b.serial -%>
+<% const active = batteries.filter((b) => !b.retiredAt) -%>
+<% const byserial = new Map(batteries.map((b) => [b.serial, b])) -%>
+<div class="batteries" data-controller="battery-chart">
+  <header class="page-header">
+    <div>
+      <h1>Akkunutzung</h1>
+      <p class="subtle">Flugzeit je Akku aus den Flugprotokollen. Verglichen wird in Flugstunden je Einsatzjahr – so zählen neue Akkus fair mit.</p>
+    </div>
+  </header>
+
+  <% if (!batteries.length) { -%>
+    <div class="empty">
+      <%- icon('battery', { size: 40, class: 'empty__icon' }) %>
+      <p><strong>Noch keine Flugprotokolle.</strong></p>
+      <p class="subtle">Die Akkunutzung ergibt sich aus den Flugprotokollen der Fernsteuerung.</p>
+      <a class="button button--primary" href="#/flightlogs">Zu den Flugprotokollen</a>
+    </div>
+  <% } else { -%>
+
+    <%# Recommendation: the least used active batteries (several are used per operation) -%>
+    <% if (recommended.length) { -%>
+      <section class="card battery-recommendation">
+        <div class="battery-recommendation__head"><%- icon('battery', { size: 18 }) %><strong>Für den nächsten Einsatz bevorzugt</strong></div>
+        <div class="battery-recommendation__items">
+          <% recommended.forEach((serial) => { const b = byserial.get(serial) -%>
+            <div class="battery-chip">
+              <strong><span class="renamable" data-controller="device-name" data-device-name-kind-value="battery" data-device-name-serial-value="<%= b.serial %>"><%= label(b) %></span></strong>
+              <span class="subtle"><%= formatHours(b.perYear) %> je Einsatzjahr · zuletzt <%= localDate(b.last) %></span>
+            </div>
+          <% }) -%>
+        </div>
+        <p class="hint">Die am wenigsten genutzten aktiven Akkus (Durchschnitt aller aktiven: <%= formatHours(averages.perYear) %> je Einsatzjahr).</p>
+      </section>
+    <% } -%>
+
+    <% const idle = active.filter((b) => b.storageWarning).sort((a, b) => b.idleDays - a.idleDays) -%>
+    <% if (idle.length) { -%>
+      <div class="callout callout--info battery-warning"><%- icon('alert') %>
+        <span>
+          <strong>Länger als <%= storageWarningDays %> Tage nicht geflogen:</strong>
+          <%- idle.map((b) => `${escapeHtml(label(b))} (${b.idleDays} Tage)`).join(', ') %>.
+          Bald einsetzen oder Lagerladung prüfen – DJI empfiehlt, Akkus nicht monatelang ungenutzt zu lassen.
+        </span>
+      </div>
+    <% } -%>
+
+    <%# Bar chart: switchable between total hours and hours per service year -%>
+    <section class="card battery-chart">
+      <div class="battery-chart__head">
+        <h2 class="card__title">Flugstunden</h2>
+        <div class="segmented" role="radiogroup">
+          <input type="radio" id="chart_total" name="battery_chart" value="total" data-action="battery-chart#switch"><label for="chart_total">Gesamt</label>
+          <input type="radio" id="chart_per_year" name="battery_chart" value="perYear" data-action="battery-chart#switch"><label for="chart_per_year">Je Einsatzjahr</label>
+        </div>
+      </div>
+      <% [['total', 'hours', averages.hours], ['perYear', 'perYear', averages.perYear]].forEach(([mode, key, avg]) => { -%>
+        <% const max = Math.max(...batteries.map((b) => b[key]), avg) || 1 -%>
+        <div class="battery-bars" data-battery-chart-target="chart" data-mode="<%= mode %>" hidden>
+          <% batteries.forEach((b) => { -%>
+            <div class="battery-bar <%= b.retiredAt ? 'is-retired' : '' %> <%= recommended.includes(b.serial) ? 'is-recommended' : '' %>">
+              <span class="battery-bar__label truncate" title="<%= b.serial %>"><%= label(b) %></span>
+              <span class="battery-bar__track">
+                <span class="battery-bar__fill" style="width: <%= (b[key] / max) * 100 %>%">
+                  <% if (mode === 'total' && b.recentHours) { %><span class="battery-bar__recent" style="width: <%= (b.recentHours / b.hours) * 100 %>%" title="davon letzte 90 Tage: <%= formatHours(b.recentHours) %>"></span><% } %>
+                </span>
+              </span>
+              <span class="battery-bar__value"><%= formatHours(b[key]) %></span>
+            </div>
+          <% }) -%>
+          <div class="battery-bars__average" style="--avg: <%= ((avg / max) * 100).toFixed(2) %>"><span>Ø <%= formatHours(avg) %></span></div>
+        </div>
+      <% }) -%>
+      <p class="hint battery-chart__legend">
+        <span data-battery-chart-target="legend" data-mode="total" hidden><span class="battery-legend battery-legend--recent"></span> davon in den letzten 90 Tagen · </span>
+        <span class="battery-legend battery-legend--recommended"></span> für den nächsten Einsatz bevorzugt · gestrichelt: Durchschnitt der aktiven Akkus
+      </p>
+    </section>
+
+    <%# Table -%>
+    <div class="flightlogs__table-wrap battery-table-wrap">
+      <table class="flightlogs__table">
+        <thead>
+          <tr>
+            <th>Akku</th>
+            <th class="num">Starts</th>
+            <th class="num">Flugzeit</th>
+            <th class="num">Je Einsatzjahr</th>
+            <th class="num">Ø pro Start</th>
+            <th>In Betrieb seit</th>
+            <th>Zuletzt geflogen</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% batteries.forEach((b) => { -%>
+            <tr class="<%= b.retiredAt ? 'is-retired' : '' %>">
+              <td>
+                <span class="renamable flightlogs__battery <%= b.name ? 'is-named' : '' %>" data-controller="device-name"
+                      data-device-name-kind-value="battery" data-device-name-serial-value="<%= b.serial %>"><%= label(b) %></span>
+                <% if (recommended.includes(b.serial)) { %><span class="badge badge--tiny battery-badge--recommended">bevorzugt</span><% } %>
+                <% if (b.retiredAt) { %><span class="badge badge--muted badge--tiny">außer Dienst seit <%= localDate(b.retiredAt) %></span><% } %>
+              </td>
+              <td class="num"><%= b.starts %></td>
+              <td class="num"><%= formatHours(b.hours) %></td>
+              <td class="num"><%= formatHours(b.perYear) %></td>
+              <td class="num"><%= Math.round(b.averageMinutes) %> min</td>
+              <td><%= localDate(b.first) %></td>
+              <td>
+                <%= localDate(b.last) %>
+                <% if (b.storageWarning) { %><span class="badge badge--tiny battery-badge--warning" title="Seit <%= b.idleDays %> Tagen nicht geflogen"><%= b.idleDays %> Tage</span><% } %>
+              </td>
+              <td class="battery-actions">
+                <a class="button button--small button--quiet" href="#/flightlogs?battery=<%= encodeURIComponent(b.serial) %>">Flüge</a>
+                <% if (b.retiredAt) { -%>
+                  <%- buttonTo('Wieder in Dienst', `/batteries/${encodeURIComponent(b.serial)}/activate`, { method: 'patch', class: 'button button--small button--quiet' }) %>
+                <% } else { -%>
+                  <%- buttonTo('Außer Dienst', `/batteries/${encodeURIComponent(b.serial)}/retire`, { method: 'patch', class: 'button button--small button--quiet',
+                        confirm: `${label(b)} außer Dienst stellen? Der Akku zählt dann nicht mehr für Empfehlung und Durchschnitt. Seine Flüge bleiben erhalten.`, confirmButton: 'Außer Dienst stellen' }) %>
+                <% } -%>
+              </td>
+            </tr>
+          <% }) -%>
+        </tbody>
+      </table>
+    </div>
+  <% } -%>
+</div>

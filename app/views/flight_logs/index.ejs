@@ -1,4 +1,4 @@
-<%# locals: logs, groups, names, available, dir, canPickFolder -%>
+<%# locals: logs, groups, names, battery, available, dir, canPickFolder -%>
 <% const named = (kind, sn) => names.get(`${kind}:${sn}`) -%>
 <div class="flightlogs" data-controller="flight-logs">
   <header class="page-header">
@@ -13,6 +13,14 @@
       </div>
     <% } -%>
   </header>
+
+  <% if (battery) { -%>
+    <div class="flightlogs__filter">
+      <span>Nur Flüge mit <strong><%= named('battery', battery) ?? battery %></strong></span>
+      <a class="button button--small" href="#/flightlogs">Alle Flüge zeigen</a>
+      <a class="button button--small button--quiet" href="#/batteries">Zur Akkunutzung</a>
+    </div>
+  <% } -%>
 
   <% if (!available) { -%>
     <div class="callout callout--subtle"><%- icon('alert') %><span>Flugprotokolle lassen sich nur in der Desktop-App übernehmen.</span></div>
