@@ -1,0 +1,39 @@
+# Prüft bei jedem Push, dass di-drop unter macOS und Windows übersetzt und die Tests laufen –
+# ohne Installer und ohne Release (Windows-spezifischer Code wird auf dem Mac nicht übersetzt).
+name: Check
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, windows-latest]
+    name: ${{ matrix.platform == 'windows-latest' && 'Windows' || 'macOS' }}
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: npm ci
+      - run: npm run build          # Oberfläche (wird in die App eingebettet)
+
+      - name: Rust übersetzen und testen
+        working-directory: src-tauri
+        run: |
+          cargo check --all-targets
+          cargo test --lib
