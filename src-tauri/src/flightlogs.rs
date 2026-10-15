@@ -229,10 +229,10 @@ pub fn is_dji(info: &mtp_rs::mtp::MtpDeviceInfo) -> bool {
 }
 
 pub fn device_info(info: &mtp_rs::mtp::MtpDeviceInfo) -> DeviceInfo {
-    let key = match &info.serial_number {
-        Some(sn) if !sn.trim().is_empty() => format!("sn:{sn}"),
-        _ => format!("loc:{}", info.location_id),
-    };
+    // Über die USB-Position öffnen, nicht über die Seriennummer: unter Windows kennt WPD das Gerät
+    // unter einer anderen Seriennummer als der USB-Deskriptor; open_by_location ordnet es dort
+    // über Hersteller-/Produktkennung zu (siehe mtp-rs MtpDeviceBuilder::open_by_location).
+    let key = format!("loc:{}", info.location_id);
     let name = [info.manufacturer.as_deref(), info.product.as_deref()]
         .into_iter()
         .flatten()
@@ -263,24 +263,49 @@ fn mtp_error(e: mtp_rs::Error) -> String {
 }
 
 async fn open_device(key: &str) -> Result<mtp_rs::mtp::MtpDevice, String> {
-    let result = if let Some(sn) = key.strip_prefix("sn:") {
-        mtp_rs::mtp::MtpDevice::open_by_serial(sn).await
+    use mtp_rs::mtp::MtpDevice;
+    let opened = if let Some(sn) = key.strip_prefix("sn:") {
+        MtpDevice::open_by_serial(sn).await
     } else {
         let location = key.strip_prefix("loc:").and_then(|l| l.parse().ok()).ok_or("Unbekanntes Gerät")?;
-        mtp_rs::mtp::MtpDevice::open_by_location(location).await
+        MtpDevice::open_by_location(location).await
     };
-    result.map_err(mtp_error)
+    match opened {
+        Ok(device) => Ok(device),
+        // Windows: Zuordnung USB ↔ WPD hat nicht geklappt → direkt über WPD öffnen, aber nur ein DJI-Gerät
+        #[cfg(windows)]
+        Err(first) => {
+            let device = MtpDevice::builder()
+                .backend(mtp_rs::mtp::Backend::Wpd)
+                .open_first()
+                .await
+                .map_err(|e| format!("{} (WPD: {e})", mtp_error(first)))?;
+            let info = device.device_info();
+            if format!("{} {}", info.manufacturer, info.model).to_lowercase().contains("dji") {
+                Ok(device)
+            } else {
+                Err(format!("Fernsteuerung nicht gefunden – Windows meldet zuerst „{} {}“.", info.manufacturer, info.model))
+            }
+        }
+        #[cfg(not(windows))]
+        Err(error) => Err(mtp_error(error)),
+    }
+}
+
+/// Fehlermeldung mit dem Schritt, an dem es hakt (für die Fehlersuche ohne Gerät beim Entwickler)
+fn at_step(step: &str) -> impl Fn(String) -> String + '_ {
+    move |e| format!("{e} [Schritt: {step}]")
 }
 
 /// Protokoll-Ordner auf dem Gerät suchen → (Speicher, Ordner, Pfad)
 async fn find_log_folder(
     device: &mtp_rs::mtp::MtpDevice,
 ) -> Result<Option<(mtp_rs::mtp::Storage, mtp_rs::mtp::ObjectHandle, String)>, String> {
-    for storage in device.storages().await.map_err(mtp_error)? {
+    for storage in device.storages().await.map_err(mtp_error).map_err(at_step("Speicher auflisten"))? {
         'candidates: for candidate in DEVICE_FOLDERS {
             let mut parent = None;
             for part in candidate.split('/') {
-                let objects = storage.list_objects(parent).await.map_err(mtp_error)?;
+                let objects = storage.list_objects(parent).await.map_err(mtp_error).map_err(at_step("Ordner durchsuchen"))?;
                 match objects.iter().find(|o| o.is_folder() && o.filename.eq_ignore_ascii_case(part)) {
                     Some(folder) => parent = Some(folder.handle),
                     None => continue 'candidates,
@@ -297,7 +322,7 @@ async fn find_log_folder(
 type Found = (mtp_rs::mtp::Storage, String, Vec<mtp_rs::mtp::ObjectInfo>, mtp_rs::mtp::ObjectHandle);
 
 async fn device_logs(key: &str) -> Result<(DeviceInfo, Option<Found>), String> {
-    let device = open_device(key).await?;
+    let device = open_device(key).await.map_err(at_step("Gerät öffnen"))?;
     let info = device.device_info();
     let name = format!("{} {}", info.manufacturer, info.model).trim().to_string();
     let device_info = DeviceInfo { key: key.to_string(), name: if name.is_empty() { "DJI-Fernsteuerung".into() } else { name } };
@@ -305,7 +330,8 @@ async fn device_logs(key: &str) -> Result<(DeviceInfo, Option<Found>), String> {
     let files = storage
         .list_objects(Some(folder))
         .await
-        .map_err(mtp_error)?
+        .map_err(mtp_error)
+        .map_err(at_step("Protokolle auflisten"))?
         .into_iter()
         .filter(|o| !o.is_folder() && is_log_name(&o.filename))
         .collect();
@@ -385,7 +411,7 @@ pub async fn device_import(
         for (i, (file, dir, is_log)) in plan.iter().enumerate() {
             let target = dest_dir.join(dir);
             let result = match std::fs::create_dir_all(&target) {
-                Ok(()) => storage.download_to_vec(file.handle).await.map_err(mtp_error),
+                Ok(()) => storage.download_to_vec(file.handle).await.map_err(mtp_error).map_err(at_step("Datei laden")),
                 Err(e) => Err(e.to_string()),
             };
             match result.and_then(|data| write_new(&target, &file.filename, &data)) {
