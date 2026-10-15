@@ -5,6 +5,8 @@
 //! - only files below `<card>/DCIM`, only supported media types (no folders, no other files)
 //! - only if the imported copy exists outside the card with the same size and the same
 //!   fingerprint as the original
+//! - companion files (RTK/PPK raw data, see COMPANION_EXTENSIONS) only on request and only in folders
+//!   where no image or video is left – otherwise they belong to recordings that stay on the card
 //! - afterwards only folders below DCIM that became empty are removed – never DCIM itself
 
 use serde::{Deserialize, Serialize};
@@ -20,6 +22,18 @@ pub struct Card {
     /// Display name (volume name or drive letter)
     pub name: String,
     pub dcim: String,
+}
+
+/// Files DJI writes next to the images of RTK drones (M4TD, M30T …), for recomputing the positions
+/// afterwards (PPK): .MRK (time + position per photo + antenna offset), .OBS/.NAV (RINEX satellite
+/// raw data), .RTK (DJI raw data), ppk_file_name.pbk (pointer to the .RTK file). Not used yet –
+/// the images already carry the RTK positions (XMP RtkFlag/RtkStd*).
+pub const COMPANION_EXTENSIONS: &[&str] = &["mrk", "obs", "nav", "rtk", "pbk"];
+
+fn is_companion(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| COMPANION_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
 }
 
 /// Additional card roots for tests (path list like PATH)
@@ -110,6 +124,8 @@ pub struct Kept {
 pub struct DeleteReport {
     pub deleted: Vec<String>,
     pub kept: Vec<Kept>,
+    /// Companion files (RTK/PPK) deleted along with them
+    pub companions: Vec<String>,
     /// Folders below DCIM removed because they became empty
     pub removed_dirs: Vec<String>,
 }
@@ -148,7 +164,8 @@ fn refuse_reason(dcim: &Path, item: &DeleteItem) -> Option<String> {
 
 /// Deletes imported originals from the card (permanently, no trash – cards have none).
 /// Every file is checked individually; anything doubtful stays on the card.
-pub fn delete_imported(card_root: &Path, items: &[DeleteItem]) -> Result<DeleteReport, String> {
+/// companions: also delete RTK/PPK files in folders that no longer contain images or videos.
+pub fn delete_imported(card_root: &Path, items: &[DeleteItem], companions: bool) -> Result<DeleteReport, String> {
     let dcim = dcim_of(card_root)
         .ok_or("Keine Speicherkarte (DCIM-Ordner fehlt)")?
         .canonicalize()
@@ -171,6 +188,11 @@ pub fn delete_imported(card_root: &Path, items: &[DeleteItem]) -> Result<DeleteR
             Err(e) => report.kept.push(Kept { src: item.src.clone(), reason: format!("Löschen fehlgeschlagen: {e}") }),
         }
     }
+    if companions {
+        for dir in &parents {
+            delete_companions(&dcim, dir, &mut report);
+        }
+    }
     // Remove folders that became empty, deepest first, up to (not including) DCIM
     let mut dirs: Vec<PathBuf> = parents.into_iter().flat_map(|p| p.ancestors().map(Path::to_path_buf).collect::<Vec<_>>()).collect();
     dirs.retain(|d| d.starts_with(&dcim) && *d != dcim);
@@ -184,6 +206,27 @@ pub fn delete_imported(card_root: &Path, items: &[DeleteItem]) -> Result<DeleteR
         }
     }
     Ok(report)
+}
+
+/// RTK/PPK files of a folder – only once no image or video is left in it
+fn delete_companions(dcim: &Path, dir: &Path, report: &mut DeleteReport) {
+    if !dir.starts_with(dcim) || dir == dcim {
+        return;
+    }
+    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    let files: Vec<PathBuf> = entries
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_file())) // no folders, no symlinks
+        .map(|e| e.path())
+        .collect();
+    if files.iter().any(|f| media::is_media_file(f)) {
+        return;
+    }
+    for file in files.iter().filter(|f| is_companion(f)) {
+        if std::fs::remove_file(file).is_ok() {
+            report.companions.push(file.display().to_string());
+        }
+    }
 }
 
 /// macOS leaves "._name" and ".DS_Store" on FAT cards – they don't count as content
@@ -259,6 +302,7 @@ mod tests {
                 item(&not_media, &a_copy),
                 item(&c, &c), // copy on the card itself
             ],
+            false,
         )
         .unwrap();
         assert_eq!(report.deleted, vec![a.display().to_string()]);
@@ -270,7 +314,7 @@ mod tests {
 
         // once b is verified too, the empty flight folder goes – DCIM stays
         std::fs::copy(&b, &b_copy).unwrap();
-        let report = delete_imported(&card, &[item(&b, &b_copy)]).unwrap();
+        let report = delete_imported(&card, &[item(&b, &b_copy)], false).unwrap();
         assert_eq!(report.deleted.len(), 1);
         assert_eq!(report.removed_dirs, vec![flight.display().to_string()]);
         assert!(card.join("DCIM").is_dir() && other.is_dir());
@@ -286,9 +330,59 @@ mod tests {
         let copy = dir.join("copy.jpg");
         std::fs::write(&copy, vec![1u8; 10]).unwrap();
         let sneaky = card.join("DCIM/X/../../MISC.jpg");
-        let report = delete_imported(&card, &[item(&sneaky, &copy)]).unwrap();
+        let report = delete_imported(&card, &[item(&sneaky, &copy)], true).unwrap();
         assert!(report.deleted.is_empty());
         assert!(outside.exists());
-        assert!(delete_imported(&dir, &[]).is_err()); // no DCIM → no card
+        assert!(delete_imported(&dir, &[], true).is_err()); // no DCIM → no card
+    }
+
+    #[test]
+    fn deletes_companions_only_when_no_recording_is_left() {
+        let dir = tmp("companions");
+        let card = dir.join("card");
+        let done = card.join("DCIM/DJI_202610151104_001_BOS-Cloud");
+        let partly = card.join("DCIM/DJI_202610151200_002");
+        std::fs::create_dir_all(&done).unwrap();
+        std::fs::create_dir_all(&partly).unwrap();
+        std::fs::create_dir_all(dir.join("storage")).unwrap();
+        let mut items = vec![];
+        for (folder, name) in [(&done, "DJI_0002_V.JPG"), (&partly, "DJI_0003_V.JPG")] {
+            let src = folder.join(name);
+            std::fs::write(&src, vec![5u8; 1000]).unwrap();
+            let copy = dir.join("storage").join(name);
+            std::fs::copy(&src, &copy).unwrap();
+            items.push(item(&src, &copy));
+            for ext in ["MRK", "OBS", "NAV", "RTK"] {
+                std::fs::write(folder.join(format!("DJI_0002_D.{ext}")), b"raw").unwrap();
+            }
+            std::fs::write(folder.join("ppk_file_name.pbk"), b"DJI_0002_D.RTK").unwrap();
+            std::fs::write(folder.join("notes.txt"), b"keep").unwrap();
+        }
+        std::fs::remove_file(done.join("notes.txt")).unwrap();
+        std::fs::write(partly.join("DJI_0004_V.JPG"), b"stays on the card").unwrap();
+
+        let report = delete_imported(&card, &items, true).unwrap();
+        assert_eq!(report.deleted.len(), 2);
+        assert_eq!(report.companions.len(), 5);
+        // folder empty → removed; the other still has an image → raw data and other files stay
+        assert!(!done.exists());
+        assert!(partly.join("DJI_0002_D.RTK").exists() && partly.join("notes.txt").exists());
+        assert!(card.join("DCIM").is_dir());
+    }
+
+    #[test]
+    fn keeps_companions_without_request() {
+        let dir = tmp("no-companions");
+        let card = dir.join("card");
+        let folder = card.join("DCIM/DJI_001");
+        std::fs::create_dir_all(&folder).unwrap();
+        let src = folder.join("DJI_0001_V.JPG");
+        std::fs::write(&src, vec![1u8; 10]).unwrap();
+        std::fs::write(folder.join("DJI_0001_D.MRK"), b"raw").unwrap();
+        let copy = dir.join("copy.jpg");
+        std::fs::copy(&src, &copy).unwrap();
+        let report = delete_imported(&card, &[item(&src, &copy)], false).unwrap();
+        assert!(report.companions.is_empty());
+        assert!(folder.join("DJI_0001_D.MRK").exists());
     }
 }

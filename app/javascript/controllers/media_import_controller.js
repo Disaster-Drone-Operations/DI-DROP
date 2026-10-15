@@ -102,6 +102,12 @@ export default class extends Controller {
     }
   }
 
+  // Memory card: the second checkbox (RTK/PPK files) only counts together with the first
+  toggleCardDelete(event) {
+    const companions = event.target.form.elements.delete_companions
+    if (companions) companions.disabled = !event.target.checked
+  }
+
   // Memory card: import into another active mission instead
   switchMission(event) {
     const card = this.card
@@ -124,7 +130,7 @@ export default class extends Controller {
     this.show('importing', { progress: { done: 0, total: 0, name: '' } })
     try {
       const { imported, failed, flight, assignments, copies } = await this.importer.import(selection, (progress) => this.show('importing', { progress }))
-      const cleanup = this.card && data.get('delete_from_card') ? await this.deleteFromCard(copies) : null
+      const cleanup = this.card && data.get('delete_from_card') ? await this.deleteFromCard(copies, !!data.get('delete_companions')) : null
       this.close()
       const names = (assignments ?? []).map((a) => `„${a.title}“`).join(', ')
       let flash = failed.length
@@ -142,12 +148,12 @@ export default class extends Controller {
 
   // Delete the imported originals from the card – only current blocks (never "older" images);
   // Rust checks every copy again before deleting
-  async deleteFromCard(copies) {
+  async deleteFromCard(copies, companions) {
     const items = copies.filter((c) => !c.older).map(({ src, copy }) => ({ src, copy }))
     if (!items.length) return null
     this.show('deleting')
     try {
-      return await platform.sdcard.delete(this.card.root, items)
+      return await platform.sdcard.delete(this.card.root, items, companions)
     } catch (error) {
       return { deleted: [], kept: items.map((i) => ({ src: i.src, reason: String(error) })) }
     }

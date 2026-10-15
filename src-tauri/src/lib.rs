@@ -136,8 +136,8 @@ fn sdcard_list() -> Vec<sdcard::Card> {
 
 /// Deletes imported originals from the card – each one only after its copy was verified
 #[tauri::command]
-async fn sdcard_delete(root: String, items: Vec<sdcard::DeleteItem>) -> Result<sdcard::DeleteReport, String> {
-    tauri::async_runtime::spawn_blocking(move || sdcard::delete_imported(Path::new(&root), &items))
+async fn sdcard_delete(root: String, items: Vec<sdcard::DeleteItem>, companions: bool) -> Result<sdcard::DeleteReport, String> {
+    tauri::async_runtime::spawn_blocking(move || sdcard::delete_imported(Path::new(&root), &items, companions))
         .await
         .map_err(|e| e.to_string())?
 }

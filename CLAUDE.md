@@ -116,6 +116,10 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Löschen von der Karte nur in Rust (`sdcard::delete_imported`): Quelle unter `<Karte>/DCIM`, Bild-/Videoformat,
   Kopie außerhalb der Karte mit gleicher Größe und gleichem Fingerabdruck – sonst bleibt die Datei.
   Danach nur leer gewordene Ordner unter DCIM entfernen, nie DCIM selbst.
+- RTK-Rohdaten neben den Bildern (`.MRK` Zeit/Position/Antennenversatz je Foto, `.OBS`/`.NAV` RINEX-Satellitendaten,
+  `.RTK` DJI-Rohdaten, `ppk_file_name.pbk`): bisher ungenutzt (auch nicht fürs Orthophoto), werden mit dem zweiten
+  Haken gelöscht – nur in Ordnern ohne verbliebene Aufnahme. Für eine spätere PPK-Nachberechnung (Orthophoto bei
+  RTK float/single, XMP `RtkFlag` ≠ 50) wären sie die Grundlage; bei RTK fixed stehen die Positionen schon im Bild.
 - Testen nie mit echter Karte: in der Browser-Brücke gilt jeder Ordner in `tmp/dev-sdcards/` als Karte
   (dort Kopien von Testbildern ablegen; gelöscht wird in der Brücke nur dort).
 
