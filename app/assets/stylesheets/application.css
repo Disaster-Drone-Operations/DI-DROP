@@ -1186,3 +1186,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .flightlogs__battery { font-family: var(--font-mono); }
 .flightlogs .renamable { cursor: text; border-radius: 4px; padding: 1px 3px; margin: -1px -3px; text-decoration: none; }
 .flightlogs .renamable:hover { background: var(--hover); text-decoration: none; }
+/* Settings → updates: test versions opt-in */
+.update-channel { display: flex; gap: 10px; align-items: flex-start; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
+.update-channel input { margin-top: 3px; accent-color: var(--accent); }
+.update-channel > span { display: flex; flex-direction: column; gap: 2px; }

@@ -8,6 +8,7 @@ mod geocode;
 mod places;
 pub mod transfer;
 pub mod flightlogs;
+mod app_update;
 mod menu;
 
 use std::path::{Path, PathBuf};
@@ -239,6 +240,7 @@ pub fn run() {
         // Auto-update from GitHub releases (signed, see docs/release.md) + restart afterwards
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .manage(app_update::PendingUpdate::default())
         .setup(|app| {
             // Only once the menu is attached to the running app (shortly after start, on the main thread)
             #[cfg(target_os = "macos")]
@@ -261,6 +263,7 @@ pub fn run() {
             cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
             geocode::reverse_geocode,
             make_thumbnail,
+            app_update::app_update_check, app_update::app_update_install,
             flightlogs_import_folder, flightlogs_scan_local, flightlogs_devices,
             flightlogs_device_status, flightlogs_device_import,
             places::places_info, places::places_read, places::places_update,

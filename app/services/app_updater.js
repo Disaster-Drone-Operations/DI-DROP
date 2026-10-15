@@ -12,7 +12,15 @@ import Setting from '/app/models/setting.js'
 import { summary as uploadSummary } from '/app/services/upload_queue.js'
 
 const CHECK_EVERY = 6 * 3600_000
-let pending = null // update object found by the plugin
+let pending = null // info of the update found by the last check (the update itself is kept in Rust)
+
+// Opt-in for testers: also offer GitHub pre-releases (Einstellungen → Aktualisierungen)
+export const includePrereleases = () => Setting.get('app.update_prereleases') === true
+
+export async function setIncludePrereleases(on) {
+  await Setting.set('app.update_prereleases', !!on)
+  await Setting.set('app.update_checked_at', null) // check again at the next opportunity
+}
 
 export const isAvailable = () => !!platform.updater
 
@@ -21,7 +29,7 @@ export const currentVersion = () => platform.updater?.version() ?? Promise.resol
 export async function findUpdate() {
   if (!isAvailable()) return null
   try {
-    pending = await platform.updater.check()
+    pending = await platform.updater.check(includePrereleases())
   } catch (error) {
     // No published release yet (latest.json missing) → there is simply nothing new
     if (/release JSON|404|not found/i.test(String(error))) pending = null
@@ -29,7 +37,7 @@ export async function findUpdate() {
   }
   await Setting.set('app.update_checked_at', new Date().toISOString())
   if (!pending) return null
-  return { version: pending.version, notes: (pending.body ?? '').trim(), date: pending.date ?? null }
+  return { version: pending.version, notes: (pending.body ?? '').trim(), date: pending.date ?? null, prerelease: !!pending.prerelease }
 }
 
 // Confirmation with release notes (and a hint about running uploads)
@@ -41,7 +49,7 @@ export async function askToInstall(info) {
     : ''
   const notes = info.notes ? `\n\nNeu in dieser Version:\n${info.notes.slice(0, 900)}` : ''
   return platform.confirm(
-    `di-drop ${info.version} ist verfügbar (installiert: ${current}).${notes}${busy}\n\nJetzt installieren? di-drop startet danach neu.`,
+    `di-drop ${info.version}${info.prerelease ? ' (Testversion)' : ''} ist verfügbar (installiert: ${current}).${notes}${busy}\n\nJetzt installieren? di-drop startet danach neu.`,
     { title: 'Update verfügbar', okLabel: 'Installieren', cancelLabel: 'Später' },
   )
 }
@@ -52,8 +60,8 @@ export async function installUpdate(onProgress = () => {}) {
   if (!pending) return false
   let total = 0
   let done = 0
-  await pending.downloadAndInstall((event) => {
-    if (event.event === 'Started') total = event.data.contentLength ?? 0
+  await platform.updater.install((event) => {
+    if (event.event === 'Started') total = event.data?.contentLength ?? 0
     if (event.event === 'Progress') {
       done += event.data.chunkLength
       onProgress(total ? `Wird geladen … ${Math.min(100, Math.round((done / total) * 100))} %` : 'Wird geladen …')

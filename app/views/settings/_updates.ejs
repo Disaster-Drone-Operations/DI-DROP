@@ -1,2 +1,11 @@
 <%# locals: section -%>
 <div class="update-list" data-controller="updates"></div>
+
+<%# Testers: also install GitHub pre-releases (only in the desktop app) -%>
+<label class="update-channel" data-controller="update-channel" hidden>
+  <input type="checkbox" data-update-channel-target="checkbox" data-action="change->update-channel#toggle">
+  <span>
+    <strong>Testversionen installieren</strong>
+    <span class="hint">Bietet auch Vorabversionen (Pre-Releases) als Update an – für Kameraden, die Neues vorab ausprobieren. Testversionen können noch Fehler enthalten.</span>
+  </span>
+</label>

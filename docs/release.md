@@ -22,6 +22,23 @@ git push && git push --tags
 Ein Release-Entwurf wird von den Apps nicht gesehen – erst der veröffentlichte Release zählt
 (`…/releases/latest/download/latest.json`).
 
+## Testversionen (Pre-Releases)
+
+Unter *Einstellungen → Aktualisierungen* gibt es den Haken **„Testversionen installieren“**.
+Wer ihn setzt, bekommt auch Pre-Releases über den normalen Update-Weg angeboten; alle anderen nur
+vollständig veröffentlichte Releases.
+
+1. Version wie gewohnt erhöhen und taggen (z. B. `0.3.0`) – keine Zusätze wie `-beta` nötig.
+2. Den Release-Entwurf als **Pre-Release** veröffentlichen („Set as a pre-release“).
+   → Nur Tester bekommen das Update.
+3. Passt alles: Release bearbeiten, Haken „pre-release“ entfernen und „Set as the latest release“.
+   → Jetzt bekommen es alle.
+
+Technisch: Mit Haken sucht di-drop über die GitHub-API den neuesten Release (Pre-Release oder
+nicht, ohne Entwürfe) mit `latest.json`; ohne Haken gilt `…/releases/latest/…`. Die Signaturprüfung
+ist in beiden Fällen dieselbe. Zurückgestuft wird nie – wer eine Testversion hat und den Haken
+entfernt, bleibt darauf, bis eine höhere Version erscheint.
+
 ## Signatur der Updates (einmalig einrichten)
 
 Updates sind mit einem eigenen Schlüssel signiert; die App installiert nur, was dazu passt.
