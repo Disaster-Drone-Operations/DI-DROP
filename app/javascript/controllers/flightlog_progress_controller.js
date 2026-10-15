@@ -22,8 +22,8 @@ export default class extends Controller {
       this.element.innerHTML = `<div class="upload-status__line">${icon('protocol', { size: 14 })}<span class="upload-status__title">${escapeHtml(text)}</span></div>
         <div class="progress-bar"><span style="width: ${percent ?? 15}%"></span></div>`
     } else if (state === 'done') {
-      const msg = added ? `${added} ${added === 1 ? 'Flugprotokoll' : 'Flugprotokolle'} übernommen` : 'Flugprotokolle aktuell'
-      this.element.innerHTML = `<div class="upload-status__line">${icon('check', { size: 14 })}<span class="upload-status__title">${msg}${failed?.length ? ` · ${failed.length} nicht lesbar` : ''}</span></div>`
+      const msg = added ? `${added} ${added === 1 ? 'Flugprotokoll' : 'Flugprotokolle'} übernommen` : text ?? 'Flugprotokolle aktuell'
+      this.element.innerHTML = `<div class="upload-status__line">${icon('check', { size: 14 })}<span class="upload-status__title">${escapeHtml(msg)}${failed?.length ? ` · ${failed.length} nicht lesbar` : ''}</span></div>`
       this.timer = setTimeout(() => (this.element.hidden = true), 8000)
     } else {
       this.element.innerHTML = `<div class="upload-status__line">${icon('alert', { size: 14 })}<span class="upload-status__title">${escapeHtml(text)}</span></div>`

@@ -10,7 +10,7 @@ import { mediaBaseDir } from '/app/services/media_importer.js'
 import Setting from '/app/models/setting.js'
 
 let busy = false
-const asked = new Set() // ask only once per remote controller per app session
+const asked = new Set() // ask only once while the remote controller stays connected
 
 export const isAvailable = () => !!platform.flightlogs
 
@@ -83,9 +83,11 @@ async function deviceArrived(device) {
     console.warn('[flight logs]', error)
     return progress({ state: 'error', text: String(error) })
   }
-  if (!status.folder || status.new === 0) return
-  asked.add(device.key)
   const name = status.device.name || device.name
+  // Visible feedback that the remote controller was detected, even without anything new
+  if (!status.folder) return progress({ state: 'error', text: `${name}: kein Ordner mit Flugprotokollen gefunden` })
+  if (status.new === 0) return progress({ state: 'done', added: 0, text: `${name}: keine neuen Flugprotokolle` })
+  asked.add(device.key)
   const ok = await platform.confirm(
     `${name} ist angeschlossen.\n\n${status.new === 1 ? 'Ein neues Flugprotokoll' : `${status.new} neue Flugprotokolle`} gefunden. Jetzt übernehmen?`,
     { title: 'Flugprotokolle', okLabel: 'Übernehmen', cancelLabel: 'Später' },
@@ -106,6 +108,8 @@ async function deviceArrived(device) {
 export function watchDevices() {
   if (!isAvailable()) return
   platform.flightlogs.onDevice((device) => deviceArrived(device)).catch((e) => console.warn('[flight logs]', e))
+  // Unplugged → ask again next time it is connected
+  platform.flightlogs.onDeviceRemoved?.((device) => asked.delete(device.key)).catch((e) => console.warn('[flight logs]', e))
   // Already connected at startup: this event came before the UI was listening → check ourselves
   setTimeout(async () => {
     for (const device of await connectedDevices()) await deviceArrived(device)

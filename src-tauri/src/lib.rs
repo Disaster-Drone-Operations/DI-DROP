@@ -104,7 +104,7 @@ async fn flightlogs_device_import(
     .await
 }
 
-/// Remote controller plugged in? → event "flightlogs:device" to the UI
+/// Remote controller plugged in/out? → events "flightlogs:device" / "flightlogs:device-removed" to the UI
 fn watch_flightlog_devices(app: AppHandle) {
     use futures_util::StreamExt;
     use tauri::Emitter;
@@ -114,10 +114,14 @@ fn watch_flightlog_devices(app: AppHandle) {
             Err(error) => return eprintln!("[flightlogs] device watching not possible: {error}"),
         };
         while let Some(event) = watch.next().await {
-            if let mtp_rs::mtp::HotplugEvent::Arrived(info) = event {
-                if flightlogs::is_dji(&info) {
+            match event {
+                mtp_rs::mtp::HotplugEvent::Arrived(info) if flightlogs::is_dji(&info) => {
                     let _ = app.emit("flightlogs:device", flightlogs::device_info(&info));
                 }
+                mtp_rs::mtp::HotplugEvent::Left(info) if flightlogs::is_dji(&info) => {
+                    let _ = app.emit("flightlogs:device-removed", flightlogs::device_info(&info));
+                }
+                _ => {}
             }
         }
     });
