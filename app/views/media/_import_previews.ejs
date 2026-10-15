@@ -1,0 +1,14 @@
+<%# locals: block -%>
+<%# Memory card: a few thumbnails per block (visible image preferred), loaded one after another -%>
+<% const MAX = 8 -%>
+<% const rank = (f) => f.kind === 'video' ? 9 : ({ V: 0, W: 1, Z: 2, T: 3 })[f.variant] ?? 4 -%>
+<div class="import-previews">
+  <% block.shots.slice(0, MAX).forEach((shot) => { const file = [...shot.files].sort((a, b) => rank(a) - rank(b))[0] -%>
+    <% if (file.kind === 'image') { -%>
+      <img class="import-preview" alt="" title="<%= file.name %>" data-controller="thumb-preview" data-thumb-preview-path-value="<%= file.path %>">
+    <% } else { -%>
+      <span class="import-preview import-preview--placeholder" title="<%= file.name %>"><%- icon(file.kind === 'video' ? 'video' : 'images') %></span>
+    <% } -%>
+  <% }) -%>
+  <% if (block.shots.length > MAX) { %><span class="import-preview import-preview--more">+<%= block.shots.length - MAX %></span><% } %>
+</div>

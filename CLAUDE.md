@@ -107,6 +107,18 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   (Rohdaten des Flugcontrollers, ~20 MB je Flug) nur mit Einstellung `flightlogs.include_dat`.
 - Testen ohne Fernsteuerung: Ordner-Import in der Browser-Brücke (`flightlogs-import` im Hilfsprogramm).
 
+## SD-Karten
+
+- Erkennung: `src-tauri/src/sdcard.rs` prüft alle 2 s die eingehängten Laufwerke auf einen `DCIM`-Ordner
+  (Ereignisse `sdcard:inserted`/`sdcard:removed`); `app/services/sdcard_watcher.js` öffnet den
+  Import-Dialog auf der passenden Einsatzseite (nur wenn Bilder neu in *allen* Einsätzen sind).
+- Aufnahmen vor Einsatzbeginn = „Ältere Aufnahmen“: nicht vorausgewählt, nie von der Karte gelöscht.
+- Löschen von der Karte nur in Rust (`sdcard::delete_imported`): Quelle unter `<Karte>/DCIM`, Bild-/Videoformat,
+  Kopie außerhalb der Karte mit gleicher Größe und gleichem Fingerabdruck – sonst bleibt die Datei.
+  Danach nur leer gewordene Ordner unter DCIM entfernen, nie DCIM selbst.
+- Testen nie mit echter Karte: in der Browser-Brücke gilt jeder Ordner in `tmp/dev-sdcards/` als Karte
+  (dort Kopien von Testbildern ablegen; gelöscht wird in der Brücke nur dort).
+
 ## Akkunutzung
 
 - `app/services/battery_usage.js`: Flugstunden je Akku aus `flight_logs`, verglichen als

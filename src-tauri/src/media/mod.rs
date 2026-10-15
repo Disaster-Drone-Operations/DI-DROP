@@ -135,16 +135,11 @@ fn assign_shot_keys(files: &mut [ScannedFile]) {
     }
 }
 
-fn scan_file(path: &Path) -> Result<ScannedFile, String> {
-    let kind = media_kind(path).ok_or("Kein unterstütztes Format")?;
-    let mut file = File::open(path).map_err(|e| e.to_string())?;
-    let size = file.metadata().map_err(|e| e.to_string())?.len();
-
+/// Fingerprint: size + start + end. Camera files already differ in the header (timestamps,
+/// serial numbers) – so we don't have to read the whole file. Also returns the header bytes.
+fn fingerprint_with_head(file: &mut File, size: u64) -> Result<(String, Vec<u8>), String> {
     let mut head = vec![0; HEAD_BYTES.min(size as usize)];
     file.read_exact(&mut head).map_err(|e| e.to_string())?;
-
-    // Fingerprint: size + start + end. Camera files already differ
-    // in the header (timestamps, serial numbers) – so we don't have to read the whole file.
     let mut hasher = blake3::Hasher::new();
     hasher.update(&size.to_le_bytes());
     hasher.update(&head);
@@ -154,7 +149,26 @@ fn scan_file(path: &Path) -> Result<ScannedFile, String> {
         file.read_exact(&mut tail).map_err(|e| e.to_string())?;
         hasher.update(&tail);
     }
-    let fingerprint = hasher.finalize().to_hex()[..32].to_string();
+    Ok((hasher.finalize().to_hex()[..32].to_string(), head))
+}
+
+/// Same fingerprint as during scanning/import (used to verify copies before deleting originals)
+pub fn fingerprint(path: &Path) -> Result<String, String> {
+    let mut file = File::open(path).map_err(|e| e.to_string())?;
+    let size = file.metadata().map_err(|e| e.to_string())?.len();
+    Ok(fingerprint_with_head(&mut file, size)?.0)
+}
+
+pub fn is_media_file(path: &Path) -> bool {
+    media_kind(path).is_some()
+}
+
+fn scan_file(path: &Path) -> Result<ScannedFile, String> {
+    let kind = media_kind(path).ok_or("Kein unterstütztes Format")?;
+    let mut file = File::open(path).map_err(|e| e.to_string())?;
+    let size = file.metadata().map_err(|e| e.to_string())?.len();
+
+    let (fingerprint, head) = fingerprint_with_head(&mut file, size)?;
 
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
     let dji_name = parse_dji_name(&name);

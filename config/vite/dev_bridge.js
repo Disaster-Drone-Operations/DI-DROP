@@ -9,6 +9,7 @@
 //   POST /__didrop/nc      { action, … }           → Nextcloud management (credentials in tmp/dev-nextcloud.json)
 //   POST /__didrop/transfer?kind=copy|nc-upload&id=…  → NDJSON stream with progress, last line = result
 //   POST /__didrop/cancel  { id }                  → cancels a transfer
+//   POST /__didrop/cli?command=sdcard-list|…       → memory cards; test cards = folders in tmp/dev-sdcards
 
 import { spawn, execFile } from 'node:child_process'
 import fs from 'node:fs'
@@ -19,10 +20,13 @@ export default function devBridge({ root }) {
   const thumbsDir = path.join(root, 'tmp/dev-thumbs')
   const mediaDir = path.join(root, 'tmp/dev-media')
 
+  const sdcardsDir = path.join(root, 'tmp/dev-sdcards')
   const env = { ...process.env, DIDROP_NC_ACCOUNT_FILE: path.join(root, 'tmp/dev-nextcloud.json') }
+  // Test memory cards: every folder in tmp/dev-sdcards counts as a mounted card
+  const testCards = () => (fs.existsSync(sdcardsDir) ? fs.readdirSync(sdcardsDir).map((name) => path.join(sdcardsDir, name)) : [])
   const transfers = new Map()
   const run = (command, input) => new Promise((resolve, reject) => {
-    const child = spawn(binary, [command], { env })
+    const child = spawn(binary, [command], { env: { ...env, DIDROP_SDCARD_ROOTS: testCards().join(path.delimiter) } })
     let out = ''
     let err = ''
     child.stdout.on('data', (d) => (out += d))
@@ -49,9 +53,15 @@ export default function devBridge({ root }) {
             res.setHeader('Content-Type', 'application/json')
             return res.end(JSON.stringify({ mediaDir }))
           }
-          if (url.pathname === '/cli' && ['flightlogs-import', 'flightlogs-scan'].includes(url.searchParams.get('command'))) {
+          if (url.pathname === '/cli' && ['flightlogs-import', 'flightlogs-scan', 'sdcard-list', 'sdcard-delete'].includes(url.searchParams.get('command'))) {
+            const command = url.searchParams.get('command')
+            const request = await body(req)
             res.setHeader('Content-Type', 'application/json')
-            return res.end(await run(url.searchParams.get('command'), await body(req)))
+            // Never delete from a real card while testing in the browser
+            if (command === 'sdcard-delete' && !path.resolve(request.root ?? '').startsWith(sdcardsDir + path.sep)) {
+              return res.end(JSON.stringify({ error: 'In der Browser-Testumgebung wird nur auf Testkarten (tmp/dev-sdcards) gelöscht.' }))
+            }
+            return res.end(await run(command, request))
           }
           if (url.pathname === '/thumb') {
             res.setHeader('Content-Type', 'application/json')

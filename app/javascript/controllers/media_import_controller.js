@@ -3,9 +3,12 @@ import platform from '/lib/platform/index.js'
 import { render } from '/lib/views.js'
 import Mission from '/app/models/mission.js'
 import MediaImporter from '/app/services/media_importer.js'
+import { takePendingCard, showCardIn } from '/app/services/sdcard_watcher.js'
 
 // Import a flight's images: drag & drop onto the window or choose folder/files,
 // then assign the image blocks to assignments in the dialog.
+// Memory cards (app/services/sdcard_watcher.js) open the same dialog with previews and the
+// option to delete the imported images from the card afterwards.
 //   data-media-import-mission-id-value     mission
 //   data-media-import-assignment-id-value  (optional) assignment to suggest
 //   data-media-import-return-path-value    page to reload afterwards
@@ -19,13 +22,25 @@ export default class extends Controller {
     if (this.element.isConnected) this.unlisten = unlisten
     else unlisten()
 
-    this.dialogTarget.addEventListener('cancel', (e) => this.state === 'importing' && e.preventDefault())
+    this.dialogTarget.addEventListener('cancel', (e) => ['importing', 'deleting'].includes(this.state) && e.preventDefault())
     this.dialogTarget.addEventListener('close', () => (this.state = null))
+
+    this.checkCard = () => this.startPendingCard()
+    this.cardRemoved = ({ detail }) => {
+      if (this.card?.root === detail.root && ['scanning', 'review'].includes(this.state)) {
+        this.show('error', { error: `Die Speicherkarte „${detail.name}“ wurde entfernt.` })
+      }
+    }
+    document.addEventListener('sdcard:pending', this.checkCard)
+    document.addEventListener('sdcard:removed', this.cardRemoved)
+    this.startPendingCard()
   }
 
   disconnect() {
     this.unlisten?.()
     this.unlisten = null
+    document.removeEventListener('sdcard:pending', this.checkCard)
+    document.removeEventListener('sdcard:removed', this.cardRemoved)
   }
 
   // ── Inputs ───────────────────────────────────────────────────────────────
@@ -54,6 +69,7 @@ export default class extends Controller {
   // ── Flow ─────────────────────────────────────────────────────────────────
 
   async start(paths, { assignmentId } = {}) {
+    this.card = null
     this.show('scanning')
     try {
       this.importer = new MediaImporter({ mission: await Mission.find(this.missionIdValue) })
@@ -63,6 +79,34 @@ export default class extends Controller {
       console.error(error)
       this.show('error', { error: error?.message ?? String(error) })
     }
+  }
+
+  // Memory card waiting for this mission (inserted card, see sdcard_watcher.js)
+  async startPendingCard() {
+    if (this.state || !this.hasDialogTarget) return
+    const pending = takePendingCard(this.missionIdValue)
+    if (!pending) return
+    this.card = pending.card
+    this.scanned = pending.scanned
+    this.show('scanning')
+    try {
+      this.importer = new MediaImporter({ mission: await Mission.find(this.missionIdValue) })
+      const review = await this.importer.scan([this.card.dcim], { card: true, scanned: this.scanned })
+      review.card = this.card
+      review.missionId = this.missionIdValue
+      review.missions = (await Mission.active()).map((m) => ({ id: m.id, title: m.title }))
+      this.show('review', { review })
+    } catch (error) {
+      console.error(error)
+      this.show('error', { error: error?.message ?? String(error) })
+    }
+  }
+
+  // Memory card: import into another active mission instead
+  switchMission(event) {
+    const card = this.card
+    this.close()
+    showCardIn(Number(event.target.value), card, this.scanned)
   }
 
   async import(event) {
@@ -79,19 +123,42 @@ export default class extends Controller {
 
     this.show('importing', { progress: { done: 0, total: 0, name: '' } })
     try {
-      const { imported, failed, flight, assignments } = await this.importer.import(selection, (progress) => this.show('importing', { progress }))
+      const { imported, failed, flight, assignments, copies } = await this.importer.import(selection, (progress) => this.show('importing', { progress }))
+      const cleanup = this.card && data.get('delete_from_card') ? await this.deleteFromCard(copies) : null
       this.close()
       const names = (assignments ?? []).map((a) => `„${a.title}“`).join(', ')
-      const flash = failed.length
+      let flash = failed.length
         ? { alert: `${imported} importiert, ${failed.length} fehlgeschlagen: ${failed.slice(0, 3).map((f) => `${f.name} (${f.error})`).join('; ')}` }
         : imported
           ? { notice: `${imported} ${imported === 1 ? 'Datei' : 'Dateien'} importiert – Flug ${flight.number}${names ? `, ${names}` : ''}.` }
           : { notice: 'Nichts ausgewählt – nichts importiert.' }
+      if (cleanup) flash = this.withCleanup(flash, cleanup)
       document.dispatchEvent(new CustomEvent('router:visit', { detail: { path: this.returnPathValue, flash } }))
     } catch (error) {
       console.error(error)
       this.show('error', { error: error?.message ?? String(error) })
     }
+  }
+
+  // Delete the imported originals from the card – only current blocks (never "older" images);
+  // Rust checks every copy again before deleting
+  async deleteFromCard(copies) {
+    const items = copies.filter((c) => !c.older).map(({ src, copy }) => ({ src, copy }))
+    if (!items.length) return null
+    this.show('deleting')
+    try {
+      return await platform.sdcard.delete(this.card.root, items)
+    } catch (error) {
+      return { deleted: [], kept: items.map((i) => ({ src: i.src, reason: String(error) })) }
+    }
+  }
+
+  withCleanup(flash, { deleted, kept }) {
+    const text = flash.alert ?? flash.notice
+    const removed = deleted.length ? ` ${deleted.length} von der Karte gelöscht.` : ''
+    if (!kept.length) return { ...flash, ...(flash.alert ? { alert: text + removed } : { notice: text + removed }) }
+    const reasons = [...new Set(kept.map((k) => k.reason))].slice(0, 2).join('; ')
+    return { alert: `${text}${removed} ${kept.length} ${kept.length === 1 ? 'Datei blieb' : 'Dateien blieben'} auf der Karte (${reasons}).` }
   }
 
   close() {

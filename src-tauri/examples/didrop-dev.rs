@@ -9,6 +9,8 @@
 //!   echo '{"src": "...", "dest": "..."}' | didrop-dev copy            (progress on stderr)
 //!   echo '{"src": "...", "dir": "/folder", "file_name": "x.jpg"}' | didrop-dev nc-upload
 //!   echo '{"action": "test", ...}' | didrop-dev nc                    (Nextcloud management)
+//!   echo '{}' | didrop-dev sdcard-list                                (cards; test cards via DIDROP_SDCARD_ROOTS)
+//!   echo '{"root": "...", "items": [{"src", "copy"}]}' | didrop-dev sdcard-delete
 //! Nextcloud credentials of the bridge: file from DIDROP_NC_ACCOUNT_FILE instead of the keychain.
 
 use std::io::Read;
@@ -102,9 +104,15 @@ fn main() {
                 result(di_drop_lib::flightlogs::import_folder(req["src"].as_str().unwrap_or("").as_ref(), &dest, &known, req["include_dat"].as_bool().unwrap_or(false)))
             }
         }
+        Some("sdcard-list") => serde_json::to_string(&di_drop_lib::sdcard::list()),
+        Some("sdcard-delete") => {
+            let req: Value = serde_json::from_str(&input).expect("JSON");
+            let items: Vec<di_drop_lib::sdcard::DeleteItem> = serde_json::from_value(req["items"].clone()).expect("items");
+            result(di_drop_lib::sdcard::delete_imported(req["root"].as_str().unwrap_or("").as_ref(), &items))
+        }
         Some("nc") => result(nc(serde_json::from_str(&input).expect("JSON"))),
         _ => {
-            eprintln!("Usage: didrop-dev scan|import|copy|nc-upload|thumb|flightlogs-import|flightlogs-scan|nc < request.json");
+            eprintln!("Usage: didrop-dev scan|import|copy|nc-upload|thumb|flightlogs-import|flightlogs-scan|sdcard-list|sdcard-delete|nc < request.json");
             std::process::exit(2);
         }
     };

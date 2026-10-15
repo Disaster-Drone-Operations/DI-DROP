@@ -8,6 +8,7 @@ mod geocode;
 mod places;
 pub mod transfer;
 pub mod flightlogs;
+pub mod sdcard;
 mod app_update;
 mod menu;
 
@@ -119,6 +120,37 @@ fn watch_flightlog_devices(app: AppHandle) {
                 }
             }
         }
+    });
+}
+
+// ── Memory cards (src/sdcard.rs) ─────────────────────────────────────
+
+#[tauri::command]
+fn sdcard_list() -> Vec<sdcard::Card> {
+    sdcard::list()
+}
+
+/// Deletes imported originals from the card – each one only after its copy was verified
+#[tauri::command]
+async fn sdcard_delete(root: String, items: Vec<sdcard::DeleteItem>) -> Result<sdcard::DeleteReport, String> {
+    tauri::async_runtime::spawn_blocking(move || sdcard::delete_imported(Path::new(&root), &items))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Memory card inserted/removed? → events "sdcard:inserted" / "sdcard:removed" to the UI
+fn watch_sdcards(app: AppHandle) {
+    use tauri::Emitter;
+    std::thread::spawn(move || {
+        let removed_app = app.clone();
+        sdcard::watch(
+            |card| {
+                let _ = app.emit("sdcard:inserted", card);
+            },
+            |card| {
+                let _ = removed_app.emit("sdcard:removed", card);
+            },
+        )
     });
 }
 
@@ -257,6 +289,7 @@ pub fn run() {
                 });
             }
             watch_flightlog_devices(app.handle().clone());
+            watch_sdcards(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![scan_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir, open_url,
@@ -266,6 +299,7 @@ pub fn run() {
             app_update::app_update_check, app_update::app_update_install,
             flightlogs_import_folder, flightlogs_scan_local, flightlogs_devices,
             flightlogs_device_status, flightlogs_device_import,
+            sdcard_list, sdcard_delete,
             places::places_info, places::places_read, places::places_update,
             transfer::commands::transfer_copy, transfer::commands::transfer_nextcloud, transfer::commands::transfer_cancel,
             transfer::commands::nc_account, transfer::commands::nc_login_start, transfer::commands::nc_login_poll,

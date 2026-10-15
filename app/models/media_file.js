@@ -57,6 +57,7 @@ export default class MediaFile extends Record {
 
   // Which fingerprints have already been imported in this mission – and where?
   // → Map(fingerprint → { flight_number, mission_title })
+  // missionId null: across all missions (memory cards)
   static async findByFingerprints(fingerprints, missionId) {
     const found = new Map()
     for (let i = 0; i < fingerprints.length; i += 400) {
@@ -68,8 +69,8 @@ export default class MediaFile extends Record {
            FROM media_files
            JOIN flights ON flights.id = media_files.flight_id
            JOIN missions ON missions.id = media_files.mission_id
-          WHERE media_files.mission_id = ? AND media_files.fingerprint IN (${chunk.map(() => '?').join(', ')})`,
-        [missionId, ...chunk],
+          WHERE ${missionId == null ? '' : 'media_files.mission_id = ? AND'} media_files.fingerprint IN (${chunk.map(() => '?').join(', ')})`,
+        missionId == null ? chunk : [missionId, ...chunk],
       )
       for (const row of rows) found.set(row.fingerprint, row)
     }

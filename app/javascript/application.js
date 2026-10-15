@@ -10,6 +10,7 @@ import { install as installShortcuts } from '/app/javascript/shortcuts.js'
 import { start as startUploads } from '/app/services/upload_queue.js'
 import { checkOnStartup as checkForAppUpdate } from '/app/services/app_updater.js'
 import { watchDevices as watchFlightLogDevices } from '/app/services/flightlog_importer.js'
+import { watchCards as watchSdCards } from '/app/services/sdcard_watcher.js'
 
 document.documentElement.classList.add(`platform-${platform.os}`, `runtime-${platform.name}`)
 
@@ -38,6 +39,7 @@ try {
   startUploads().catch((error) => console.error('Upload queue:', error))
   checkForAppUpdate()
   watchFlightLogDevices()
+  watchSdCards()
 } catch (error) {
   console.error(error)
   element.innerHTML = `<div class="boot boot--error"><strong>di-drop konnte nicht starten.</strong><pre></pre></div>`

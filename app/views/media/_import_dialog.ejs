@@ -11,29 +11,68 @@
     <p class="selectable"><%= error %></p>
     <div class="dialog__actions"><button type="button" class="button" data-action="media-import#close">Schließen</button></div>
 
+  <% } else if (state === 'deleting') { -%>
+    <div class="dialog__center">
+      <div class="spinner"></div>
+      <p>Kopien werden geprüft und die Bilder von der Karte gelöscht …</p>
+    </div>
+
   <% } else if (state === 'importing') { -%>
     <h2 class="dialog__title">Importiere …</h2>
     <progress class="progress" max="<%= progress.total %>" value="<%= progress.done %>"></progress>
     <p class="subtle"><%= progress.done %> von <%= progress.total %> Dateien<% if (progress.name) { %> · <span class="mono"><%= progress.name %></span><% } %></p>
 
   <% } else if (state === 'review') { -%>
-    <% const newShots = review.shots.filter((s) => !s.isDuplicate).length -%>
-    <h2 class="dialog__title">Bilder importieren</h2>
+    <% const current = review.blocks.filter((b) => !b.older); const older = review.blocks.filter((b) => b.older) -%>
+    <% if (review.card) { -%>
+      <div class="import-card">
+        <%- icon('sdcard', { size: 22 }) %>
+        <div>
+          <h2 class="dialog__title">Neue SD-Karte erkannt</h2>
+          <p class="subtle">„<%= review.card.name %>“ · Import in
+            <% if (review.missions.length > 1) { -%>
+              <select class="import-card__mission" data-action="media-import#switchMission" aria-label="Einsatz">
+                <% review.missions.forEach((m) => { %><option value="<%= m.id %>" <%= m.id === review.missionId ? 'selected' : '' %>><%= m.title %></option><% }) %>
+              </select>
+            <% } else { -%>
+              <strong><%= review.missions.find((m) => m.id === review.missionId)?.title %></strong>
+            <% } -%>
+          </p>
+        </div>
+      </div>
+    <% } else { -%>
+      <h2 class="dialog__title">Bilder importieren</h2>
+    <% } -%>
 
     <% if (review.newCount === 0) { -%>
-      <div class="callout callout--info"><%- icon('check') %><span>Alle <%= review.duplicateCount %> Dateien sind in diesem Einsatz schon importiert – es gibt nichts Neues.</span></div>
+      <div class="callout callout--info"><%- icon('check') %><span>Alle <%= review.duplicateCount %> Dateien sind <%= review.card ? 'schon importiert' : 'in diesem Einsatz schon importiert' %> – es gibt nichts Neues.</span></div>
       <div class="dialog__actions"><button type="button" class="button button--primary" data-action="media-import#close">OK</button></div>
     <% } else { -%>
-      <% const first = review.blocks[0]?.start; const last = review.blocks.at(-1)?.end -%>
-      <p class="lead"><strong><%= pluralize(newShots, 'neue Aufnahme', 'neue Aufnahmen') %></strong><% if (first) { %> von <%= formatTime(first) %><%= last && formatTime(last) !== formatTime(first) ? `–${formatTime(last)}` : '' %> Uhr<% } %> (<%= pluralize(review.newCount, 'Datei', 'Dateien') %>).</p>
-      <% if (review.duplicateCount) { %><p class="subtle"><%= review.duplicateCount %> Dateien sind in diesem Einsatz schon importiert und werden übersprungen.</p><% } %>
+      <% const shown = current.length ? current : review.blocks; const first = shown[0]?.start; const last = shown.at(-1)?.end -%>
+      <% const shownShots = shown.reduce((n, b) => n + b.shots.length, 0); const shownFiles = shown.reduce((n, b) => n + b.shots.reduce((m, s) => m + s.files.length, 0), 0) -%>
+      <p class="lead"><strong><%= pluralize(shownShots, 'neue Aufnahme', 'neue Aufnahmen') %></strong><% if (first) { %> von <%= formatTime(first) %><%= last && formatTime(last) !== formatTime(first) ? `–${formatTime(last)}` : '' %> Uhr<% } %> (<%= pluralize(shownFiles, 'Datei', 'Dateien') %>).</p>
+      <% if (review.duplicateCount) { %><p class="subtle"><%= review.duplicateCount %> Dateien sind <%= review.card ? 'schon importiert' : 'in diesem Einsatz schon importiert' %> und werden übersprungen.</p><% } %>
       <% if (review.skipped.length) { %><p class="subtle"><%= review.skipped.length %> Dateien konnten nicht gelesen werden.</p><% } %>
 
       <form data-action="submit->media-import#import" class="dialog__form" novalidate>
         <div class="import-blocks">
-          <% review.blocks.forEach((block) => { -%>
-            <%- include('media/_import_block', { block, review, multiple: review.blocks.length > 1 }) %>
+          <% current.forEach((block) => { -%>
+            <%- include('media/_import_block', { block, review, multiple: current.length > 1 }) %>
           <% }) -%>
+          <% if (!current.length) { -%>
+            <p class="subtle">Alle neuen Aufnahmen stammen von vor diesem Einsatz – siehe unten.</p>
+          <% } -%>
+
+          <% if (older.length) { -%>
+            <details class="disclosure" <%= current.length ? '' : 'open' %>>
+              <summary>Ältere Aufnahmen <span class="disclosure__hint">– vor Beginn dieses Einsatzes, <%= pluralize(older.reduce((n, b) => n + b.shots.length, 0), 'Aufnahme', 'Aufnahmen') %>; werden nicht von der Karte gelöscht</span></summary>
+              <div class="disclosure__body import-blocks">
+                <% older.forEach((block) => { -%>
+                  <%- include('media/_import_block', { block, review, multiple: true }) %>
+                <% }) -%>
+              </div>
+            </details>
+          <% } -%>
         </div>
 
         <details class="disclosure">
@@ -71,8 +110,15 @@
           </div>
         </details>
 
+        <% if (review.card) { -%>
+          <div class="import-card__delete">
+            <label class="checkbox"><input type="checkbox" name="delete_from_card" value="yes"> Importierte Bilder danach von der SD-Karte löschen</label>
+            <p class="subtle">Endgültig – aber nur Bilder, deren Kopie vollständig und geprüft im Einsatz liegt. Ältere Aufnahmen und nicht gewählte Bilder bleiben auf der Karte.</p>
+          </div>
+        <% } -%>
+
         <div class="dialog__actions">
-          <button type="button" class="button" data-action="media-import#close">Abbrechen</button>
+          <button type="button" class="button" data-action="media-import#close"><%= review.card ? 'Später' : 'Abbrechen' %></button>
           <button type="submit" class="button button--primary" autofocus>Importieren</button>
         </div>
       </form>

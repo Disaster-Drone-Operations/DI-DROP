@@ -9,12 +9,16 @@
 //   const review = await importer.scan(paths, { preferredAssignmentId })
 //   await importer.import({ blocks: [{ id, target, newKind, newTitle }], shotKeys, variants }, onProgress)
 //
+// Memory cards (scan(…, { card: true })): duplicates across all missions, blocks from before the
+// mission start count as "older" (not imported by default and never deleted from the card).
+//
 // Storage: <base>/<2026_09_11__Einsatz>/<2026_09_11__1355_Kontrollflug 3>/DJI_….JPG
 
 import platform from '/lib/platform/index.js'
 import { sanitizeFolderName, dateTimeFolder } from '/lib/folders.js'
 import { parseLocal, toLocalDateTime, addMinutes } from '/lib/time.js'
 import Setting from '/app/models/setting.js'
+import Mission from '/app/models/mission.js'
 import Assignment from '/app/models/assignment.js'
 import AssignmentSeries from '/app/models/assignment_series.js'
 import Flight from '/app/models/flight.js'
@@ -23,6 +27,10 @@ import Viewpoint from '/app/models/viewpoint.js'
 import { syncFileNames } from '/app/services/file_namer.js'
 
 const BLOCK_GAP_MINUTES = 5
+// Mapping flight: most images straight down, enough of them
+const NADIR_PITCH = -80
+const MAPPING_MIN_SHOTS = 8
+const MAPPING_NADIR_SHARE = 0.8
 
 export async function mediaBaseDir() {
   return Setting.isSet('storage.base_path') ? Setting.get('storage.base_path') : platform.defaultMediaDir()
@@ -36,6 +44,7 @@ function sortVariants(variants) {
 }
 
 const dirOf = (path) => path.replace(/[\\/][^\\/]*$/, '')
+const baseName = (path) => path.split(/[\\/]/).pop()
 const variantKey = (e) => (e.kind === 'video' ? 'video' : e.variant ?? 'other')
 
 export default class MediaImporter {
@@ -46,15 +55,16 @@ export default class MediaImporter {
 
   // ── 1. Scan, detect duplicates, build blocks, suggest assignments ─────
 
-  async scan(paths, { preferredAssignmentId = null } = {}) {
-    const { files, skipped } = await platform.media.scan(paths)
-    const known = await MediaFile.findByFingerprints(files.map((f) => f.fingerprint), this.mission.id)
+  // scanned: result of platform.media.scan(paths) if already available (memory card check)
+  async scan(paths, { preferredAssignmentId = null, card = false, scanned = null } = {}) {
+    const { files, skipped } = scanned ?? await platform.media.scan(paths)
+    const known = await MediaFile.findByFingerprints(files.map((f) => f.fingerprint), card ? null : this.mission.id)
     const seen = new Set()
 
     this.entries = files.map((file) => {
       const existing = known.get(file.fingerprint)
       const duplicate = existing
-        ? { label: `Flug ${existing.flight_number}` }
+        ? { label: existing.mission_id === this.mission.id ? `Flug ${existing.flight_number}` : `Einsatz „${existing.mission_title}“` }
         : seen.has(file.fingerprint) ? { label: 'mehrfach in dieser Auswahl' } : null
       seen.add(file.fingerprint)
       return { ...file, taken_at: file.meta.taken_at, duplicate }
@@ -70,8 +80,12 @@ export default class MediaImporter {
     this.blocks = this.buildBlocks(shots.filter((s) => !s.isDuplicate))
     const openAssignments = await Assignment.open(this.mission.id)
     const recentlyDone = (await Assignment.done(this.mission.id)).slice(0, 5)
-    const several = this.blocks.length > 1
-    for (const block of this.blocks) Object.assign(block, this.suggest(block, openAssignments, preferredAssignmentId, several))
+    if (card) await this.markOlder(this.blocks)
+    const current = this.blocks.filter((b) => !b.older)
+    const several = current.length > 1
+    for (const block of this.blocks) {
+      Object.assign(block, block.older ? { target: 'skip', newKind: 'special' } : this.suggest(block, openAssignments, preferredAssignmentId, several))
+    }
 
     const newEntries = this.entries.filter((e) => !e.duplicate)
     return {
@@ -83,6 +97,19 @@ export default class MediaImporter {
       variants: sortVariants(new Set(newEntries.map(variantKey))),
       newCount: newEntries.length,
       duplicateCount: this.entries.length - newEntries.length,
+    }
+  }
+
+  // Memory card: blocks that ended before the mission started stay on the card unless chosen.
+  // Hint: another mission on the same day
+  async markOlder(blocks) {
+    const startsAt = this.mission.startsAt
+    const others = (await Mission.all()).filter((m) => m.id !== this.mission.id)
+    for (const block of blocks) {
+      if (!block.end || parseLocal(block.end) >= startsAt) continue
+      block.older = true
+      const day = block.start.slice(0, 10)
+      block.otherMission = others.find((m) => m.date === day) ?? null
     }
   }
 
@@ -102,6 +129,9 @@ export default class MediaImporter {
     for (const b of blocks) {
       b.start = b.shots[0].taken_at
       b.end = b.shots.at(-1).taken_at
+      b.folder = baseName(b.shots[0].dir)
+      const nadir = b.shots.filter((s) => s.files.some((f) => f.meta.gimbal_pitch != null && f.meta.gimbal_pitch <= NADIR_PITCH))
+      b.isMapping = b.shots.length >= MAPPING_MIN_SHOTS && nadir.length >= b.shots.length * MAPPING_NADIR_SHARE
     }
     return blocks
   }
@@ -110,7 +140,12 @@ export default class MediaImporter {
   // → { target: '<id>' | 'new', newKind }
   // One block: the most due matching assignment (control flights are sometimes flown manually).
   // Several blocks: waypoint images → control flight, manual shots → other assignment or a new one.
+  // Mapping flights (images straight down) → open mapping assignment or a new one.
   suggest(block, open, preferredId, several) {
+    if (block.isMapping && !preferredId) {
+      const mapping = open.find((a) => a.kind === 'mapping')
+      return { target: mapping ? String(mapping.id) : 'new', newKind: 'mapping', newTitle: 'Kartierung' }
+    }
     const newKind = block.hasWaypoint ? 'control' : 'special'
     if (preferredId) return { target: String(preferredId), newKind } // dragged onto a specific assignment
     const controls = open.filter((a) => a.isControl)
@@ -138,7 +173,7 @@ export default class MediaImporter {
         .filter((e) => !e.duplicate && variants.has(variantKey(e)))
       if (entries.length) plan.push({ choice, block, entries })
     }
-    if (!plan.length) return { imported: 0, failed: [], flight: null }
+    if (!plan.length) return { imported: 0, failed: [], flight: null, copies: [] }
 
     await this.ensureMissionFolder()
     const flight = await this.findOrCreateFlight(plan.flatMap((p) => p.entries))
@@ -156,13 +191,14 @@ export default class MediaImporter {
       if (!p.assignment.media_dir) await p.assignment.update({ media_dir: p.dir })
       for (const e of p.entries) {
         items.push({ src: e.path, dest_dir: p.dir, fingerprint: e.fingerprint, kind: e.kind })
-        targets.set(e.fingerprint, { entry: e, assignment: p.assignment })
+        targets.set(e.fingerprint, { entry: e, assignment: p.assignment, older: p.block.older })
       }
     }
 
     const results = await platform.media.import(items, onProgress)
 
     const failed = []
+    const copies = [] // { src, copy, older } – for deleting from the memory card
     let imported = 0
     for (const result of results) {
       const { entry, assignment } = targets.get(result.fingerprint)
@@ -194,15 +230,20 @@ export default class MediaImporter {
         target_lat: m.target_lat, target_lon: m.target_lon, target_distance: m.target_distance,
         metadata: Object.keys(m.dji ?? {}).length ? JSON.stringify(m.dji) : null,
       })
-      if (await file.save()) imported++
-      else failed.push({ name: entry.name, error: Object.values(file.errors).flat().join(', ') })
+      if (await file.save()) {
+        imported++
+        copies.push({ src: entry.path, copy: result.dest_path, fingerprint: entry.fingerprint, older: !!targets.get(result.fingerprint).older })
+      } else failed.push({ name: entry.name, error: Object.values(file.errors).flat().join(', ') })
     }
 
     if (imported) {
       await Viewpoint.sync(this.mission.id)
       await syncFileNames(this.mission.id) // descriptive file names (date, time, viewpoint, image type)
+      // The copies were renamed → current paths (the card cleanup verifies these files)
+      const current = new Map((await MediaFile.where('mission_id = ?', [this.mission.id])).map((f) => [f.fingerprint, f.path]))
+      for (const c of copies) c.copy = current.get(c.fingerprint) ?? c.copy
     }
-    return { imported, failed, flight, assignments: [...new Map(plan.map((p) => [p.assignment.id, p.assignment])).values()] }
+    return { imported, failed, flight, copies, assignments: [...new Map(plan.map((p) => [p.assignment.id, p.assignment])).values()] }
   }
 
   async resolveAssignment(choice) {
