@@ -2,9 +2,9 @@ import Record from '/lib/record.js'
 import { db } from '/lib/db.js'
 import { parseLocal } from '/lib/time.js'
 
-// Ein Flug – entsteht beim Import (ein Import nach der Landung = ein Flug).
-// Start und Ende ergeben sich aus der ersten und letzten Aufnahme.
-// Ein Flug kann mehrere Aufträge bedienen.
+// A flight – created on import (one import after landing = one flight).
+// Start and end follow from the first and last shot.
+// One flight can serve several assignments.
 export default class Flight extends Record {
   static tableName = 'flights'
 
@@ -19,11 +19,11 @@ export default class Flight extends Record {
     media_dir: 'string',
   }
 
-  // Bilder innerhalb dieses Abstands zu einem bestehenden Flug gehören zu ihm
+  // Images within this distance of an existing flight belong to it
   static MERGE_MINUTES = 10
 
   static defaults() {
-    return { kind: 'flug' }
+    return { kind: 'flight' }
   }
 
   validate() {
@@ -48,7 +48,7 @@ export default class Flight extends Record {
     return parseLocal(this.landed_at)
   }
 
-  // Aufträge, die in diesem Flug bedient wurden → [{ id, title, kind, shots }]
+  // Assignments served in this flight → [{ id, title, kind, shots }]
   static async assignmentsByFlight(missionId) {
     const rows = await db.select(
       `SELECT media_files.flight_id, assignments.id, assignments.title, assignments.kind, COUNT(DISTINCT media_files.shot_key) AS shots
@@ -64,7 +64,7 @@ export default class Flight extends Record {
     return map
   }
 
-  // Dateien auf der Festplatte bleiben erhalten – nur die Einträge verschwinden
+  // Files on disk are kept – only the records disappear
   async destroy() {
     await db.execute('DELETE FROM media_files WHERE flight_id = ?', [this.id])
     await super.destroy()

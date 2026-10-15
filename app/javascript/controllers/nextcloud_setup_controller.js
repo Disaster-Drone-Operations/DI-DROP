@@ -5,8 +5,8 @@ import platform from '/lib/platform/index.js'
 import Setting from '/app/models/setting.js'
 import { formatBytes } from '/app/helpers/index.js'
 
-// Einstellungen → Nextcloud: Anmeldung (Login Flow im Browser oder App-Passwort), Testen, Abmelden.
-// Der Zugang liegt im Schlüsselbund; hier kommen nur Server und Benutzername an.
+// Settings → Nextcloud: sign-in (Login Flow in the browser or app password), test, sign out.
+// The credentials live in the keychain; only server and user name arrive here.
 export default class extends Controller {
   static targets = ['body']
 
@@ -49,7 +49,7 @@ export default class extends Controller {
     if (this.flow) platform.openUrl(this.flow.login_url)
   }
 
-  // Alle 2 s fragen, ob die Anmeldung im Browser fertig ist (höchstens 20 Minuten)
+  // Ask every 2 s whether the sign-in in the browser is finished (at most 20 minutes)
   poll() {
     const started = Date.now()
     const tick = async () => {

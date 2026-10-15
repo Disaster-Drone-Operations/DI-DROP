@@ -4,14 +4,14 @@ import { render } from '/lib/views.js'
 import Comparison from '/app/models/comparison.js'
 import { exportComparison, releaseBitmaps } from '/app/services/comparison_renderer.js'
 
-// Vergleichsbild-Seite: Wegpunkte auswählen (Editoren ein-/ausblenden) und alle erzeugen
+// Comparison image page: select viewpoints (show/hide editors) and create them all
 export default class extends Controller {
   static targets = ['checkbox', 'editors', 'hint', 'exportButton', 'exportLabel']
   static values = { missionId: Number }
 
   connect() {
-    // Auswahl merken, damit sie z. B. nach dem Umbenennen eines Wegpunkts erhalten bleibt.
-    // Noch keine Auswahl → wie beim letzten Mal: Wegpunkte der zuletzt erstellten Vergleichsbilder
+    // Remember the selection so it survives e.g. renaming a viewpoint.
+    // No selection yet → same as last time: viewpoints of the most recently created comparison images
     const saved = this.loadSelection()
     this.checkboxTargets.forEach((c) => (c.checked = saved ? saved.includes(c.value) : c.dataset.last === '1'))
     if (!saved && this.checkboxTargets.some((c) => c.checked)) this.saveSelection()
@@ -27,7 +27,7 @@ export default class extends Controller {
     this.sync()
   }
 
-  // Editoren passend zur Auswahl anlegen/entfernen (bestehende behalten ihren Zustand)
+  // Add/remove editors to match the selection (existing ones keep their state)
   sync() {
     const checked = this.checkboxTargets.filter((c) => c.checked)
     const ids = checked.map((c) => c.value)
@@ -95,7 +95,7 @@ export default class extends Controller {
     document.dispatchEvent(new CustomEvent('router:visit', { detail: { path: `/missions/${this.missionIdValue}/comparisons`, flash } }))
   }
 
-  // ── Auswahl merken ─────────────────────────────────────────────────────────
+  // ── Remember selection ─────────────────────────────────────────────────────
 
   get storageKey() {
     return `di-drop:comparisons:${this.missionIdValue}`
@@ -104,7 +104,7 @@ export default class extends Controller {
   loadSelection() {
     try {
       const raw = sessionStorage.getItem(this.storageKey)
-      return raw ? JSON.parse(raw) : null // null = noch nie ausgewählt
+      return raw ? JSON.parse(raw) : null // null = never selected
     } catch {
       return null
     }
@@ -114,7 +114,7 @@ export default class extends Controller {
     try {
       sessionStorage.setItem(this.storageKey, JSON.stringify(this.checkboxTargets.filter((c) => c.checked).map((c) => c.value)))
     } catch {
-      // nicht schlimm – Auswahl wird dann nur nicht gemerkt
+      // not a problem – the selection just isn't remembered
     }
   }
 }

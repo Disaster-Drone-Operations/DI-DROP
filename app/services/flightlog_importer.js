@@ -1,8 +1,8 @@
-// Flugprotokolle übernehmen: von der angesteckten DJI-Fernsteuerung oder aus einem Ordner.
+// Import flight logs: from the connected DJI remote controller or from a folder.
 //
-// Immer alle: Was schon da ist (gleicher Name, gleiche Größe), wird übersprungen – es gibt keine
-// Auswahlliste. Die Originaldateien bleiben unverändert in <Bildablage>/Flugprotokolle.
-// Fortschritt geht als Ereignis "flightlogs:progress" an die Oberfläche (unten links).
+// Always all of them: whatever is already there (same name, same size) is skipped – there is no
+// selection list. The original files stay unchanged in <media base>/Flugprotokolle.
+// Progress goes to the UI as the event "flightlogs:progress" (bottom left).
 
 import platform from '/lib/platform/index.js'
 import FlightLog from '/app/models/flight_log.js'
@@ -10,11 +10,11 @@ import { mediaBaseDir } from '/app/services/media_importer.js'
 import Setting from '/app/models/setting.js'
 
 let busy = false
-const asked = new Set() // pro App-Sitzung nur einmal je Fernsteuerung nachfragen
+const asked = new Set() // ask only once per remote controller per app session
 
 export const isAvailable = () => !!platform.flightlogs
 
-// Rohdaten des Flugcontrollers (MCDatFlightRecords) nur auf Wunsch (Einstellungen → Flugprotokolle)
+// Raw flight controller data (MCDatFlightRecords) only on request (Settings → Flugprotokolle)
 const includeDat = () => Setting.get('flightlogs.include_dat') === 'yes'
 
 export async function flightLogDir() {
@@ -30,7 +30,7 @@ async function store(report) {
   return { added, copied: report.copied ?? 0, extras: report.extras_copied ?? 0, failed: report.failed ?? [] }
 }
 
-// Aus einem Ordner (USB-Stick, kopierter FlightRecord-Ordner, auch ganze Datenträger)
+// From a folder (USB stick, copied FlightRecord folder, also whole drives)
 export async function importFromFolder(src) {
   if (busy) throw new Error('Es werden gerade schon Flugprotokolle übernommen.')
   busy = true
@@ -47,7 +47,7 @@ export async function importFromFolder(src) {
   }
 }
 
-// Von der Fernsteuerung (MTP)
+// From the remote controller (MTP)
 export async function importFromDevice(device) {
   if (busy) throw new Error('Es werden gerade schon Flugprotokolle übernommen.')
   busy = true
@@ -66,21 +66,21 @@ export async function importFromDevice(device) {
   }
 }
 
-// Dateien, die schon im Ordner liegen, aber in der Datenbank fehlen (z. B. nach Neuinstallation)
+// Files already in the folder but missing from the database (e.g. after a reinstall)
 export async function syncLocal() {
   if (!isAvailable() || busy) return 0
   const report = await platform.flightlogs.scanLocal(await flightLogDir(), await FlightLog.knownFileNames())
   return (await store(report)).added
 }
 
-// Fernsteuerung angesteckt → neue Protokolle? → einmal nachfragen → alle übernehmen
+// Remote controller connected → new logs? → ask once → import all
 async function deviceArrived(device) {
   if (busy || asked.has(device.key)) return
   let status
   try {
     status = await platform.flightlogs.deviceStatus(device.key, await flightLogDir())
   } catch (error) {
-    console.warn('[Flugprotokolle]', error)
+    console.warn('[flight logs]', error)
     return progress({ state: 'error', text: String(error) })
   }
   if (!status.folder || status.new === 0) return
@@ -98,21 +98,21 @@ async function deviceArrived(device) {
       : { notice: `${added} ${added === 1 ? 'Flugprotokoll' : 'Flugprotokolle'} übernommen.` }
     document.dispatchEvent(new CustomEvent('router:visit', { detail: { path: '/flightlogs', flash } }))
   } catch {
-    // Meldung zeigt die Fortschrittsanzeige
+    // The progress indicator shows the message
   }
 }
 
-// Beim App-Start: auf angesteckte Fernsteuerungen achten (auch schon vorhandene)
+// At app start: watch for connected remote controllers (including already present ones)
 export function watchDevices() {
   if (!isAvailable()) return
-  platform.flightlogs.onDevice((device) => deviceArrived(device)).catch((e) => console.warn('[Flugprotokolle]', e))
-  // Schon beim Start angesteckt: Diese Meldung kam, bevor die Oberfläche zuhörte → selbst nachsehen
+  platform.flightlogs.onDevice((device) => deviceArrived(device)).catch((e) => console.warn('[flight logs]', e))
+  // Already connected at startup: this event came before the UI was listening → check ourselves
   setTimeout(async () => {
     for (const device of await connectedDevices()) await deviceArrived(device)
   }, 3000)
 }
 
-// Gerade angesteckte Fernsteuerung von Hand übernehmen (Knopf auf der Seite)
+// Import from the currently connected remote controller manually (button on the page)
 export async function connectedDevices() {
   return isAvailable() ? platform.flightlogs.devices().catch(() => []) : []
 }

@@ -1,7 +1,7 @@
-// Vertrags-Tests für das Location Relay Protocol v1 (docs/location-relay-protocol.md).
-// Laufen gegen jeden kompatiblen Relay:
+// Contract tests for the Location Relay Protocol v1 (docs/location-relay-protocol.md).
+// They run against any compatible relay:
 //   RELAY_URL=http://127.0.0.1:8787 node --test test/relay.contract.test.mjs
-// (lokal: node relay/dev.mjs && npx wrangler dev --config relay/wrangler.dev.toml)
+// (locally: node relay/dev.mjs && npx wrangler dev --config relay/wrangler.dev.toml)
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -9,7 +9,7 @@ import { createSecrets, createChannel, sessionSocketUrl, randomB64url, positionF
 
 const RELAY = process.env.RELAY_URL ?? 'http://127.0.0.1:8787'
 
-// Kleiner Testclient: Nachrichten in eine Warteschlange, gezielt auf Typen warten
+// Small test client: queues messages, waits for specific types
 function connect(sessionId) {
   const ws = new WebSocket(sessionSocketUrl(RELAY, sessionId))
   const queue = []
@@ -30,7 +30,7 @@ function connect(sessionId) {
       const i = queue.findIndex(match)
       if (i >= 0) return Promise.resolve(queue.splice(i, 1)[0])
       return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error('Timeout beim Warten auf Nachricht')), ms)
+        const timer = setTimeout(() => reject(new Error('Timeout waiting for message')), ms)
         waiters.push({ match, resolve: (m) => { clearTimeout(timer); resolve(m) } })
       })
     },
@@ -47,7 +47,7 @@ async function desktopReady(secrets = createSecrets()) {
   return { desktop, secrets, channel: await createChannel({ ...secrets, role: 'desktop' }) }
 }
 
-// Smartphone verbindet sich und koppelt sich; Desktop prüft und bestätigt
+// Phone connects and pairs; desktop verifies and accepts
 async function pairPhone({ desktop, secrets, channel }, phoneSecret = secrets.phoneSecret) {
   const phone = connect(secrets.sessionId)
   await phone.opened
@@ -73,7 +73,7 @@ const fakeFix = (lat = 50.977500, lon = 11.023600) => positionFromGeolocation({
   coords: { latitude: lat, longitude: lon, altitude: 427.3, accuracy: 4.8, altitudeAccuracy: 7.1, heading: null, speed: null },
 })
 
-test('Einzelposition: Desktop erhält entschlüsselte Position, Smartphone erhält ACK', async () => {
+test('single position: desktop receives decrypted position, phone receives ACK', async () => {
   const session = await desktopReady()
   const { phone, phoneChannel } = await pairPhone(session)
 
@@ -94,17 +94,17 @@ test('Einzelposition: Desktop erhält entschlüsselte Position, Smartphone erhä
   await Promise.all([session.desktop.closed, phone.closed])
 })
 
-test('Live-Übertragung: mehrere Positionen kommen in Reihenfolge an', async () => {
+test('live stream: multiple positions arrive in order', async () => {
   const session = await desktopReady()
   const { phone, phoneChannel } = await pairPhone(session)
   for (let i = 0; i < 5; i++) phone.raw(await phoneChannel.seal(fakeFix(50 + i / 1000, 11)))
   const seqs = []
   for (let i = 0; i < 5; i++) seqs.push((await session.channel.open(await session.desktop.next(ofType('data')))).seq)
-  assert.deepEqual(seqs, [2, 3, 4, 5, 6]) // seq 1 war die Kopplungsprobe
+  assert.deepEqual(seqs, [2, 3, 4, 5, 6]) // seq 1 was the pairing proof
   session.desktop.send({ type: 'close' })
 })
 
-test('Rollenübernahme: bloße Session-ID genügt nicht für die Desktop-Rolle', async () => {
+test('role takeover: a bare session id is not enough for the desktop role', async () => {
   const session = await desktopReady()
   const attacker = connect(session.secrets.sessionId)
   await attacker.opened
@@ -112,13 +112,13 @@ test('Rollenübernahme: bloße Session-ID genügt nicht für die Desktop-Rolle',
   const error = await attacker.next(ofType('error'))
   assert.equal(error.code, 'UNAUTHORIZED')
   await attacker.closed
-  // legitimer Desktop ist weiterhin verbunden und funktioniert
+  // legitimate desktop is still connected and works
   const { accepted } = await pairPhone(session)
   assert.equal(accepted, true)
   session.desktop.send({ type: 'close' })
 })
 
-test('Desktop-Reconnect mit eigenem Token übernimmt die Session samt gekoppeltem Smartphone', async () => {
+test('desktop reconnect with its own token takes over the session including the paired phone', async () => {
   const session = await desktopReady()
   await pairPhone(session)
   session.desktop.close()
@@ -132,7 +132,7 @@ test('Desktop-Reconnect mit eigenem Token übernimmt die Session samt gekoppelte
   again.send({ type: 'close' })
 })
 
-test('Ohne Desktop wird nichts angenommen oder gepuffert (NO_RECEIVER)', async () => {
+test('without a desktop nothing is accepted or buffered (NO_RECEIVER)', async () => {
   const { sessionId } = createSecrets()
   const phone = connect(sessionId)
   await phone.opened
@@ -141,7 +141,7 @@ test('Ohne Desktop wird nichts angenommen oder gepuffert (NO_RECEIVER)', async (
   await phone.closed
 })
 
-test('Falscher Schlüssel: Kopplung wird abgelehnt', async () => {
+test('wrong key: pairing is rejected', async () => {
   const session = await desktopReady()
   const { phone, accepted } = await pairPhone(session, randomB64url(32))
   assert.equal(accepted, false)
@@ -150,7 +150,7 @@ test('Falscher Schlüssel: Kopplung wird abgelehnt', async () => {
   session.desktop.send({ type: 'close' })
 })
 
-test('Replay: dieselbe verschlüsselte Nachricht wird nur einmal akzeptiert', async () => {
+test('replay: the same encrypted message is accepted only once', async () => {
   const session = await desktopReady()
   const { phone, phoneChannel } = await pairPhone(session)
   const sealed = await phoneChannel.seal(fakeFix())
@@ -161,7 +161,7 @@ test('Replay: dieselbe verschlüsselte Nachricht wird nur einmal akzeptiert', as
   session.desktop.send({ type: 'close' })
 })
 
-test('Manipulation: veränderter Ciphertext wird erkannt', async () => {
+test('tampering: modified ciphertext is detected', async () => {
   const session = await desktopReady()
   const { phone, phoneChannel } = await pairPhone(session)
   const sealed = await phoneChannel.seal(fakeFix())
@@ -172,7 +172,7 @@ test('Manipulation: veränderter Ciphertext wird erkannt', async () => {
   session.desktop.send({ type: 'close' })
 })
 
-test('Zweites Smartphone wird abgewiesen (ALREADY_PAIRED)', async () => {
+test('second phone is rejected (ALREADY_PAIRED)', async () => {
   const session = await desktopReady()
   await pairPhone(session)
   const second = connect(session.secrets.sessionId)
@@ -182,7 +182,7 @@ test('Zweites Smartphone wird abgewiesen (ALREADY_PAIRED)', async () => {
   session.desktop.send({ type: 'close' })
 })
 
-test('Isolation: Daten aus Session A erreichen Desktop B nicht', async () => {
+test('isolation: data from session A does not reach desktop B', async () => {
   const a = await desktopReady()
   const b = await desktopReady()
   const { phone, phoneChannel } = await pairPhone(a)
@@ -193,7 +193,7 @@ test('Isolation: Daten aus Session A erreichen Desktop B nicht', async () => {
   b.desktop.send({ type: 'close' })
 })
 
-test('Ungekoppeltes Smartphone darf nur die Kopplungsprobe senden', async () => {
+test('unpaired phone may only send the pairing proof', async () => {
   const session = await desktopReady()
   const phone = connect(session.secrets.sessionId)
   await phone.opened
@@ -201,12 +201,12 @@ test('Ungekoppeltes Smartphone darf nur die Kopplungsprobe senden', async () => 
   phone.send({ type: 'hello', role: 'phone' })
   await session.desktop.next(ofType('phone-connected'))
   phone.raw(await phoneChannel.seal({ type: 'pair', ts: Date.now() }))
-  phone.raw(await phoneChannel.seal(fakeFix())) // vor der Bestätigung → nicht erlaubt
+  phone.raw(await phoneChannel.seal(fakeFix())) // before confirmation → not allowed
   assert.equal((await phone.next(ofType('error'))).code, 'INVALID_MESSAGE')
   session.desktop.send({ type: 'close' })
 })
 
-test('Health liefert Protokollversion ohne sensible Daten', async () => {
+test('health returns the protocol version without sensitive data', async () => {
   const health = await (await fetch(`${RELAY}/health`)).json()
   assert.equal(health.ok, true)
   assert.equal(health.protocol, 1)

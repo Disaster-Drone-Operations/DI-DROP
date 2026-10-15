@@ -1,12 +1,12 @@
-// Bereitstellungs-Status für Aufträge und Bilder (Symbol + Fortschritt in Übersichten).
-// Grundlage sind die upload_items (auch ältere, erledigte); laufende Bytes kommen aus der Warteschlange.
+// Provisioning status for assignments and images (icon + progress in overviews).
+// Based on upload_items (including older, finished ones); running bytes come from the queue.
 
 import { db } from '/lib/db.js'
 import { progressOf } from '/app/services/upload_queue.js'
 
 const placeholders = (list) => list.map(() => '?').join(',')
 
-// rows: upload_items eines Auftrags oder Bildes → { state, percent, done, files }
+// rows: upload_items of an assignment or image → { state, percent, done, files }
 //   state: none | queued | running | paused | failed | done
 export function summarize(rows) {
   if (!rows.length) return { state: 'none', percent: 0, done: 0, files: 0 }
@@ -22,7 +22,7 @@ export function summarize(rows) {
   }
 }
 
-// Alle Einträge zu den genannten Aufträgen/Bildern (abgebrochene zählen nicht)
+// All items for the given assignments/images (canceled ones don't count)
 export async function load({ assignmentIds = [], fileIds = [] }) {
   if (!assignmentIds.length && !fileIds.length) return []
   const where = []

@@ -1,4 +1,4 @@
-// Anzeige von Flugdaten: Dauer, Strecke, Uhrzeit (lokale Zeit des Rechners)
+// Display of flight data: duration, distance, time of day (computer's local time)
 
 // 754 s → "12:34 min", 3900 s → "1:05 h"
 export function formatFlightDuration(seconds) {

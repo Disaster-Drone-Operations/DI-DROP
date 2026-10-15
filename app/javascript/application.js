@@ -1,4 +1,4 @@
-// Einstiegspunkt der App (entspricht config/application.rb + app/javascript/application.js)
+// App entry point (corresponds to config/application.rb + app/javascript/application.js)
 
 import { Application } from '@hotwired/stimulus'
 import platform from '/lib/platform/index.js'
@@ -13,16 +13,16 @@ import { watchDevices as watchFlightLogDevices } from '/app/services/flightlog_i
 
 document.documentElement.classList.add(`platform-${platform.os}`, `runtime-${platform.name}`)
 
-// Stimulus-Controller automatisch registrieren: folder_picker_controller.js → "folder-picker"
+// Register Stimulus controllers automatically: folder_picker_controller.js → "folder-picker"
 const stimulus = Application.start()
-window.Stimulus = stimulus // zum Debuggen in der Konsole, wie in Rails
+window.Stimulus = stimulus // for debugging in the console, like in Rails
 if (import.meta.env.DEV) window.platform = platform
 const stimulusControllers = import.meta.glob('./controllers/*_controller.js', { eager: true, import: 'default' })
 for (const [file, controller] of Object.entries(stimulusControllers)) {
   stimulus.register(file.split('/').pop().replace('_controller.js', '').replaceAll('_', '-'), controller)
 }
 
-// Route-Controller: missions_controller.js → "missions"
+// Route controllers: missions_controller.js → "missions"
 const controllers = Object.fromEntries(
   Object.entries(import.meta.glob('/app/controllers/*_controller.js', { eager: true, import: 'default' }))
     .map(([file, controller]) => [file.split('/').pop().replace('_controller.js', ''), controller]),
@@ -35,7 +35,7 @@ try {
   await Setting.load()
   await new Router({ routes, controllers, element }).start()
   installShortcuts()
-  startUploads().catch((error) => console.error('Upload-Warteschlange:', error))
+  startUploads().catch((error) => console.error('Upload queue:', error))
   checkForAppUpdate()
   watchFlightLogDevices()
 } catch (error) {

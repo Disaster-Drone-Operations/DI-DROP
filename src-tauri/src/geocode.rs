@@ -1,5 +1,5 @@
-//! Adresse zu Koordinaten über den OpenStreetMap-Dienst Nominatim.
-//! Nutzungsregeln: eindeutige App-Kennung (User-Agent), höchstens eine Anfrage pro Sekunde.
+//! Address for coordinates via the OpenStreetMap service Nominatim.
+//! Usage policy: unique app identifier (User-Agent), at most one request per second.
 //! https://operations.osmfoundation.org/policies/nominatim/
 
 use serde_json::Value;
@@ -13,7 +13,7 @@ pub async fn reverse_geocode(lat: f64, lon: f64) -> Result<Value, String> {
     if !(-90.0..=90.0).contains(&lat) || !(-180.0..=180.0).contains(&lon) {
         return Err("Ungültige Koordinaten".into());
     }
-    // Abstand zur vorigen Anfrage einhalten
+    // Keep the interval to the previous request
     let wait = {
         let mut last = LAST_REQUEST.lock().map_err(|e| e.to_string())?;
         let now = Instant::now();

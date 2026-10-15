@@ -4,9 +4,9 @@ import { escapeHtml, icon } from '/app/helpers/index.js'
 import { currentLocation, freshPosition, startTransfer } from '/app/services/location_service.js'
 import { describeLocation } from '/app/services/address_service.js'
 
-// Einsatzformular: „Hier“ neben dem Einsatzort übernimmt den Standort vom Smartphone,
-// trägt die Koordinaten ein und leitet daraus eine Ortsangabe ab.
-//   Frische Position (≤ 5 Min., z. B. Live) → sofort; sonst QR-Dialog (location-transfer)
+// Mission form: „Hier“ next to the mission location takes the location from the smartphone,
+// fills in the coordinates and derives a place name from them.
+//   Fresh position (≤ 5 min, e.g. live) → immediately; otherwise QR dialog (location-transfer)
 export default class extends Controller {
   static targets = ['hint']
   static values = { configured: Boolean }
@@ -53,7 +53,7 @@ export default class extends Controller {
   apply(position) {
     const { lat, lon } = position
     if (this.coordinatesInput) this.coordinatesInput.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`
-    // Nur ausfüllen, was leer ist (oder von uns stammt) – sonst als Vorschlag anbieten
+    // Only fill in what is empty (or came from us) – otherwise offer it as a suggestion
     const input = this.locationInput
     const ours = !input.value.trim() || input.value === this.filled
     const accuracy = position.accuracy != null ? ` (± ${Math.round(position.accuracy)} m)` : ''

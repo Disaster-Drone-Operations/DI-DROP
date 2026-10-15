@@ -1,5 +1,5 @@
-// Alle exportierten Funktionen aus app/helpers/*.js stehen in jedem Template
-// direkt zur Verfügung, z. B. <%= formatDate(mission.date) %>
+// All exported functions from app/helpers/*.js are available directly in every
+// template, e.g. <%= formatDate(mission.date) %>
 
 import { parseLocal } from '/lib/time.js'
 import platform from '/lib/platform/index.js'
@@ -20,12 +20,12 @@ export function pluralize(count, singular, plural) {
   return `${count} ${count === 1 ? singular : plural}`
 }
 
-// Für Navigationslinks: aktiv bei exaktem Treffer oder bei Unterseiten
+// For navigation links: active on an exact match or on subpages
 export function isCurrent(currentPath, path, { exact = false } = {}) {
   return currentPath === path || (!exact && currentPath.startsWith(`${path}/`))
 }
 
-// ── Datum & Zeit ──────────────────────────────────────────────────────────
+// ── Date & time ───────────────────────────────────────────────────────────
 
 const asDate = (v) => (v instanceof Date ? v : parseLocal(v))
 
@@ -51,7 +51,7 @@ export function isToday(value) {
   return !!d && d.toDateString() === new Date().toDateString()
 }
 
-// "13:57–14:03 Uhr" – mit Datum, wenn nicht von heute
+// "13:57–14:03 Uhr" – with date if not from today
 export function timeRange(from, to) {
   const a = asDate(from)
   const b = asDate(to)
@@ -60,8 +60,8 @@ export function timeRange(from, to) {
   return isToday(a) ? `${range} Uhr` : `${formatDate(a, { weekday: false })}, ${range} Uhr`
 }
 
-// Tastenkürzel passend zum System anzeigen: "⌘N" (Mac) bzw. "Strg+N" (Windows)
-// Reihenfolge wie im System: macOS ⌃⌥⇧⌘, Windows Strg+Alt+Umschalt+
+// Display keyboard shortcuts matching the OS: "⌘N" (Mac) or "Strg+N" (Windows)
+// Order as in the OS: macOS ⌃⌥⇧⌘, Windows Strg+Alt+Umschalt+
 export function shortcut(keys) {
   const mac = /Mac/.test(navigator.userAgent)
   const parts = keys.split('+')
@@ -71,12 +71,12 @@ export function shortcut(keys) {
   return [has('Mod') || has('Ctrl') ? 'Strg' : null, has('Alt') ? 'Alt' : null, has('Shift') ? 'Umschalt' : null, key].filter(Boolean).join('+')
 }
 
-// macOS-Desktop: App-Menü mit Einstellungen, Uploads … (Windows/Browser: alles in der Seitenleiste)
+// macOS desktop: app menu with settings, uploads … (Windows/browser: everything in the sidebar)
 export const hasNativeMenu = () => platform.name === 'tauri' && platform.os === 'macos'
 
 // ── Links & Buttons ───────────────────────────────────────────────────────
 
-// Wie Rails' button_to: kleines Formular, das per PATCH/DELETE abschickt
+// Like Rails' button_to: small form that submits via PATCH/DELETE
 //   <%- buttonTo('Löschen', `/missions/${id}`, { method: 'delete', confirm: 'Sicher?' }) %>
 export function buttonTo(label, path, { method = 'post', confirm, confirmButton, params = {}, class: cls = 'button', icon: iconName, title } = {}) {
   const hidden = Object.entries({ _method: method, ...params })
@@ -89,7 +89,7 @@ export function buttonTo(label, path, { method = 'post', confirm, confirmButton,
   return `<form class="button-to" action="#${escapeHtml(path)}" method="post"${confirmAttrs}>${hidden}<button type="submit" class="${escapeHtml(cls)}"${title ? ` title="${escapeHtml(title)}"` : ''}>${content}</button></form>`
 }
 
-// ── Icons (Strichzeichnungen im Stil von Lucide, 24×24) ───────────────────
+// ── Icons (line drawings in Lucide style, 24×24) ──────────────────────────
 
 const ICONS = {
   drone: '<circle cx="5" cy="5" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="M7.5 7.5 10 10M16.5 7.5 14 10M7.5 16.5 10 14M16.5 16.5 14 14"/><rect x="10" y="10" width="4" height="4" rx="1"/>',
@@ -111,7 +111,7 @@ const ICONS = {
   chevron: '<path d="m9 18 6-6-6-6"/>',
   alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
   initial: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
-  kontrolle: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+  control: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
   images: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>',
   import: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
   video: '<path d="m16 13 5.22 3.48a.5.5 0 0 0 .78-.42V7.87a.5.5 0 0 0-.75-.43L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
@@ -128,7 +128,7 @@ const ICONS = {
   map: '<path d="M14.1 5.9 9.9 3.1a2 2 0 0 0-1.8-.1L3.6 5A1 1 0 0 0 3 6v14a1 1 0 0 0 1.4.9l4.5-2a2 2 0 0 1 1.8.1l4.2 2.8a2 2 0 0 0 1.8.1l4.7-2A1 1 0 0 0 21 18V4a1 1 0 0 0-1.4-.9l-4.5 2a2 2 0 0 1-1.8-.1Z"/><path d="M15 5.8v15M9 3.2v15"/>',
   phone: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
   qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>',
-  spezial: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  special: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
 }
 
 export function icon(name, { size = 16, class: cls = 'icon' } = {}) {

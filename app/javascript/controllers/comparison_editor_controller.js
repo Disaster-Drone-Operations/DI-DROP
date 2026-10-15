@@ -4,7 +4,7 @@ import { draw, loadBitmap, captionFor, fileNameFor } from '/app/services/compari
 const MAX_SHOTS = 4
 const DEFAULT_SHOTS = 3
 
-// Ein Wegpunkt im Vergleichsbild-Editor: Bildtyp + Aufnahmen wählen, Live-Vorschau
+// One viewpoint in the comparison image editor: choose image type + shots, live preview
 export default class extends Controller {
   static targets = ['variant', 'chip', 'canvas', 'message', 'fileName']
   static values = { viewpointId: Number, name: String, shots: Array, variants: Array }
@@ -18,7 +18,7 @@ export default class extends Controller {
     return this.variantTarget.value
   }
 
-  // Standard: je Flug die letzte Aufnahme, davon die letzten drei Flüge
+  // Default: the last shot per flight, from the last three flights
   selectDefaults() {
     const latestPerFlight = new Map()
     this.shotsValue.forEach((shot, i) => {
@@ -70,7 +70,7 @@ export default class extends Controller {
         const file = shot.files[this.variant]
         items.push({ bitmap: await loadBitmap(file.thumb ?? file.path), caption: captionFor(shot.taken_at) })
       }
-      if (token !== this.drawToken) return // inzwischen neue Auswahl
+      if (token !== this.drawToken) return // selection changed in the meantime
       draw(this.canvasTarget, items, { maxHeight: 480 })
       this.showMessage(null)
     } catch (error) {

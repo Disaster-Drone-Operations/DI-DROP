@@ -2,14 +2,14 @@ import { Controller } from '@hotwired/stimulus'
 import Assignment from '/app/models/assignment.js'
 
 const PLACEHOLDERS = {
-  spezial: 'z. B. Bagger-Zufahrt prüfen',
-  sonstiges: 'z. B. Live-Bild zur Lagebesprechung',
-  kartierung: 'z. B. Brandfläche Nordhang',
+  special: 'z. B. Bagger-Zufahrt prüfen',
+  other: 'z. B. Live-Bild zur Lagebesprechung',
+  mapping: 'z. B. Brandfläche Nordhang',
   position: 'z. B. Einsatzfahrzeuge',
-  gebiet: 'z. B. Suchgebiet A–C',
+  area: 'z. B. Suchgebiet A–C',
 }
 
-// "Neuer Auftrag": Name nur, wo nötig; Takt nur bei Kontrollflügen
+// "Neuer Auftrag": name only where needed; interval only for control flights
 export default class extends Controller {
   static targets = ['titleField', 'title', 'intervalField']
 
@@ -22,6 +22,6 @@ export default class extends Controller {
     const named = Assignment.NAMED_KINDS.includes(kind)
     this.titleFieldTarget.hidden = !named
     this.titleTarget.placeholder = PLACEHOLDERS[kind] ?? ''
-    this.intervalFieldTarget.hidden = kind !== 'kontrolle'
+    this.intervalFieldTarget.hidden = kind !== 'control'
   }
 }

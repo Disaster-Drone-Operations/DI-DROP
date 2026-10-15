@@ -1,8 +1,8 @@
 import { Controller } from '@hotwired/stimulus'
 import platform from '/lib/platform/index.js'
 
-// Dateien mit dem Standardprogramm öffnen (Vorschau, Fotos …) oder im Finder/Explorer zeigen
-//   <button data-action="system-open#open" data-system-open-path-param="/pfad/bild.jpg">
+// Open files with the default app (Preview, Photos …) or show them in Finder/Explorer
+//   <button data-action="system-open#open" data-system-open-path-param="/path/image.jpg">
 export default class extends Controller {
   open({ params }) {
     platform.openPath(params.path).catch((e) => this.fail(e))

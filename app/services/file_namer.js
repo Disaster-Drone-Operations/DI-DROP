@@ -1,15 +1,15 @@
-// Sprechende Dateinamen für importierte Bilder:
+// Descriptive file names for imported images:
 //
 //   2026_09_11__13_31_Ost_1_Wärmebild.JPG
-//   └ Datum ┘  └Zeit┘ └Wegp.┘ └Bildtyp┘
+//   └  date ┘  └time┘ └viewp┘ └ type ┘
 //
-// Keine Leerzeichen in Datei- und Ordnernamen (sanitizeFolderName macht daraus "_").
+// No spaces in file and folder names (sanitizeFolderName turns them into "_").
 //
-// Mehrere Aufnahmen derselben Stelle in derselben Minute → "_2", "_3" …
+// Several shots of the same spot in the same minute → "_2", "_3" …
 //
-// Die Namen werden nachgezogen, sobald sich der Wegpunkt-Name ändert (Umbenennen,
-// oder "Ost" → "Ost_1", weil ein zweiter Ost-Wegpunkt dazukam). Vergleichsbilder ebenso.
-// Den Originalnamen der Drohne behält die Datenbank (original_name).
+// Names are updated as soon as the viewpoint name changes (renaming,
+// or "Ost" → "Ost_1" because a second east viewpoint was added). Comparison images too.
+// The database keeps the drone's original name (original_name).
 
 import platform from '/lib/platform/index.js'
 import { db } from '/lib/db.js'
@@ -31,8 +31,8 @@ const extOf = (name) => name.match(/\.[^.]+$/)?.[0] ?? ''
 // "2026-09-11T13:31:52" → "2026_09_11__13_31"
 const stampOf = (takenAt) => `${takenAt.slice(0, 10).replaceAll('-', '_')}__${takenAt.slice(11, 13)}_${takenAt.slice(14, 16)}`
 
-// shotTime: Zeit der Aufnahme (früheste Datei) – Wärme- und Sichtbild lösen teils eine
-// Sekunde versetzt aus, sollen aber denselben Zeitstempel tragen und nebeneinander stehen
+// shotTime: time of the shot (earliest file) – thermal and visible images sometimes trigger
+// a second apart, but should carry the same timestamp and sit next to each other
 export function desiredName(file, viewpointName, shotTime = file.taken_at) {
   if (!shotTime || shotTime.length < 16) return null
   const kind = file.kind === 'video' ? 'Video' : VARIANT_WORDS[file.variant] ?? null
@@ -40,7 +40,7 @@ export function desiredName(file, viewpointName, shotTime = file.taken_at) {
   return parts.filter(Boolean).join('_') + extOf(splitPath(file.path).name)
 }
 
-// Passt der aktuelle Name schon? (auch mit "_2"-Zusatz bei Namensgleichheit)
+// Does the current name already fit? (also with a "_2" suffix for duplicate names)
 function fits(current, wanted) {
   if (current === wanted) return true
   const ext = extOf(wanted)
@@ -48,10 +48,10 @@ function fits(current, wanted) {
   return current.startsWith(`${stem}_`) && current.endsWith(ext) && /^\d+$/.test(current.slice(stem.length + 1, current.length - ext.length))
 }
 
-// Einsatzordner "2026_09_11__B3_Musterdorf" (Datum + Stichwort) und Ordner der Aufträge
-// "2026_09_11__13_57_Kontrollflug_3" (Zeit der ersten Aufnahme + Auftrag).
-// Umbenannt werden nur Ordner, die die App selbst angelegt hat: direkt im Einsatzordner
-// und mit Datum am Anfang. Alle gespeicherten Pfade ziehen mit.
+// Mission folder "2026_09_11__B3_Musterdorf" (date + keyword) and assignment folders
+// "2026_09_11__13_57_Kontrollflug_3" (time of the first shot + assignment).
+// Only folders the app created itself are renamed: directly inside the mission folder
+// and starting with a date. All stored paths follow.
 async function syncFolderNames(missionId, changes) {
   const mission = await Mission.find(missionId)
   if (!mission.media_dir) return
@@ -79,7 +79,7 @@ async function syncFolderNames(missionId, changes) {
     try {
       target = await platform.renameDir(dir, `${parent}${sep}${wanted}`)
     } catch (error) {
-      console.warn('[Ordnernamen]', dir, '→', wanted, error)
+      console.warn('[folder names]', dir, '→', wanted, error)
       continue
     }
     const now = new Date().toISOString()
@@ -98,8 +98,8 @@ async function syncFolderNames(missionId, changes) {
   }
 }
 
-// Einsatzordner nachziehen (Stichwort/Datum geändert, alte Namen mit Leerzeichen).
-// Nur Ordner, die die App selbst angelegt hat (Datum am Anfang). Alle Pfade ziehen mit.
+// Update the mission folder (keyword/date changed, old names with spaces).
+// Only folders the app created itself (starting with a date). All paths follow.
 async function syncMissionFolder(mission, changes) {
   const dir = mission.media_dir
   const { dir: parent, sep, name: folder } = splitPath(dir)
@@ -110,7 +110,7 @@ async function syncMissionFolder(mission, changes) {
   try {
     target = await platform.renameDir(dir, `${parent}${sep}${wanted}`)
   } catch (error) {
-    console.warn('[Einsatzordner]', dir, '→', wanted, error)
+    console.warn('[mission folder]', dir, '→', wanted, error)
     return
   }
   const now = new Date().toISOString()
@@ -136,8 +136,8 @@ async function syncMissionFolder(mission, changes) {
 
 const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-// Benennt Ordner und Dateien eines Einsatzes um, deren Name nicht (mehr) passt.
-// Gibt die Änderungen zurück: [{ from, to }] – für Seiten, die Pfade schon anzeigen.
+// Renames folders and files of a mission whose name doesn't fit (anymore).
+// Returns the changes: [{ from, to }] – for pages that already show paths.
 export async function syncFileNames(missionId) {
   if (!platform.capabilities.media) return []
   const changes = []
@@ -162,7 +162,7 @@ export async function syncFileNames(missionId) {
     changes.push({ from: file.path, to })
   }
 
-  // Vergleichsbilder: "Vergleich_<Wegpunkt>_1308_1331_1440.jpg"
+  // Comparison images: "Vergleich_<viewpoint>_1308_1331_1440.jpg"
   for (const comparison of await Comparison.forMission(missionId)) {
     const viewpointName = names.get(comparison.viewpoint_id)
     const { dir, sep, name } = splitPath(comparison.path)
@@ -178,8 +178,8 @@ export async function syncFileNames(missionId) {
   return collapse(changes)
 }
 
-// Ordner und danach Datei umbenannt → für offene Ansichten direkt alt → endgültig
-// (Kreise wie A → B → A und "Umbenennungen" auf denselben Namen werden ignoriert – nie endlos laufen)
+// Folder and then file renamed → for open views directly old → final
+// (cycles like A → B → A and "renames" to the same name are ignored – never loop forever)
 function collapse(changes) {
   const real = changes.filter((c) => c.from !== c.to)
   const next = new Map(real.map((c) => [c.from, c.to]))
@@ -201,8 +201,8 @@ async function rename(from, to) {
   try {
     return await platform.renameFile(from, to)
   } catch (error) {
-    // z. B. Datei inzwischen im Finder verschoben – nicht abbrechen, nur melden
-    console.warn('[Dateinamen]', from, '→', to, error)
+    // e.g. file moved in the Finder in the meantime – don't abort, just report
+    console.warn('[file names]', from, '→', to, error)
     return null
   }
 }

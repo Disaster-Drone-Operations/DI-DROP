@@ -1,8 +1,8 @@
-// Formular-Builder, angelehnt an Rails' form_with / simple_form:
+// Form builder, modeled on Rails' form_with / simple_form:
 //
 //   <% const f = formFor(mission, 'mission') %>
 //   <%- f.field('title', { label: 'Stichwort', autofocus: true }) %>
-//   <%- f.field('kind', { type: 'segmented', options: [['einsatz', 'Einsatz'], ['uebung', 'Übung']] }) %>
+//   <%- f.field('kind', { type: 'segmented', options: [['operation', 'Einsatz'], ['exercise', 'Übung']] }) %>
 
 import { escapeHtml, icon } from '/app/helpers/application_helper.js'
 import platform from '/lib/platform/index.js'
@@ -21,7 +21,7 @@ function control({ type = 'text', id, name, value, options = [], placeholder, re
         .map(([v, label]) => `<option value="${escapeHtml(v)}"${String(v) === String(value ?? '') ? ' selected' : ''}>${escapeHtml(label)}</option>`)
         .join('')}</select>`
 
-    // Native-artige Umschalter (macOS "Segmented Control")
+    // Native-like toggle (macOS "Segmented Control")
     case 'segmented':
       return `<div class="segmented" role="radiogroup">${options
         .map(([v, label], i) => {
@@ -46,8 +46,8 @@ function control({ type = 'text', id, name, value, options = [], placeholder, re
   }
 }
 
-// Ein komplettes Feld: Label, Eingabe, Fehler, Hinweis
-//   button: HTML eines Knopfs rechts neben der Eingabe (z. B. „Hier“ beim Einsatzort)
+// A complete field: label, input, errors, hint
+//   button: HTML of a button right of the input (e.g. „Hier“ for the mission location)
 export function field({ label, hint, errors = [], wide, button, ...opts }) {
   const invalid = errors.length > 0
   const input = button ? `<div class="input-with-button">${control(opts)}${button}</div>` : control(opts)

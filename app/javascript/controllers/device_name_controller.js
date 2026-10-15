@@ -2,9 +2,9 @@ import { Controller } from '@hotwired/stimulus'
 import DeviceName from '/app/models/device_name.js'
 import { escapeHtml } from '/app/helpers/index.js'
 
-// Eigener Name für eine Seriennummer (Drohne, Akku) – Doppelklick zum Benennen.
-// Enter speichert, Esc bricht ab, leerer Name = wieder die Seriennummer.
-// Danach ändert sich der Name überall auf der Seite, wo diese Seriennummer steht.
+// Custom name for a serial number (drone, battery) – double-click to name it.
+// Enter saves, Esc cancels, empty name = back to the serial number.
+// Afterwards the name changes everywhere on the page where this serial number appears.
 //   <span data-controller="device-name" data-device-name-kind-value="battery" data-device-name-serial-value="87UP…">Akku A</span>
 export default class extends Controller {
   static values = { kind: String, serial: String }
@@ -34,7 +34,7 @@ export default class extends Controller {
     this.element.append(this.input)
     this.input.focus()
     this.input.select()
-    // Klicks im Eingabefeld nicht als Zeilenauswahl werten
+    // Don't treat clicks in the input as row selection
     this.input.addEventListener('click', (e) => e.stopPropagation())
 
     const finish = async (save) => {

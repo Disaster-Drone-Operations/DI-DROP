@@ -3,7 +3,7 @@ import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
 import updates from '/app/services/updates.js'
 
-// Einstellungen → Aktualisierungen: Liste mit Stand und Knopf je Eintrag
+// Settings → updates: list with status and a button per entry
 export default class extends Controller {
   connect() {
     this.states = Object.fromEntries(updates.map((u) => [u.key, {}]))
@@ -12,7 +12,7 @@ export default class extends Controller {
       const status = await u.status().catch(() => null)
       if (!this.states[u.key].busy) this.update(u.key, { status })
     })
-    // Aus dem Menü „Nach Updates suchen …“ bzw. nach „Installieren“ beim Start
+    // From the menu „Nach Updates suchen …“ or after „Installieren“ at startup
     if (/[?&](check|install)=1/.test(location.hash) && updates.find((u) => u.key === 'app')?.available()) {
       this.run({ params: { key: 'app' } })
     }

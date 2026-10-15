@@ -1,11 +1,11 @@
-// Upload-Warteschlange für alle Ziele (Ordner, Nextcloud …).
+// Upload queue for all targets (folder, Nextcloud …).
 //
-// Läuft im Hintergrund der App weiter, egal welche Seite offen ist. Der Zustand steht in
-// upload_items/upload_batches (überlebt einen Neustart); Fortschritt und Geschwindigkeit nur
-// im Arbeitsspeicher. Seiten hören auf das Ereignis "uploads:changed".
+// Keeps running in the background of the app, no matter which page is open. The state lives in
+// upload_items/upload_batches (survives a restart); progress and speed only
+// in memory. Pages listen to the "uploads:changed" event.
 //
-// Reihenfolge: kleinste "position" zuerst. Beim Einreihen gilt Wärmebilder → Vergleichsbilder →
-// Sichtbilder – über alle Aufträge hinweg, damit Wichtiges schnell bei den Kameraden ist.
+// Order: smallest "position" first. On enqueueing: thermal images → comparison images →
+// visible images – across all assignments, so that important things reach the comrades quickly.
 
 import { db } from '/lib/db.js'
 import Setting from '/app/models/setting.js'
@@ -14,17 +14,17 @@ import UploadItem from '/app/models/upload_item.js'
 import { TARGETS } from '/app/services/upload_targets.js'
 
 const CONCURRENCY = 2
-const RETRY_DELAYS = [10_000, 30_000, 60_000] // Netzwerkfehler: automatisch erneut versuchen
+const RETRY_DELAYS = [10_000, 30_000, 60_000] // network errors: retry automatically
 const SPEED_WINDOW = 6000
-const CATEGORY_BASE = 1e13 // position = Rang · 1e13 + Zeitpunkt → Kategorie vor Alter
+const CATEGORY_BASE = 1e13 // position = rank · 1e13 + timestamp → category before age
 
-const items = new Map() // id → UploadItem (aktive und kürzlich erledigte)
+const items = new Map() // id → UploadItem (active and recently finished)
 const batches = new Map() // id → UploadBatch
 const running = new Map() // id → { done, intent, transferId }
 const retries = new Map() // id → { count, notBefore }
-const samples = [] // { t, bytes } – kumulierte Bytes für die Geschwindigkeit
+const samples = [] // { t, bytes } – cumulative bytes for the speed
 let transferred = 0
-let sessionStart = null // Beginn der aktuellen "Runde" (für die Gesamtanzeige)
+let sessionStart = null // start of the current "round" (for the overall display)
 let started = false
 let emitTimer = null
 let retryTimer = null
@@ -55,7 +55,7 @@ async function persist(item, fields) {
 
 // ── Start ────────────────────────────────────────────────────────────────
 
-// Beim App-Start: Unterbrochenes wieder einreihen und weitermachen
+// At app start: re-enqueue interrupted items and continue
 export async function start() {
   if (started) return
   started = true
@@ -79,7 +79,7 @@ async function loadBatches(ids) {
   for (const batch of await UploadBatch.where(`id IN (${missing.map(() => '?').join(',')})`, missing)) batches.set(batch.id, batch)
 }
 
-// ── Einreihen ────────────────────────────────────────────────────────────
+// ── Enqueue ────────────────────────────────────────────────────────────
 
 // entries: [{ media_file_id?, comparison_id?, category, variant, viewpoint_id, source_path, file_name, size }]
 export async function enqueue({ mission, assignment, target, destination, label, entries }) {
@@ -90,7 +90,7 @@ export async function enqueue({ mission, assignment, target, destination, label,
   const rank = (c) => Math.max(0, UploadItem.CATEGORY_ORDER.indexOf(c))
   const sorted = [...entries].sort((a, b) => rank(a.category) - rank(b.category))
   const stamp = now()
-  // Eine Anweisung für alle Dateien (schneller als einzeln)
+  // One statement for all files (faster than one by one)
   const columns = ['batch_id', 'mission_id', 'assignment_id', 'target', 'media_file_id', 'comparison_id', 'category', 'variant',
     'viewpoint_id', 'source_path', 'dest_path', 'size', 'position', 'status', 'created_at', 'updated_at']
   for (let start = 0; start < sorted.length; start += 50) {
@@ -112,7 +112,7 @@ export async function enqueue({ mission, assignment, target, destination, label,
   return batch
 }
 
-// ── Abarbeiten ───────────────────────────────────────────────────────────
+// ── Processing ───────────────────────────────────────────────────────────
 
 function nextItems() {
   const t = Date.now()
@@ -126,7 +126,7 @@ function kick() {
     if (running.size >= CONCURRENCY) break
     run(item)
   }
-  // Wartende Wiederholungen später anstoßen
+  // Trigger pending retries later
   clearTimeout(retryTimer)
   const waits = [...retries.values()].map((r) => r.notBefore - Date.now()).filter((ms) => ms > 0)
   if (waits.length) retryTimer = setTimeout(kick, Math.min(...waits) + 50)
@@ -143,7 +143,7 @@ async function run(item) {
   let fields
   try {
     if (!target) throw new Error(`Unbekanntes Ziel: ${item.target}`)
-    if (job.intent) throw new Error('CANCELED') // während des Starts pausiert/verschoben
+    if (job.intent) throw new Error('CANCELED') // paused/moved while starting
     await refreshSource(item)
     const result = await target.transfer(item, transferId, ({ done }) => {
       transferred += Math.max(0, done - job.done)
@@ -153,7 +153,7 @@ async function run(item) {
     })
     retries.delete(item.id)
     fields = { status: 'done', skipped: !!result?.skipped, finished_at: now() }
-    // Unter Ausweichnamen abgelegt (am Ziel lag eine andere Datei gleichen Namens)
+    // Stored under a fallback name (a different file with the same name was at the target)
     if (result?.name) fields.dest_path = `${item.dest_path.slice(0, item.dest_path.search(/[^\\/]*$/))}${result.name}`
     if (!result?.skipped) rememberSpeed(item, (Date.now() - job.startedAt) / 1000)
   } catch (error) {
@@ -163,6 +163,7 @@ async function run(item) {
     } else {
       const attempt = (retries.get(item.id)?.count ?? 0) + 1
       const delay = RETRY_DELAYS[attempt - 1]
+      // Matches the (German, user-facing) error messages from Rust
       const transient = /nicht erreichbar|Verbindung|Status 5\d\d|gesperrt/.test(message)
       if (transient && delay) {
         retries.set(item.id, { count: attempt, notBefore: Date.now() + delay })
@@ -181,7 +182,7 @@ async function run(item) {
 }
 
 function sessionEnded() {
-  // Gesamtanzeige bleibt kurz auf "fertig", danach beginnt beim nächsten Einreihen eine neue Runde
+  // The overall display stays on "done" briefly, then the next enqueue starts a new round
   setTimeout(() => {
     if (![...items.values()].some(isActive)) {
       sessionStart = null
@@ -190,7 +191,7 @@ function sessionEnded() {
   }, 60_000)
 }
 
-// Durchschnittliche Geschwindigkeit je Ziel merken (für Schätzungen vor dem Hochladen)
+// Remember the average speed per target (for estimates before uploading)
 function rememberSpeed(item, seconds) {
   if (!item.size || item.size < 300_000 || seconds <= 0) return
   const key = `uploads.speed_${item.target}`
@@ -199,10 +200,10 @@ function rememberSpeed(item, seconds) {
   Setting.set(key, Math.round(previous ? previous * 0.6 + measured * 0.4 : measured))
 }
 
-// Dateien können nach dem Einreihen umbenannt worden sein (Wegpunkt "Draufsicht" → "Draufsicht_1",
-// Auftrag/Einsatz umbenannt). Daher direkt vor dem Hochladen den aktuellen Pfad nachlesen und
-// den Zielpfad mitziehen: Das Ziel spiegelt die letzten Teile des lokalen Pfads
-// (Nextcloud: Auftragsordner/Datei, Ordner-Export: Einsatzordner/Auftragsordner/Datei).
+// Files may have been renamed after enqueueing (viewpoint "Draufsicht" → "Draufsicht_1",
+// assignment/mission renamed). So right before uploading, re-read the current path and
+// update the target path: the target mirrors the last parts of the local path
+// (Nextcloud: assignment folder/file, folder export: mission folder/assignment folder/file).
 async function refreshSource(item) {
   const [row] = item.media_file_id
     ? await db.select('SELECT path FROM media_files WHERE id = ?', [item.media_file_id])
@@ -215,7 +216,7 @@ async function refreshSource(item) {
   await persist(item, { source_path: row.path, dest_path: dest.join('/') })
 }
 
-// ── Steuern ──────────────────────────────────────────────────────────────
+// ── Control ──────────────────────────────────────────────────────────────
 
 const find = (id) => items.get(Number(id))
 
@@ -256,7 +257,7 @@ export async function cancel(id) {
 
 const activePositions = () => [...items.values()].filter(isActive).map((i) => i.position)
 
-// An den Anfang: läuft als Nächstes (pausierte werden dabei fortgesetzt)
+// To the front: runs next (paused ones are resumed)
 export async function moveToFront(id) {
   const item = find(id)
   if (!item || !isActive(item)) return
@@ -264,7 +265,7 @@ export async function moveToFront(id) {
   const fields = { position: Math.min(...activePositions()) - 1 }
   if (['paused', 'failed'].includes(item.status)) Object.assign(fields, { status: 'queued', error: null })
   await persist(item, fields)
-  // Volle Leitung → den hintersten laufenden Upload zurückstellen, damit dieser sofort startet
+  // Line full → put back the rearmost running upload so this one starts immediately
   if (!running.has(item.id) && running.size >= CONCURRENCY) {
     const last = [...running.keys()].map(find).sort((a, b) => b.position - a.position)[0]
     if (last) await interrupt(last, 'queued')
@@ -273,7 +274,7 @@ export async function moveToFront(id) {
   kick()
 }
 
-// Ans Ende: ein laufender Upload wird angehalten und kommt dran, wenn er an der Reihe ist
+// To the end: a running upload is stopped and resumes when it's its turn
 export async function moveToEnd(id) {
   const item = find(id)
   if (!item || !isActive(item)) return
@@ -299,14 +300,14 @@ export async function cancelBatch(batchId) {
   for (const item of [...items.values()].filter((i) => i.batch_id === Number(batchId) && isActive(i))) await cancel(item.id)
 }
 
-// Erledigte aus der Liste entfernen (bleiben in der Datenbank – für „zuletzt bereitgestellt“)
+// Remove finished ones from the list (they stay in the database – for „zuletzt bereitgestellt“)
 export async function clearFinished() {
   for (const [id, item] of items) if (!isActive(item)) items.delete(id)
   await Setting.set('uploads.cleared_at', now())
   emit({ immediate: true })
 }
 
-// ── Lesen ────────────────────────────────────────────────────────────────
+// ── Reading ────────────────────────────────────────────────────────────────
 
 export function speed() {
   const t = Date.now()
@@ -319,7 +320,7 @@ export function speed() {
 
 export const rememberedSpeed = (target) => Setting.get(`uploads.speed_${target}`) ?? null
 
-// Geschätzte Dauer in Sekunden für eine Datenmenge (null = noch keine Erfahrung)
+// Estimated duration in seconds for an amount of data (null = no experience yet)
 export function estimateSeconds(target, bytes) {
   const bps = rememberedSpeed(target)
   return bps ? bytes / bps : null
@@ -327,7 +328,7 @@ export function estimateSeconds(target, bytes) {
 
 export const progressOf = (item) => (item.status === 'done' ? item.size : running.get(item.id)?.done ?? 0)
 
-// Für Seitenleiste und Übersicht
+// For sidebar and overview
 export function summary() {
   const all = [...items.values()]
   const session = all.filter((i) => isActive(i) || (i.status === 'done' && sessionStart && Date.parse(i.finished_at) >= sessionStart - 1000))
@@ -338,7 +339,7 @@ export function summary() {
   const bps = speed()
   let eta = bps > 0 ? remaining / bps : null
   if (eta == null && remaining) {
-    // Noch keine Messung in dieser Runde → aus früheren Uploads schätzen
+    // No measurement in this round yet → estimate from earlier uploads
     eta = pending.reduce((s, i) => s + (estimateSeconds(i.target, Math.max(0, (i.size || 0) - progressOf(i))) ?? NaN), 0)
     if (Number.isNaN(eta)) eta = null
   }
@@ -353,7 +354,7 @@ export function summary() {
   }
 }
 
-// Alle Einträge für die Übersicht: aktive in Warteschlangen-Reihenfolge, danach erledigte
+// All items for the overview: active ones in queue order, then finished ones
 export function list() {
   const all = [...items.values()]
   const order = { running: 0, queued: 1, paused: 1, failed: 1 }
@@ -362,7 +363,7 @@ export function list() {
   return { active, finished, batches, retries }
 }
 
-// Bytes, die vor einem neuen Upload noch in der Warteschlange liegen (je Ziel)
+// Bytes still in the queue ahead of a new upload (per target)
 export function pendingBytes(target) {
   return [...items.values()]
     .filter((i) => i.target === target && ['queued', 'running'].includes(i.status))

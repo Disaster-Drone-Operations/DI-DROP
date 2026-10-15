@@ -1,8 +1,8 @@
-// Minimale Nextcloud für Tests (nur was di-drop braucht): Login Flow v2, OCS-Benutzer, WebDAV
-// (PROPFIND, MKCOL, PUT, HEAD). Dateien landen in einem Ordner.
-//   node test/support/nextcloud_mock.mjs [port] [ordner] [kbps]
-//   kbps begrenzt die Upload-Geschwindigkeit, um den Fortschritt sichtbar zu machen.
-//   MOCK_BLIND_HEAD=1: Größenabfrage findet nie etwas (prüft, dass PUT selbst nie überschreibt).
+// Minimal Nextcloud for tests (only what di-drop needs): Login Flow v2, OCS user, WebDAV
+// (PROPFIND, MKCOL, PUT, HEAD). Files end up in a folder.
+//   node test/support/nextcloud_mock.mjs [port] [folder] [kbps]
+//   kbps limits the upload speed to make the progress visible.
+//   MOCK_BLIND_HEAD=1: size lookup never finds anything (checks that PUT itself never overwrites).
 import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -35,8 +35,8 @@ http.createServer(async (req, res) => {
       return send(200, { poll: { token, endpoint: `${base}/login/v2/poll` }, login: `${base}/login/v2/flow/${token}` })
     }
     if (req.method === 'GET' && url.pathname.startsWith('/login/v2/flow/')) {
-      flows.set(url.pathname.split('/').pop(), true) // Aufruf der Seite = "Zugriff erlauben"
-      return send(200, '<h1>Test-Nextcloud</h1><p>Zugriff für di-drop erlaubt. Fenster kann geschlossen werden.</p>', 'text/html; charset=utf-8')
+      flows.set(url.pathname.split('/').pop(), true) // opening the page = "grant access"
+      return send(200, '<h1>Test Nextcloud</h1><p>Access granted for di-drop. You can close this window.</p>', 'text/html; charset=utf-8')
     }
     if (req.method === 'POST' && url.pathname === '/login/v2/poll') {
       let body = ''
@@ -70,14 +70,14 @@ http.createServer(async (req, res) => {
       return send(201, '')
     }
     if (req.method === 'HEAD') {
-      if (process.env.MOCK_BLIND_HEAD) return send(404, '') // Test: nur If-None-Match schützt vor Überschreiben
+      if (process.env.MOCK_BLIND_HEAD) return send(404, '') // test: only If-None-Match protects against overwriting
       if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) return send(404, '')
       res.writeHead(200, { 'Content-Length': fs.statSync(file).size })
       return res.end()
     }
     if (req.method === 'PUT') {
       if (!fs.existsSync(path.dirname(file))) return send(409, '')
-      if (req.headers['if-none-match'] === '*' && fs.existsSync(file)) return send(412, '') // nicht überschreiben
+      if (req.headers['if-none-match'] === '*' && fs.existsSync(file)) return send(412, '') // don't overwrite
       const out = fs.createWriteStream(`${file}.part`)
       for await (const chunk of req) {
         out.write(chunk)
@@ -92,4 +92,4 @@ http.createServer(async (req, res) => {
   } catch (error) {
     send(500, String(error))
   }
-}).listen(port, '127.0.0.1', () => console.log(`Test-Nextcloud auf ${base} (Dateien: ${root}${kbps ? `, ${kbps} KB/s` : ''})`))
+}).listen(port, '127.0.0.1', () => console.log(`Test Nextcloud at ${base} (files: ${root}${kbps ? `, ${kbps} KB/s` : ''})`))

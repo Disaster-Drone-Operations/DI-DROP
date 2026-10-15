@@ -1,5 +1,5 @@
-# Prüft bei jedem Push, dass di-drop unter macOS und Windows übersetzt und die Tests laufen –
-# ohne Installer und ohne Release (Windows-spezifischer Code wird auf dem Mac nicht übersetzt).
+# Checks on every push that di-drop compiles on macOS and Windows and the tests pass –
+# without installers and without a release (Windows-specific code isn't compiled on the Mac).
 name: Check
 
 on:
@@ -30,9 +30,9 @@ jobs:
           workspaces: src-tauri -> target
 
       - run: npm ci
-      - run: npm run build          # Oberfläche (wird in die App eingebettet)
+      - run: npm run build          # UI (embedded into the app)
 
-      - name: Rust übersetzen und testen
+      - name: Build and test Rust
         working-directory: src-tauri
         run: |
           cargo check --all-targets

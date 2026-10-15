@@ -7,7 +7,7 @@ import Comparison from '/app/models/comparison.js'
 import platform from '/lib/platform/index.js'
 import { syncFileNames } from '/app/services/file_namer.js'
 
-// Vergleichsbilder eines Einsatzes: Wegpunkte auswählen, Aufnahmen wählen, erzeugen
+// Comparison images of a mission: select viewpoints, choose shots, generate
 export default class ComparisonsController extends ApplicationController {
   async index() {
     const mission = await Mission.find(this.params.mission_id)
@@ -23,7 +23,7 @@ export default class ComparisonsController extends ApplicationController {
     const assignmentById = new Map(assignments.map((a) => [a.id, a]))
     const names = new Map(viewpoints.map((v) => [v.id, v.name]))
 
-    // Pro Wegpunkt: Aufnahmen (über alle Flüge) mit ihren Dateien je Bildtyp
+    // Per viewpoint: shots (across all flights) with their files per image type
     const entries = viewpoints.map((viewpoint) => {
       const shots = new Map()
       for (const f of files.filter((f) => f.viewpoint_id === viewpoint.id)) {
@@ -43,8 +43,8 @@ export default class ComparisonsController extends ApplicationController {
       }
     })
 
-    // Schon erstellte Vergleichsbilder je Wegpunkt (neuestes) und die letzte „Runde“:
-    // alles, was bis 15 Minuten vor dem neuesten Vergleichsbild erstellt wurde → wird vorausgewählt
+    // Already created comparison images per viewpoint (newest) and the last "round":
+    // everything created up to 15 minutes before the newest comparison image → preselected
     const lastCreated = new Map()
     for (const c of comparisons) {
       if (c.viewpoint_id && (!lastCreated.has(c.viewpoint_id) || c.created_at > lastCreated.get(c.viewpoint_id))) lastCreated.set(c.viewpoint_id, c.created_at)

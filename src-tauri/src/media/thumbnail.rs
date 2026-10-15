@@ -1,11 +1,11 @@
-//! Vorschaubilder für die Übersicht.
+//! Thumbnails for the overview.
 //!
-//! Drohnenfotos haben 20–50 Megapixel. Statt das ganze Bild zu dekodieren,
-//! lässt `jpeg-decoder` schon beim Dekodieren auf 1/2, 1/4 oder 1/8 herunterskalieren –
-//! das ist um ein Vielfaches schneller.
+//! Drone photos have 20–50 megapixels. Instead of decoding the whole image,
+//! `jpeg-decoder` can downscale to 1/2, 1/4 or 1/8 while decoding –
+//! that is many times faster.
 //!
-//! Noch schneller: DJI bettet in jedes Foto ein Vorschaubild (960×720) nach dem
-//! MPF-Standard ein. Ist es vorhanden, wird nur dieses dekodiert.
+//! Even faster: DJI embeds a preview image (960×720) in every photo following the
+//! MPF standard. If present, only that one is decoded.
 
 use std::fs::{self, File};
 use std::io::{BufWriter, Cursor};
@@ -21,7 +21,7 @@ pub fn create(src: &Path, dest: &Path) -> Result<(), String> {
     create_sized(src, dest, MAX_EDGE)
 }
 
-/// Wie `create`, mit eigener Kantenlänge (Vergleichsbilder sind sehr breit → größer)
+/// Like `create`, with a custom edge length (comparison images are very wide → larger)
 pub fn create_sized(src: &Path, dest: &Path, max_edge: u32) -> Result<(), String> {
     let bytes = fs::read(src).map_err(|e| e.to_string())?;
     let jpeg = mpf_preview(&bytes).unwrap_or(&bytes);
@@ -67,17 +67,17 @@ pub fn create_sized(src: &Path, dest: &Path, max_edge: u32) -> Result<(), String
     fs::rename(&tmp, dest).map_err(|e| e.to_string())
 }
 
-/// Sucht das eingebettete Vorschaubild ("Large Thumbnail") im MPF-Segment (APP2).
+/// Finds the embedded preview image ("Large Thumbnail") in the MPF segment (APP2).
 ///
-/// Aufbau: APP2 "MPF\0" → TIFF-Header (Byte-Reihenfolge) → IFD mit Tag 0xB002 (MP Entries,
-/// je 16 Bytes: Attribute, Größe, Offset relativ zum TIFF-Header, 2× Abhängigkeit).
-/// Eintrag 0 ist das Hauptbild, der nächste mit Größe/Offset das Vorschaubild.
+/// Layout: APP2 "MPF\0" → TIFF header (byte order) → IFD with tag 0xB002 (MP entries,
+/// 16 bytes each: attributes, size, offset relative to the TIFF header, 2× dependency).
+/// Entry 0 is the main image, the next one with size/offset is the preview image.
 fn mpf_preview(bytes: &[u8]) -> Option<&[u8]> {
-    let mut pos = 2; // nach SOI
+    let mut pos = 2; // after SOI
     while pos + 4 <= bytes.len() && bytes[pos] == 0xFF {
         let marker = bytes[pos + 1];
         if marker == 0xDA || marker == 0xD9 {
-            return None; // Bilddaten beginnen – kein MPF gefunden
+            return None; // image data starts – no MPF found
         }
         let len = u16::from_be_bytes([bytes[pos + 2], bytes[pos + 3]]) as usize;
         let segment = bytes.get(pos + 4..pos + 2 + len)?;
@@ -124,7 +124,7 @@ fn parse_mp_entries(bytes: &[u8], base: usize) -> Option<&[u8]> {
 
 #[cfg(test)]
 mod bench {
-    /// DIDROP_TEST_IMAGE=/pfad/bild.jpg cargo test --release bench -- --ignored --nocapture
+    /// DIDROP_TEST_IMAGE=/path/image.jpg cargo test --release bench -- --ignored --nocapture
     #[test]
     #[ignore]
     fn thumbnail_speed() {

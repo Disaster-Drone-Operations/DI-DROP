@@ -1,4 +1,4 @@
-// Größen, Geschwindigkeiten und Restzeiten für Uploads
+// Sizes, speeds and remaining times for uploads
 
 export function formatBytes(bytes) {
   if (bytes == null) return ''

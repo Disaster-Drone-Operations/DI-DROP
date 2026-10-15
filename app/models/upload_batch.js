@@ -1,6 +1,6 @@
 import Record from '/lib/record.js'
 
-// Ein Bereitstellungs-Vorgang: die ausgewählten Dateien eines Auftrags → ein Ziel
+// A provisioning run: the selected files of an assignment → one target
 export default class UploadBatch extends Record {
   static tableName = 'upload_batches'
 

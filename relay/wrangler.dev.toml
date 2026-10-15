@@ -1,5 +1,5 @@
-# Nur für den lokalen Test (wrangler dev). Das echte Deployment macht die App selbst
-# über die Cloudflare-API – ohne wrangler auf dem Rechner des Nutzers.
+# Only for local testing (wrangler dev). The real deployment is done by the app itself
+# via the Cloudflare API – without wrangler on the user's machine.
 name = "di-drop-relay-dev"
 main = ".dev/worker.js"
 compatibility_date = "2026-09-01"

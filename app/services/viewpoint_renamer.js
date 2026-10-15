@@ -1,4 +1,4 @@
-// Umbenennen eines Wegpunkts widerrufbar machen (Name + Dateinamen ziehen zurück)
+// Make renaming a viewpoint undoable (name + file names revert)
 
 import undo from '/lib/undo.js'
 import Viewpoint from '/app/models/viewpoint.js'

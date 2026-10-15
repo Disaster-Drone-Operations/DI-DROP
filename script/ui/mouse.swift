@@ -1,4 +1,4 @@
-// mouse click X Y | mouse drag X1 Y1 X2 Y2 | mouse scroll X Y DY  (Bildschirmkoordinaten in Punkten)
+// mouse click X Y | mouse drag X1 Y1 X2 Y2 | mouse scroll X Y DY  (screen coordinates in points)
 import CoreGraphics
 import Foundation
 let a = CommandLine.arguments

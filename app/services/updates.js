@@ -1,7 +1,7 @@
-// Einstellungen → Aktualisierungen: Daten, die di-drop bei Bedarf selbst nachlädt.
-// Neuer Eintrag = neues Objekt in dieser Liste:
-//   { key, title, description, action?, available(), status() → Text, run(report) → Text }
-//   report(text) zeigt Zwischenstände (z. B. Download-Fortschritt)
+// Settings → Updates: data that di-drop downloads by itself when needed.
+// New entry = new object in this list:
+//   { key, title, description, action?, available(), status() → text, run(report) → text }
+//   report(text) shows intermediate states (e.g. download progress)
 
 import platform from '/lib/platform/index.js'
 import { placesInfo, reloadPlaces } from '/app/services/address_service.js'

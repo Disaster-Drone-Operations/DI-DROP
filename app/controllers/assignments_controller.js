@@ -18,12 +18,12 @@ export default class AssignmentsController extends ApplicationController {
     this.mission = await Mission.find(this.params.mission_id)
     if (this.params.id) {
       this.assignment = await Assignment.findBy('id = ? AND mission_id = ?', [Number(this.params.id), this.mission.id])
-      if (!this.assignment) await Assignment.find(-1) // → "Nicht gefunden"
+      if (!this.assignment) await Assignment.find(-1) // → "Nicht gefunden" (not found)
     }
     this.returnTo = this.params.return_to?.startsWith('/') ? this.params.return_to : `/missions/${this.mission.id}`
   }
 
-  // Auftrag mit seinen Bildern, chronologisch
+  // Assignment with its images, chronologically
   async show() {
     await Viewpoint.sync(this.mission.id)
     await syncFileNames(this.mission.id)
@@ -53,7 +53,7 @@ export default class AssignmentsController extends ApplicationController {
     }, { title: `${this.assignment.title} – ${this.mission.title}` })
   }
 
-  // Wohin wurde dieser Auftrag schon bereitgestellt? [{ label, done, total, running }]
+  // Where has this assignment already been provisioned to? [{ label, done, total, running }]
   async provisions() {
     const rows = await db.select(
       `SELECT target, SUM(status = 'done') AS done, SUM(status IN ('queued', 'running', 'paused', 'failed')) AS open
@@ -65,12 +65,12 @@ export default class AssignmentsController extends ApplicationController {
       .map((r) => ({ label: TARGETS[r.target]?.label ?? r.target, done: r.done, total: r.done + r.open, running: r.open > 0 }))
   }
 
-  // Neuer Auftrag (aus dem Dialog auf der Einsatzseite)
+  // New assignment (from the dialog on the mission page)
   async create() {
     const p = this.params.assignment ?? {}
     const dueAt = p.when === 'at' && p.time ? parseLocal(`${toDate()}T${p.time}`) : null
 
-    if (p.kind === 'kontrolle') {
+    if (p.kind === 'control') {
       const interval = Number(p.interval) || this.mission.control_interval_minutes || 30
       const assignment = await AssignmentSeries.start(this.mission.id, { intervalMinutes: interval, dueAt })
       this.recordCreate(assignment)
@@ -88,13 +88,12 @@ export default class AssignmentsController extends ApplicationController {
       this.recordCreate(assignment)
       return this.redirectTo(this.returnTo, { notice: `Auftrag „${assignment.title}“ angelegt.`, undo: true })
     }
-    // Fehler → Einsatzseite mit offenem Dialog
+    // Errors → mission page with the dialog open
     const missions = new MissionsController({ ...this, action: 'show', params: { id: this.mission.id } })
     await missions.renderShow(this.mission, { newAssignment: assignment, newAssignmentParams: p })
   }
 
-  // Erledigt. Bei Kontrollflügen: nächsten planen oder Serie beenden.
-  // Erledigt. Bei Kontrollflügen: nächsten planen oder Serie beenden.
+  // Done. For control flights: schedule the next one or end the series.
   async complete() {
     const id = this.assignment.id
     const next = this.params.next ?? {}
@@ -118,7 +117,7 @@ export default class AssignmentsController extends ApplicationController {
     this.redirectTo(this.returnTo, { notice: `„${this.assignment.title}“ ist wieder offen.`, undo: true })
   }
 
-  // Angelegter Auftrag → Widerrufen löscht ihn wieder (solange er keine Bilder hat)
+  // Created assignment → undo deletes it again (as long as it has no images)
   recordCreate(assignment) {
     const attrs = undo.snapshot(assignment)
     let id = assignment.id
@@ -132,7 +131,7 @@ export default class AssignmentsController extends ApplicationController {
     })
   }
 
-  // Nur Aufträge ohne Bilder
+  // Only assignments without images
   async destroy() {
     const files = await MediaFile.count('assignment_id = ?', [this.assignment.id])
     if (files) return this.redirectTo(this.returnTo, { alert: 'Aufträge mit Bildern können nicht gelöscht werden.' })

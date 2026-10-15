@@ -1,14 +1,14 @@
-// Nur im Vite-Dev-Server: verbindet die Browser-Variante mit dem echten Rust-Code
-// (src-tauri/examples/didrop-dev.rs). Aktiv mit http://localhost:1420/?bridge
+// Vite dev server only: connects the browser variant to the real Rust code
+// (src-tauri/examples/didrop-dev.rs). Enabled with http://localhost:1420/?bridge
 //
-//   POST /__didrop/scan    ["/pfad", …]            → ScanResult
+//   POST /__didrop/scan    ["/path", …]            → ScanResult
 //   POST /__didrop/import  [{ src, dest_dir, … }]  → ImportResult[]
-//   GET  /__didrop/file?path=…                     → Bilddatei (für Vorschaubilder)
-//   POST /__didrop/write?path=…  (Bilddaten)       → { path }
-//   POST /__didrop/open    { path, reveal }        → öffnet im Finder/Programm
-//   POST /__didrop/nc      { action, … }           → Nextcloud-Verwaltung (Zugang in tmp/dev-nextcloud.json)
-//   POST /__didrop/transfer?kind=copy|nc-upload&id=…  → NDJSON-Strom mit Fortschritt, letzte Zeile = Ergebnis
-//   POST /__didrop/cancel  { id }                  → bricht eine Übertragung ab
+//   GET  /__didrop/file?path=…                     → image file (for thumbnails)
+//   POST /__didrop/write?path=…  (image data)      → { path }
+//   POST /__didrop/open    { path, reveal }        → opens in Finder/default app
+//   POST /__didrop/nc      { action, … }           → Nextcloud management (credentials in tmp/dev-nextcloud.json)
+//   POST /__didrop/transfer?kind=copy|nc-upload&id=…  → NDJSON stream with progress, last line = result
+//   POST /__didrop/cancel  { id }                  → cancels a transfer
 
 import { spawn, execFile } from 'node:child_process'
 import fs from 'node:fs'
@@ -27,7 +27,7 @@ export default function devBridge({ root }) {
     let err = ''
     child.stdout.on('data', (d) => (out += d))
     child.stderr.on('data', (d) => (err += d))
-    child.on('error', (e) => reject(new Error(`${e.message} – erst "cargo build --example didrop-dev" (in src-tauri) ausführen`)))
+    child.on('error', (e) => reject(new Error(`${e.message} – run "cargo build --example didrop-dev" (in src-tauri) first`)))
     child.on('close', (code) => (code === 0 ? resolve(out) : reject(new Error(err || `Exit ${code}`))))
     child.stdin.end(JSON.stringify(input))
   })
@@ -68,7 +68,7 @@ export default function devBridge({ root }) {
             res.setHeader('Content-Type', 'application/x-ndjson')
             let out = ''
             child.stdout.on('data', (d) => (out += d))
-            child.stderr.on('data', (d) => res.write(d)) // Fortschrittszeilen direkt weiterreichen
+            child.stderr.on('data', (d) => res.write(d)) // pass progress lines straight through
             child.on('close', (code) => {
               transfers.delete(id)
               res.end(code === 0 ? out : `${JSON.stringify({ error: child.killed ? 'CANCELED' : `Exit ${code}` })}\n`)
@@ -98,7 +98,7 @@ export default function devBridge({ root }) {
           }
           if (url.pathname === '/write') {
             let target = url.searchParams.get('path')
-            if (!/\.(jpe?g|png)$/i.test(target)) return res.writeHead(400).end('Nur .jpg/.png')
+            if (!/\.(jpe?g|png)$/i.test(target)) return res.writeHead(400).end('Only .jpg/.png')
             const chunks = []
             for await (const chunk of req) chunks.push(chunk)
             fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -111,7 +111,7 @@ export default function devBridge({ root }) {
           }
           if (url.pathname === '/rename') {
             const { from, to, dir } = await body(req)
-            if (path.dirname(from) !== path.dirname(to)) return res.writeHead(400).end('Nur im selben Ordner')
+            if (path.dirname(from) !== path.dirname(to)) return res.writeHead(400).end('Only within the same folder')
             let target = to
             const same = fs.existsSync(to) && fs.realpathSync(from) === fs.realpathSync(to)
             if (fs.existsSync(to) && !same) {

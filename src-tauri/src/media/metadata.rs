@@ -1,10 +1,10 @@
-//! Liest Aufnahme-Metadaten aus Drohnenbildern.
+//! Reads capture metadata from drone images.
 //!
-//! * EXIF: Aufnahmezeit, Kamera, GPS, Brennweite
-//! * XMP (DJI, Namensraum `drone-dji:`): Gimbal-/Flugrichtung, Höhen, exakte GPS-Werte
+//! * EXIF: capture time, camera, GPS, focal length
+//! * XMP (DJI, namespace `drone-dji:`): gimbal/flight heading, altitudes, exact GPS values
 //!
-//! Die Werte für Position, Blickrichtung und Zoom brauchen wir später, um
-//! Vergleichsaufnahmen (gleiche Stelle, gleicher Blickwinkel) zu erkennen.
+//! We need the position, viewing direction and zoom values later to
+//! detect comparison shots (same spot, same viewing angle).
 
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -14,7 +14,7 @@ use exif::{In, Tag, Value};
 
 #[derive(Debug, Default, Serialize, Clone)]
 pub struct Metadata {
-    /// Lokale Aufnahmezeit, "YYYY-MM-DDTHH:MM:SS"
+    /// Local capture time, "YYYY-MM-DDTHH:MM:SS"
     pub taken_at: Option<String>,
     pub make: Option<String>,
     pub model: Option<String>,
@@ -30,15 +30,15 @@ pub struct Metadata {
     pub focal_length: Option<f64>,
     pub focal_length_35mm: Option<f64>,
     pub digital_zoom: Option<f64>,
-    /// Kamera laut DJI: "InfraredCamera", "WideCamera", "ZoomCamera" …
+    /// Camera according to DJI: "InfraredCamera", "WideCamera", "ZoomCamera" …
     pub image_source: Option<String>,
-    /// Kennung des Wegpunkts bei Flugaufträgen (gleich über alle Wiederholungen der Route)
+    /// Waypoint id in flight missions (the same across all repetitions of the route)
     pub flight_line: Option<String>,
-    /// Punkt am Boden, auf den die Kamera zeigt (Laser-Entfernungsmesser)
+    /// Point on the ground the camera is aimed at (laser rangefinder)
     pub target_lat: Option<f64>,
     pub target_lon: Option<f64>,
     pub target_distance: Option<f64>,
-    /// Alle `drone-dji:`-Felder im Rohformat
+    /// All `drone-dji:` fields in raw form
     pub dji: BTreeMap<String, String>,
 }
 
@@ -122,9 +122,9 @@ fn read_dji_xmp(head: &[u8], meta: &mut Metadata) {
             .filter(|n| n.is_finite())
     };
 
-    // XMP-Werte sind genauer als EXIF und haben Vorrang
+    // XMP values are more precise than EXIF and take precedence
     if let Some(v) = num(&["GpsLatitude"]) { meta.lat = Some(v) }
-    if let Some(v) = num(&["GpsLongitude", "GpsLongtitude"]) { meta.lon = Some(v) } // DJI-Tippfehler bei manchen Modellen
+    if let Some(v) = num(&["GpsLongitude", "GpsLongtitude"]) { meta.lon = Some(v) } // DJI typo on some models
     if let Some(v) = num(&["AbsoluteAltitude"]) { meta.abs_alt = Some(v) }
     meta.rel_alt = num(&["RelativeAltitude"]);
     meta.gimbal_yaw = num(&["GimbalYawDegree"]);
@@ -135,14 +135,14 @@ fn read_dji_xmp(head: &[u8], meta: &mut Metadata) {
     let text = |key: &str| meta.dji.get(key).map(|v| v.trim().to_string()).filter(|v| !v.is_empty());
     meta.image_source = text("ImageSource");
     meta.flight_line = text("FlightLineInfo");
-    // Ohne Laser-Messung (z. B. Blick in den Himmel) schreibt DJI 0.0 → als "unbekannt" behandeln
+    // Without a laser measurement (e.g. looking at the sky) DJI writes 0.0 → treat as "unknown"
     let target = |key| num(&[key]).filter(|v| *v != 0.0);
     meta.target_lat = target("LRFTargetLat");
     meta.target_lon = target("LRFTargetLon");
     meta.target_distance = target("LRFTargetDistance");
 }
 
-/// Sammelt `prefix:Name="Wert"` (Attribut-Form) und `<prefix:Name>Wert</prefix:Name>` (Element-Form).
+/// Collects `prefix:Name="value"` (attribute form) and `<prefix:Name>value</prefix:Name>` (element form).
 fn parse_prefixed(xml: &str, prefix: &str) -> BTreeMap<String, String> {
     let mut out = BTreeMap::new();
     let mut pos = 0;

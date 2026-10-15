@@ -10,7 +10,7 @@
     <% } else { -%>
       <span class="shot__placeholder"><%- icon(file.isVideo ? 'video' : 'images', { size: 28 }) %></span>
     <% } -%>
-    <%# Bereitstellungs-Status je Datei: W = Wärmebild, S = Sichtbild -%>
+    <%# Provision status per file: W = thermal image, S = visual image -%>
     <span class="shot__provision">
       <% shot.files.filter((f) => f.id).slice().sort((a, b) => (a.variant === 'T' ? 0 : 1) - (b.variant === 'T' ? 0 : 1)).forEach((f) => { -%>
         <span data-provision-files="<%= f.id %>" data-compact data-label="<%= f.variant === 'T' ? 'W' : ['V', 'W', 'Z'].includes(f.variant) ? 'S' : '' %>"></span>

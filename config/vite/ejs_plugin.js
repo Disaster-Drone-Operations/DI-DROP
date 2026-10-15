@@ -1,15 +1,15 @@
-// Vite-Plugin: kompiliert app/views/**/*.ejs beim Build zu normalen JS-Funktionen.
+// Vite plugin: compiles app/views/**/*.ejs into plain JS functions at build time.
 //
-// Vorteile gegenüber Rendern zur Laufzeit:
-//   * kein eval/new Function nötig → strenge Content-Security-Policy möglich
-//   * Syntaxfehler in Templates fallen schon beim Build auf
+// Advantages over rendering at runtime:
+//   * no eval/new Function needed → strict Content Security Policy possible
+//   * syntax errors in templates show up at build time
 //
-// Weil ES-Module immer im Strict Mode laufen (kein `with`), müssen die Locals
-// eines Templates deklariert werden – wie bei Rails' "strict locals":
+// Because ES modules always run in strict mode (no `with`), a template's locals
+// must be declared – like Rails' "strict locals":
 //
 //   <%# locals: mission, flights %>
 //
-// Alle Helper aus app/helpers/*.js stehen in jedem Template automatisch zur Verfügung.
+// All helpers from app/helpers/*.js are automatically available in every template.
 
 import ejs from 'ejs'
 import fs from 'node:fs'
@@ -67,7 +67,7 @@ ${template.source}
       return { code, map: null }
     },
 
-    // Neue Helper-Funktionen → alle Templates neu kompilieren
+    // New helper functions → recompile all templates
     handleHotUpdate({ file, server }) {
       if (file.startsWith(helpersDir)) {
         server.moduleGraph.invalidateAll()

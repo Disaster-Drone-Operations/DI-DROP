@@ -1,6 +1,6 @@
-//! Ortsliste für die Adress-Ermittlung ohne Internet (Ortsnamen von GeoNames, CC BY 4.0).
-//! Mitgeliefert wird public/data/places_de.tsv; "Aktualisieren" lädt die aktuelle Liste
-//! herunter und legt sie in den App-Daten ab – sie hat dann Vorrang.
+//! Place list for offline address lookup (place names from GeoNames, CC BY 4.0).
+//! public/data/places_de.tsv is bundled; "Aktualisieren" (update) downloads the current list
+//! and stores it in the app data – it then takes precedence.
 
 use serde_json::{json, Value};
 use std::io::Read;
@@ -9,17 +9,17 @@ use tauri::{AppHandle, Manager};
 
 const SOURCE: &str = "https://download.geonames.org/export/dump/DE.zip";
 const FILE: &str = "places_de.tsv";
-/// Historische, verlassene oder zerstörte Orte weglassen
+/// Skip historical, abandoned or destroyed places
 const SKIP: [&str; 4] = ["PPLH", "PPLQ", "PPLW", "PPLCH"];
 
 fn path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app.path().app_data_dir().map_err(|e| e.to_string())?.join(FILE))
 }
 
-/// GeoNames-Rohdaten (DE.txt) → "Name\tBreite\tLänge\tEinwohner" je bewohntem Ort
-/// (gleiches Format wie script/build_places.mjs)
+/// GeoNames raw data (DE.txt) → "name\tlatitude\tlongitude\tpopulation" per populated place
+/// (same format as script/build_places.mjs)
 pub fn build(raw: &str) -> (String, usize) {
-    let mut out = String::from("# GeoNames (geonames.org), CC BY 4.0 – aktualisiert von di-drop\n");
+    let mut out = String::from("# GeoNames (geonames.org), CC BY 4.0 – updated by di-drop\n");
     let mut count = 0;
     for line in raw.lines() {
         let c: Vec<&str> = line.split('\t').collect();
@@ -42,7 +42,7 @@ fn count_lines(text: &str) -> usize {
     text.lines().filter(|l| !l.is_empty() && !l.starts_with('#')).count()
 }
 
-/// Stand der heruntergeladenen Liste: { count, updatedAt } oder null (= mitgelieferte Liste)
+/// State of the downloaded list: { count, updatedAt } or null (= bundled list)
 #[tauri::command]
 pub fn places_info(app: AppHandle) -> Result<Value, String> {
     let file = path(&app)?;
@@ -52,7 +52,7 @@ pub fn places_info(app: AppHandle) -> Result<Value, String> {
     Ok(json!({ "count": count_lines(&text), "updatedAt": updated.0 }))
 }
 
-/// Heruntergeladene Liste lesen (null = keine vorhanden → mitgelieferte verwenden)
+/// Reads the downloaded list (null = none present → use the bundled one)
 #[tauri::command]
 pub fn places_read(app: AppHandle) -> Result<Option<String>, String> {
     match std::fs::read_to_string(path(&app)?) {
@@ -61,7 +61,7 @@ pub fn places_read(app: AppHandle) -> Result<Option<String>, String> {
     }
 }
 
-/// Aktuelle Ortsliste von GeoNames laden, entpacken, filtern und speichern
+/// Downloads the current place list from GeoNames, unzips, filters and stores it
 #[tauri::command]
 pub async fn places_update(app: AppHandle) -> Result<Value, String> {
     let bytes = reqwest::Client::builder()
@@ -88,7 +88,7 @@ pub async fn places_update(app: AppHandle) -> Result<Value, String> {
     .await
     .map_err(|e| e.to_string())??;
 
-    // Plausibilität: eine fast leere Liste nie übernehmen
+    // Sanity check: never accept an almost empty list
     if count < 10_000 {
         return Err(format!("Die geladene Liste enthält nur {count} Orte – sie wird nicht übernommen."));
     }
@@ -101,7 +101,7 @@ pub async fn places_update(app: AppHandle) -> Result<Value, String> {
 }
 
 mod chrono_like {
-    /// SystemTime → Millisekunden seit 1970 (für JS-Date)
+    /// SystemTime → milliseconds since 1970 (for JS Date)
     pub struct Millis(pub u64);
     impl From<std::time::SystemTime> for Millis {
         fn from(t: std::time::SystemTime) -> Self {

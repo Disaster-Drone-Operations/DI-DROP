@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 import { icon, escapeHtml } from '/app/helpers/index.js'
 
-// Seitenleiste unten: Fortschritt beim Übernehmen von Flugprotokollen (Ereignis "flightlogs:progress")
+// Bottom of the sidebar: progress while importing flight logs (event "flightlogs:progress")
 export default class extends Controller {
   connect() {
     this.onProgress = (event) => this.show(event.detail)

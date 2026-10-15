@@ -1,13 +1,14 @@
-// Smartphone-Seite: Kopplung per QR-Fragment, Standort ermitteln, verschlüsselt senden.
+// Phone page: pairing via QR fragment, determine location, send encrypted.
+// The texts shown on the page are German (UI).
 import {
   parsePairingFragment, sessionSocketUrl, createChannel, positionFromGeolocation, send, VERSION,
 } from '/protocol.js'
 
 const view = document.getElementById('view')
 const pairing = parsePairingFragment(location.hash)
-// Geheimnis sofort aus der Adresszeile entfernen (nicht im Verlauf, nicht beim Teilen)
+// Remove the secret from the address bar immediately (not in history, not when sharing)
 history.replaceState(null, '', location.pathname)
-// Neuer QR-Code in derselben Browser-Seite geöffnet → mit dem neuen Code neu starten
+// New QR code opened in the same browser page → restart with the new code
 addEventListener('hashchange', () => location.reload())
 
 let ws = null
@@ -45,7 +46,7 @@ function fail(code, detail) {
   render('error', { title: 'Verbindung nicht möglich', text: esc(ERRORS[code] ?? detail ?? code) })
 }
 
-// ── Verbindung ───────────────────────────────────────────────────────────────
+// ── Connection ───────────────────────────────────────────────────────────────
 
 async function connect() {
   if (!pairing) {
@@ -60,12 +61,12 @@ async function connect() {
 
   ws.onopen = async () => {
     send(ws, { type: 'hello', role: 'phone' })
-    // Kopplungsprobe: nur wer das Geheimnis aus dem QR-Code kennt, kann sie erzeugen
+    // Pairing proof: only someone who knows the secret from the QR code can create it
     ws.send(JSON.stringify(await channel.seal({ type: 'pair', ts: Date.now() })))
   }
   ws.onmessage = (event) => handle(JSON.parse(event.data)).catch((e) => fail('INVALID_MESSAGE', e.message))
   ws.onclose = () => {
-    // Nach "Fertig"/"✓ übertragen" ist das Schließen der Verbindung kein Fehler
+    // After "Fertig"/"✓ übertragen" (done/sent) closing the connection is not an error
     if (!view.classList.contains('state-error') && !view.classList.contains('state-ok')) render('error', { title: 'Verbindung beendet', text: 'Zum erneuten Senden den QR-Code in di-drop neu scannen.' })
     stopWatch()
   }
@@ -97,7 +98,7 @@ async function handle(msg) {
 
 const sendSealed = async (payload) => ws.send(JSON.stringify(await channel.seal(payload)))
 
-// ── Standort ─────────────────────────────────────────────────────────────────
+// ── Location ─────────────────────────────────────────────────────────────────
 
 const GEO = { enableHighAccuracy: true, timeout: 30_000, maximumAge: 0 }
 

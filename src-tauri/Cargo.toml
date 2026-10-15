@@ -39,6 +39,6 @@ tauri-plugin-process = "2"
 dji-log-parser = "0.5.7"
 mtp-rs = "0.33"
 
-# Abhängigkeiten auch im Debug-Build optimieren – Bild-Dekodierung wäre sonst sehr langsam
+# Optimize dependencies in debug builds too – image decoding would be very slow otherwise
 [profile.dev.package."*"]
 opt-level = 3

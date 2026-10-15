@@ -40,7 +40,7 @@
     </nav>
 
     <% if (!hasNativeMenu()) { -%>
-      <%# macOS: Einstellungen nur im App-Menü „di-drop“ (wie Mail) -%>
+      <%# macOS: settings only in the „di-drop“ app menu (like Mail) -%>
       <nav class="nav nav--bottom">
         <a href="#/settings" class="nav__item <%= isCurrent(currentPath, '/settings') ? 'is-active' : '' %>">
           <%- icon('settings') %><span>Einstellungen</span>
@@ -50,7 +50,7 @@
 
     <div class="flightlog-progress" data-controller="flightlog-progress" hidden></div>
 
-    <%# Uploads ganz unten links in der Ecke (wie die Aktivitätsanzeige in Mail) -%>
+    <%# Uploads in the very bottom-left corner (like the activity indicator in Mail) -%>
     <a href="#/uploads" class="upload-status <%= isCurrent(currentPath, '/uploads') ? 'is-active' : '' %>" data-controller="upload-status" hidden></a>
   </aside>
 

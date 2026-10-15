@@ -1,5 +1,5 @@
--- Flugprotokolle der DJI-Fernsteuerung (Eckdaten; die Originaldateien liegen unverändert im
--- Ordner „Flugprotokolle“ und können später genauer ausgewertet werden)
+-- Flight logs from the DJI remote controller (key data; the original files are kept unchanged in the
+-- "Flugprotokolle" folder and can be analysed in more detail later)
 CREATE TABLE flight_logs (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   file_name      TEXT NOT NULL UNIQUE,
@@ -7,7 +7,7 @@ CREATE TABLE flight_logs (
   size           INTEGER,
   log_version    INTEGER,
   started_at     TEXT NOT NULL,      -- UTC, ISO 8601
-  landed_at      TEXT,               -- UTC = Start + Dauer
+  landed_at      TEXT,               -- UTC = start + duration
   duration_s     REAL,
   distance_m     REAL,
   max_height_m   REAL,
@@ -22,7 +22,7 @@ CREATE TABLE flight_logs (
   photos         INTEGER,
   video_s        INTEGER,
   app_version    TEXT,
-  mission_id     INTEGER REFERENCES missions (id),   -- später: Zuordnung zu Einsätzen
+  mission_id     INTEGER REFERENCES missions (id),   -- later: assignment to missions
   notes          TEXT,
   created_at     TEXT,
   updated_at     TEXT

@@ -28,10 +28,10 @@ export default class Mission extends Record {
     nextcloud_path: 'string',
   }
 
-  static KINDS = { einsatz: 'Einsatz', uebung: 'Übung' }
-  static STATUSES = { aktiv: 'Aktiv', abgeschlossen: 'Abgeschlossen' }
+  static KINDS = { operation: 'Einsatz', exercise: 'Übung' }
+  static STATUSES = { active: 'Aktiv', closed: 'Abgeschlossen' }
 
-  // Die vier Rollen in der Drohnengruppe
+  // The four roles in the drone unit
   static ROLES = {
     group_leader: 'Gruppenführer',
     pilot: 'Pilot',
@@ -44,7 +44,7 @@ export default class Mission extends Record {
       kind: Setting.get('general.default_mission_kind'),
       date: toDate(),
       start_time: toTime(),
-      status: 'aktiv',
+      status: 'active',
       operator: Setting.get('general.operator_name'),
       control_interval_minutes: Setting.get('flights.control_interval_minutes'),
     }
@@ -57,16 +57,16 @@ export default class Mission extends Record {
   }
 
   static active() {
-    return this.withFlightCounts('status = ?', ['aktiv'], { order: 'date DESC, start_time DESC' })
+    return this.withFlightCounts('status = ?', ['active'], { order: 'date DESC, start_time DESC' })
   }
 
   static archived() {
-    return this.withFlightCounts('status = ?', ['abgeschlossen'], { order: 'date DESC, start_time DESC' })
+    return this.withFlightCounts('status = ?', ['closed'], { order: 'date DESC, start_time DESC' })
   }
 
   validate() {
     this.validatesPresenceOf('title', 'date', 'location')
-    // Nextcloud-Ordner immer als "/Ordner/Unterordner"
+    // Nextcloud folder always as "/folder/subfolder"
     if (this.nextcloud_path) this.nextcloud_path = `/${this.nextcloud_path.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')}`.replace(/\/{2,}/g, '/')
     if (this.nextcloud_path === '/') this.nextcloud_path = null
     this.validatesInclusionOf('kind', Object.keys(Mission.KINDS))
@@ -82,7 +82,7 @@ export default class Mission extends Record {
   }
 
   get isActive() {
-    return this.status === 'aktiv'
+    return this.status === 'active'
   }
 
   get kindLabel() {
@@ -93,7 +93,7 @@ export default class Mission extends Record {
     return parseLocal(this.start_time ? `${this.date}T${this.start_time}` : this.date)
   }
 
-  // Ordnername der Bilder: "2026_10_06__Waldbrand Hohe Warte"
+  // Folder name for the images: "2026_10_06__Waldbrand Hohe Warte"
   get folderName() {
     return `${dateFolder(this.date)}__${sanitizeFolderName(this.title)}`
   }
@@ -103,7 +103,7 @@ export default class Mission extends Record {
   }
 
   async destroy() {
-    // Bilddateien auf der Festplatte bleiben erhalten
+    // Image files on disk are kept
     for (const table of ['comparisons', 'media_files', 'viewpoints', 'assignments', 'assignment_series', 'flights']) {
       await db.execute(`DELETE FROM ${table} WHERE mission_id = ?`, [this.id])
     }

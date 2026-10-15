@@ -1,6 +1,6 @@
-// Rust-Seite von di-drop. Bewusst schlank: Hier landen nur Dinge, die das
-// Frontend nicht selbst kann (Dateisystem, Laufwerke, Bildverarbeitung …).
-// Datenbank und Dialoge kommen als fertige Tauri-Plugins.
+// Rust side of di-drop. Deliberately lean: only things the frontend can't do
+// itself live here (file system, drives, image processing …).
+// Database and dialogs come as ready-made Tauri plugins.
 
 pub mod media;
 mod cloudflare;
@@ -16,7 +16,7 @@ use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 
-/// Findet Bilder/Videos in den übergebenen Dateien und Ordnern (rekursiv)
+/// Finds images/videos in the given files and folders (recursively)
 #[tauri::command]
 async fn scan_media(paths: Vec<String>) -> Result<media::ScanResult, String> {
     tauri::async_runtime::spawn_blocking(move || media::scan(&paths))
@@ -24,7 +24,7 @@ async fn scan_media(paths: Vec<String>) -> Result<media::ScanResult, String> {
         .map_err(|e| e.to_string())
 }
 
-/// Kopiert Dateien in ihre Zielordner und erzeugt Vorschaubilder
+/// Copies files into their target folders and creates thumbnails
 #[tauri::command]
 async fn import_media(
     app: AppHandle,
@@ -41,7 +41,7 @@ async fn import_media(
     .map_err(|e| e.to_string())
 }
 
-/// Vorschaubild für eine einzelne Bilddatei (Vergleichsbilder) → Pfad im Vorschau-Ordner
+/// Thumbnail for a single image file (comparison images) → path in the thumbnail folder
 #[tauri::command]
 async fn make_thumbnail(app: AppHandle, path: String) -> Result<String, String> {
     let thumbs_dir = app.path().app_cache_dir().map_err(|e| e.to_string())?.join("thumbs");
@@ -51,7 +51,7 @@ async fn make_thumbnail(app: AppHandle, path: String) -> Result<String, String> 
         .map(|p| p.to_string_lossy().into_owned())
 }
 
-// ── Flugprotokolle (src/flightlogs.rs) ──────────────────────────────────
+// ── Flight logs (src/flightlogs.rs) ──────────────────────────────────
 
 #[derive(serde::Serialize, Clone)]
 struct FlightLogProgress {
@@ -59,7 +59,7 @@ struct FlightLogProgress {
     total: usize,
 }
 
-/// Aus einem Ordner übernehmen (USB-Stick, kopierter FlightRecord-Ordner)
+/// Import from a folder (USB stick, copied FlightRecord folder)
 #[tauri::command]
 async fn flightlogs_import_folder(src: String, dest: String, known: Vec<String>, include_dat: bool) -> Result<flightlogs::ImportReport, String> {
     tauri::async_runtime::spawn_blocking(move || {
@@ -69,7 +69,7 @@ async fn flightlogs_import_folder(src: String, dest: String, known: Vec<String>,
     .map_err(|e| e.to_string())?
 }
 
-/// Protokolle im eigenen Ordner, die die Datenbank noch nicht kennt
+/// Logs in our own folder that the database doesn't know yet
 #[tauri::command]
 async fn flightlogs_scan_local(dest: String, known: Vec<String>) -> Result<flightlogs::ImportReport, String> {
     tauri::async_runtime::spawn_blocking(move || Ok(flightlogs::scan_local(Path::new(&dest), &known.into_iter().collect())))
@@ -102,14 +102,14 @@ async fn flightlogs_device_import(
     .await
 }
 
-/// Fernsteuerung angesteckt? → Ereignis "flightlogs:device" an die Oberfläche
+/// Remote controller plugged in? → event "flightlogs:device" to the UI
 fn watch_flightlog_devices(app: AppHandle) {
     use futures_util::StreamExt;
     use tauri::Emitter;
     tauri::async_runtime::spawn(async move {
         let mut watch = match mtp_rs::mtp::watch_devices() {
             Ok(watch) => watch,
-            Err(error) => return eprintln!("[Flugprotokolle] Geräteüberwachung nicht möglich: {error}"),
+            Err(error) => return eprintln!("[flightlogs] device watching not possible: {error}"),
         };
         while let Some(event) = watch.next().await {
             if let mtp_rs::mtp::HotplugEvent::Arrived(info) = event {
@@ -121,7 +121,7 @@ fn watch_flightlog_devices(app: AppHandle) {
     });
 }
 
-/// Öffnet eine Datei oder einen Ordner mit dem Standardprogramm (Vorschau, Fotos, Finder, Explorer)
+/// Opens a file or folder with the default app (Preview, Photos, Finder, Explorer)
 #[tauri::command]
 fn open_path(app: AppHandle, path: String) -> Result<(), String> {
     if !Path::new(&path).exists() {
@@ -130,7 +130,7 @@ fn open_path(app: AppHandle, path: String) -> Result<(), String> {
     app.opener().open_path(path, None::<&str>).map_err(|e| e.to_string())
 }
 
-/// Zeigt eine Datei im Finder bzw. Explorer
+/// Reveals a file in Finder or Explorer
 #[tauri::command]
 fn reveal_path(app: AppHandle, path: String) -> Result<(), String> {
     if !Path::new(&path).exists() {
@@ -147,7 +147,7 @@ fn is_image(path: &Path) -> bool {
         .is_some_and(|e| IMAGE_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
 }
 
-/// Liefert eine Bilddatei als Bytes (für die Vergleichsbild-Vorschau im Frontend)
+/// Returns an image file as bytes (for the comparison image preview in the frontend)
 #[tauri::command]
 async fn read_image(path: String) -> Result<tauri::ipc::Response, String> {
     let path = PathBuf::from(path);
@@ -161,9 +161,9 @@ async fn read_image(path: String) -> Result<tauri::ipc::Response, String> {
     Ok(tauri::ipc::Response::new(bytes))
 }
 
-/// Speichert ein im Frontend erzeugtes Bild. Pfad im Header "x-path" (URL-kodiert),
-/// Bilddaten als Rohdaten. Existiert die Datei schon, wird "_2", "_3" … angehängt.
-/// Gibt den tatsächlichen Pfad zurück.
+/// Saves an image created in the frontend. Path in the "x-path" header (URL-encoded),
+/// image data as raw body. If the file already exists, "_2", "_3" … is appended.
+/// Returns the actual path.
 #[tauri::command]
 fn write_image(request: tauri::ipc::Request<'_>) -> Result<String, String> {
     let header = request.headers().get("x-path").and_then(|h| h.to_str().ok()).ok_or("Pfad fehlt")?;
@@ -182,20 +182,20 @@ fn write_image(request: tauri::ipc::Request<'_>) -> Result<String, String> {
     Ok(target.display().to_string())
 }
 
-/// Benennt eine Bild-/Videodatei um (bleibt im selben Ordner). Ist der Zielname schon von
-/// einer *anderen* Datei belegt, wird "_2", "_3" … angehängt. Gibt den tatsächlichen Pfad zurück.
+/// Renames an image/video file (stays in the same folder). If the target name is already taken
+/// by a *different* file, "_2", "_3" … is appended. Returns the actual path.
 #[tauri::command]
 fn rename_file(from: String, to: String) -> Result<String, String> {
     media::rename_file(Path::new(&from), Path::new(&to)).map(|p| p.display().to_string())
 }
 
-/// Ordner umbenennen (für sprechende Ordnernamen der Aufträge)
+/// Renames a folder (for descriptive assignment folder names)
 #[tauri::command]
 fn rename_dir(from: String, to: String) -> Result<String, String> {
     media::rename_dir(Path::new(&from), Path::new(&to)).map(|p| p.display().to_string())
 }
 
-/// Öffnet eine Webseite im Standard-Browser (z. B. Karten, Cloudflare). Nur https.
+/// Opens a web page in the default browser (e.g. maps, Cloudflare). https only.
 #[tauri::command]
 fn open_url(app: AppHandle, url: String) -> Result<(), String> {
     if !url.starts_with("https://") {
@@ -225,7 +225,7 @@ fn percent_decode(s: &str) -> Result<String, String> {
 pub fn run() {
     let builder = tauri::Builder::default();
 
-    // macOS: deutsches Menü; App-Befehle gehen als Ereignis "menu" an die Oberfläche
+    // macOS: German menu; app commands go to the UI as "menu" event
     #[cfg(target_os = "macos")]
     let builder = builder.menu(|app| menu::build(app)).on_menu_event(|app, event| {
         use tauri::Emitter;
@@ -236,11 +236,11 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        // Auto-Update aus den GitHub-Releases (signiert, siehe docs/release.md) + Neustart danach
+        // Auto-update from GitHub releases (signed, see docs/release.md) + restart afterwards
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
-            // Erst wenn das Menü an der laufenden App hängt (kurz nach dem Start, im Hauptthread)
+            // Only once the menu is attached to the running app (shortly after start, on the main thread)
             #[cfg(target_os = "macos")]
             {
                 let handle = app.handle().clone();
@@ -249,7 +249,7 @@ pub fn run() {
                     let inner = handle.clone();
                     let _ = handle.run_on_main_thread(move || {
                         if let Err(error) = menu::register_special_menus(&inner) {
-                            eprintln!("[Menü] Hilfe-/Fenstermenü nicht angemeldet: {error}");
+                            eprintln!("[menu] help/window menu not registered: {error}");
                         }
                     });
                 });
@@ -270,7 +270,7 @@ pub fn run() {
             transfer::commands::nc_list, transfer::commands::nc_mkdir,
             cloudflare::cf_api, cloudflare::cf_upload_worker])
         .run(tauri::generate_context!())
-        .expect("Fehler beim Starten von di-drop");
+        .expect("error while starting di-drop");
 }
 
 #[cfg(test)]

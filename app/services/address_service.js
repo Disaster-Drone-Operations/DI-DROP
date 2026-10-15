@@ -1,9 +1,9 @@
-// Aus Koordinaten eine lesbare Ortsangabe machen.
+// Turn coordinates into a readable location description.
 //
-//   nearPlace(lat, lon)     → "Musterdorf, 1,2 km nordöstlich"  (ohne Internet, Ortsliste von GeoNames)
-//   lookupAddress(lat, lon) → "Hauptstraße 1, 98765 Musterdorf" (OpenStreetMap Nominatim, braucht Internet)
+//   nearPlace(lat, lon)     → "Musterdorf, 1,2 km nordöstlich"  (offline, place list from GeoNames)
+//   lookupAddress(lat, lon) → "Hauptstraße 1, 98765 Musterdorf" (OpenStreetMap Nominatim, needs internet)
 //
-// Die Ortsliste (public/data/places_de.tsv, script/build_places.mjs) wird erst beim ersten Bedarf geladen.
+// The place list (public/data/places_de.tsv, script/build_places.mjs) is only loaded when first needed.
 
 import platform from '/lib/platform/index.js'
 import { distance, bearing } from '/lib/geo.js'
@@ -11,7 +11,7 @@ import { distance, bearing } from '/lib/geo.js'
 const DIRECTIONS = ['nördlich', 'nordöstlich', 'östlich', 'südöstlich', 'südlich', 'südwestlich', 'westlich', 'nordwestlich']
 
 let places = null
-// Heruntergeladene Liste (Einstellungen → Aktualisierungen) hat Vorrang vor der mitgelieferten
+// A downloaded list (Settings → Updates) takes precedence over the bundled one
 async function placesText() {
   const downloaded = await platform.places?.read().catch(() => null)
   if (downloaded) return { text: downloaded, source: 'download' }
@@ -36,13 +36,13 @@ function loadPlaces() {
       return { names, lat, lon, source }
     })
     .catch((error) => {
-      places = null // beim nächsten Mal erneut versuchen
+      places = null // try again next time
       throw error
     })
   return places
 }
 
-// Nach einer Aktualisierung neu laden
+// Reload after an update
 export function reloadPlaces() {
   places = null
 }
@@ -55,7 +55,7 @@ export async function placesInfo() {
 
 const formatKm = (m) => (m < 1000 ? `${Math.round(m / 100) * 100} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`)
 
-// Nächster Ort aus der mitgelieferten Liste; null außerhalb Deutschlands
+// Nearest place from the bundled list; null outside Germany
 export async function nearPlace(lat, lon) {
   const { names, lat: lats, lon: lons } = await loadPlaces()
   const k = Math.cos((lat * Math.PI) / 180) ** 2
@@ -78,7 +78,7 @@ export async function nearPlace(lat, lon) {
   return { name: names[best], meters, text: `${names[best]}, ${formatKm(meters)} ${direction}` }
 }
 
-// ── Online-Adresse ──────────────────────────────────────────────────────
+// ── Online address ──────────────────────────────────────────────────────
 
 const cache = new Map()
 
@@ -88,15 +88,15 @@ export function formatAddress(result) {
   const place = a.city || a.town || a.village || a.hamlet || a.municipality
   const street = [a.road || a.pedestrian || a.footway || a.path || a.track, a.house_number].filter(Boolean).join(' ')
   const locality = [a.postcode, place].filter(Boolean).join(' ')
-  // Benannte Objekte (Parkplatz, Hütte, Gipfel …) voranstellen – nicht bei Hausadressen
+  // Put named objects (car park, hut, summit …) first – not for house addresses
   const name = result.name && !a.house_number && result.name !== street ? result.name : null
   return [name, street, locality].filter(Boolean).join(', ') || result.display_name || null
 }
 
-// Liefert { text, meters } oder null (kein Internet, nichts gefunden)
+// Returns { text, meters } or null (no internet, nothing found)
 export async function lookupAddress(lat, lon) {
   if (!platform.reverseGeocode) return null
-  const key = `${lat.toFixed(4)},${lon.toFixed(4)}` // ≈ 10 m – Live-Positionen fragen nicht jedes Mal neu
+  const key = `${lat.toFixed(4)},${lon.toFixed(4)}` // ≈ 10 m – live positions don't query again every time
   if (!cache.has(key)) {
     cache.set(key, platform.reverseGeocode(lat, lon)
       .then((result) => {
@@ -113,8 +113,8 @@ export async function lookupAddress(lat, lon) {
   return cache.get(key)
 }
 
-// Beste verfügbare Ortsangabe; onUpdate wird zuerst mit dem Offline-Ergebnis aufgerufen,
-// dann ggf. mit der genaueren Online-Adresse.
+// Best available location description; onUpdate is called first with the offline result,
+// then possibly with the more precise online address.
 //   { text, near, address, source: 'offline' | 'online' }
 export async function describeLocation(lat, lon, onUpdate = () => {}) {
   const near = await nearPlace(lat, lon).catch(() => null)
@@ -122,7 +122,7 @@ export async function describeLocation(lat, lon, onUpdate = () => {}) {
   if (result.text) onUpdate(result)
   const address = await lookupAddress(lat, lon)
   if (address) {
-    // Im Gelände ist die nächste Straße oft weit weg → dann der Ort mit Richtung, die Straße als Zusatz
+    // Out in the terrain the nearest road is often far away → then the place with direction, the road as an addition
     const text = address.meters > 250 && near ? `${near.text} (nahe ${address.text})` : address.text
     result = { text, near: near?.text ?? null, address: address.text, source: 'online' }
     onUpdate(result)

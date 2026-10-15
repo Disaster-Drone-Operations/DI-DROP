@@ -1,13 +1,13 @@
 import { Controller } from '@hotwired/stimulus'
 import platform from '/lib/platform/index.js'
 
-// Modaler Dialog (natives <dialog>). Mit data-dialog-open-value="true" öffnet er sich sofort,
-// z. B. wenn ein Formular darin mit Fehlern zurückkommt.
-// Mit data-dialog-confirm-param="…" am Knopf wird vorher nachgefragt.
+// Modal dialog (native <dialog>). With data-dialog-open-value="true" it opens immediately,
+// e.g. when a form inside it comes back with errors.
+// With data-dialog-confirm-param="…" on the button, a confirmation is asked first.
 export default class extends Controller {
   static targets = ['dialog']
 
-  // Der Dialog kann auch selbst das Controller-Element sein
+  // The dialog can also be the controller element itself
   get dialog() {
     return this.hasDialogTarget ? this.dialogTarget : this.element
   }

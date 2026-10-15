@@ -1,15 +1,15 @@
-//! Nur für die Entwicklung (als Beispielprogramm, damit es nie in die App-Pakete gelangt):
+//! Development only (as an example program, so it never ends up in the app bundles):
 //!   cargo build --example didrop-dev
-//! macht Scan und Import über die Kommandozeile verfügbar,
-//! damit die Browser-Variante (Vite-Dev-Server, siehe config/vite/dev_bridge.js)
-//! mit echten Dateien und echtem Rust-Code getestet werden kann.
+//! exposes scan and import on the command line,
+//! so the browser variant (Vite dev server, see config/vite/dev_bridge.js)
+//! can be tested with real files and real Rust code.
 //!
-//!   echo '["/pfad"]' | didrop-dev scan
+//!   echo '["/path"]' | didrop-dev scan
 //!   echo '{"items": [...], "thumbs_dir": "..."}' | didrop-dev import
-//!   echo '{"src": "...", "dest": "..."}' | didrop-dev copy            (Fortschritt auf stderr)
-//!   echo '{"src": "...", "dir": "/Ordner", "file_name": "x.jpg"}' | didrop-dev nc-upload
-//!   echo '{"action": "test", ...}' | didrop-dev nc                    (Nextcloud-Verwaltung)
-//! Nextcloud-Zugang der Brücke: Datei aus DIDROP_NC_ACCOUNT_FILE statt Schlüsselbund.
+//!   echo '{"src": "...", "dest": "..."}' | didrop-dev copy            (progress on stderr)
+//!   echo '{"src": "...", "dir": "/folder", "file_name": "x.jpg"}' | didrop-dev nc-upload
+//!   echo '{"action": "test", ...}' | didrop-dev nc                    (Nextcloud management)
+//! Nextcloud credentials of the bridge: file from DIDROP_NC_ACCOUNT_FILE instead of the keychain.
 
 use std::io::Read;
 use std::path::PathBuf;
@@ -25,10 +25,10 @@ fn report(done: u64, total: u64) {
 }
 
 fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread().enable_all().build().expect("Laufzeit")
+    tokio::runtime::Builder::new_current_thread().enable_all().build().expect("runtime")
 }
 
-/// Ergebnis als JSON; Fehler als {"error": "..."} (Exit-Code bleibt 0, damit die Brücke ihn weiterreicht)
+/// Result as JSON; errors as {"error": "..."} (exit code stays 0 so the bridge passes it on)
 fn result<T: serde::Serialize>(r: Result<T, String>) -> Result<String, serde_json::Error> {
     match r {
         Ok(v) => serde_json::to_string(&v),
@@ -52,7 +52,7 @@ fn nc(req: Value) -> Result<Value, String> {
         "forget" => to_value(nextcloud::forget()),
         "list" => to_value(rt.block_on(nextcloud::list_folders(&s("path")))),
         "mkdir" => to_value(rt.block_on(nextcloud::create_folder(&s("path")))),
-        other => Err(format!("Unbekannte Aktion: {other}")),
+        other => Err(format!("Unknown action: {other}")),
     }
 }
 
@@ -67,11 +67,11 @@ fn main() {
     std::io::stdin().read_to_string(&mut input).expect("stdin");
     let output = match std::env::args().nth(1).as_deref() {
         Some("scan") => {
-            let paths: Vec<String> = serde_json::from_str(&input).expect("JSON-Liste von Pfaden");
+            let paths: Vec<String> = serde_json::from_str(&input).expect("JSON list of paths");
             serde_json::to_string(&media::scan(&paths))
         }
         Some("import") => {
-            let req: ImportRequest = serde_json::from_str(&input).expect("Import-Anfrage");
+            let req: ImportRequest = serde_json::from_str(&input).expect("import request");
             serde_json::to_string(&media::import(req.items, &req.thumbs_dir, |p| {
                 eprintln!("{}", serde_json::to_string(&p).unwrap_or_default())
             }))
@@ -104,7 +104,7 @@ fn main() {
         }
         Some("nc") => result(nc(serde_json::from_str(&input).expect("JSON"))),
         _ => {
-            eprintln!("Aufruf: didrop-dev scan|import|copy|nc-upload|nc < anfrage.json");
+            eprintln!("Usage: didrop-dev scan|import|copy|nc-upload|thumb|flightlogs-import|flightlogs-scan|nc < request.json");
             std::process::exit(2);
         }
     };

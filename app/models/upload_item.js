@@ -1,6 +1,6 @@
 import Record from '/lib/record.js'
 
-// Eine Datei in der Upload-Warteschlange (Steuerung: app/services/upload_queue.js)
+// A file in the upload queue (control: app/services/upload_queue.js)
 export default class UploadItem extends Record {
   static tableName = 'upload_items'
 
@@ -25,7 +25,7 @@ export default class UploadItem extends Record {
     finished_at: 'datetime',
   }
 
-  // Reihenfolge beim Hochladen: Wärmebilder sind klein und am wichtigsten, Sichtbilder groß
+  // Upload order: thermal images are small and most important, visible images large
   static CATEGORY_ORDER = ['thermal', 'comparison', 'visible', 'other']
   static CATEGORY_LABELS = { thermal: 'Wärmebild', comparison: 'Vergleichsbild', visible: 'Sichtbild', other: 'Datei' }
   static ACTIVE = ['queued', 'running', 'paused', 'failed']

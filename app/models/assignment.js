@@ -2,9 +2,9 @@ import Record from '/lib/record.js'
 import { db } from '/lib/db.js'
 import { parseLocal } from '/lib/time.js'
 
-// Ein Auftrag an die Drohnengruppe, z. B. "Lageerkundung", "Kontrollflug 3",
-// "Bagger-Zufahrt prüfen". Gehört zum Einsatz; die Bilder dazu kommen aus einem
-// oder mehreren Flügen. Ein Flug kann mehrere Aufträge bedienen.
+// A task for the drone unit, e.g. "Lageerkundung", "Kontrollflug 3",
+// "Bagger-Zufahrt prüfen". Belongs to a mission; its images come from one
+// or more flights. One flight can serve several assignments.
 export default class Assignment extends Record {
   static tableName = 'assignments'
 
@@ -23,63 +23,63 @@ export default class Assignment extends Record {
 
   static KINDS = {
     initial: 'Lageerkundung',
-    spezial: 'Spezialauftrag',
-    kontrolle: 'Kontrollflug',
-    sonstiges: 'Sonstiges',
-    kartierung: 'Kartierung (Orthophoto)',
+    special: 'Spezialauftrag',
+    control: 'Kontrollflug',
+    other: 'Sonstiges',
+    mapping: 'Kartierung (Orthophoto)',
     position: 'Positionsaufnahme',
-    gebiet: 'Gebietszuordnung',
+    area: 'Gebietszuordnung',
   }
 
   static DESCRIPTIONS = {
     initial: 'Erster Überblick über die Lage vor Ort',
-    spezial: 'Einzelne Prüfung, z. B. „Kommt der Bagger über den Forstweg?“',
-    kontrolle: 'Wiederkehrend: gleiche Stellen im festen Takt auf Veränderung prüfen',
-    sonstiges: 'Alles andere, z. B. Live-Bild zur Lagebesprechung',
-    kartierung: 'Luftbild einer Fläche für eine Karte',
+    special: 'Einzelne Prüfung, z. B. „Kommt der Bagger über den Forstweg?“',
+    control: 'Wiederkehrend: gleiche Stellen im festen Takt auf Veränderung prüfen',
+    other: 'Alles andere, z. B. Live-Bild zur Lagebesprechung',
+    mapping: 'Luftbild einer Fläche für eine Karte',
     position: 'Lage von Objekten oder Personen erfassen',
-    gebiet: 'Suchgebiete zuordnen',
+    area: 'Suchgebiete zuordnen',
   }
 
-  // Häufige Arten zuerst, der Rest dezent dahinter
-  static COMMON_KINDS = ['spezial', 'kontrolle', 'sonstiges']
-  static MORE_KINDS = ['initial', 'kartierung', 'position', 'gebiet']
+  // Common kinds first, the rest subtly behind
+  static COMMON_KINDS = ['special', 'control', 'other']
+  static MORE_KINDS = ['initial', 'mapping', 'position', 'area']
 
-  // Diese Arten brauchen einen eigenen Namen; die anderen heißen wie ihre Art
-  static NAMED_KINDS = ['spezial', 'sonstiges', 'kartierung', 'position', 'gebiet']
+  // These kinds need their own title; the others are named after their kind
+  static NAMED_KINDS = ['special', 'other', 'mapping', 'position', 'area']
 
-  static STATUSES = { offen: 'Offen', erledigt: 'Erledigt' }
+  static STATUSES = { open: 'Offen', done: 'Erledigt' }
 
   static defaults() {
-    return { status: 'offen', kind: 'spezial' }
+    return { status: 'open', kind: 'special' }
   }
 
-  // ── Abfragen ───────────────────────────────────────────────────────────────
+  // ── Queries ───────────────────────────────────────────────────────────────
 
   static forMission(missionId) {
     return this.where('mission_id = ?', [missionId], { order: 'id ASC' })
   }
 
-  // Offene Aufträge, die fälligsten zuerst ("sofort" zählt ab dem Anlegen)
+  // Open assignments, most due first ("sofort" counts from creation)
   static async open(missionId) {
-    const list = await this.where('mission_id = ? AND status = ?', [missionId, 'offen'])
+    const list = await this.where('mission_id = ? AND status = ?', [missionId, 'open'])
     return list.sort((a, b) => a.effectiveDue - b.effectiveDue)
   }
 
   static done(missionId) {
-    return this.where('mission_id = ? AND status = ?', [missionId, 'erledigt'], { order: 'completed_at DESC' })
+    return this.where('mission_id = ? AND status = ?', [missionId, 'done'], { order: 'completed_at DESC' })
   }
 
-  // Anstehende Aufträge aller aktiven Einsätze
+  // Upcoming assignments of all active missions
   static async upcoming() {
     const list = await this.where(
-      "status = 'offen' AND mission_id IN (SELECT id FROM missions WHERE status = 'aktiv')", [],
+      "status = 'open' AND mission_id IN (SELECT id FROM missions WHERE status = 'active')", [],
       { select: 'assignments.*, (SELECT title FROM missions WHERE missions.id = assignments.mission_id) AS mission_title' },
     )
     return list.sort((a, b) => a.effectiveDue - b.effectiveDue)
   }
 
-  // Zahl der Aufnahmen je Auftrag → Map(id → { shots, files })
+  // Number of shots per assignment → Map(id → { shots, files })
   static async mediaCounts(missionId) {
     const rows = await db.select(
       `SELECT assignment_id, COUNT(*) AS files, COUNT(DISTINCT shot_key) AS shots
@@ -87,8 +87,8 @@ export default class Assignment extends Record {
     return new Map(rows.map((r) => [Number(r.assignment_id), { files: Number(r.files), shots: Number(r.shots) }]))
   }
 
-  // Verlauf: je Auftrag Zeitraum, Anzahl Aufnahmen und einige Vorschaubilder (Wärmebild bevorzugt)
-  // → Map(id → { first, last, shots, thumbs: [Pfad] })
+  // History: per assignment the time span, number of shots and a few thumbnails (thermal preferred)
+  // → Map(id → { first, last, shots, thumbs: [path] })
   static async timeline(missionId, { thumbs = 6 } = {}) {
     const rows = await db.select(
       `SELECT assignment_id, flight_id, shot_key, variant, thumb_path, taken_at
@@ -101,7 +101,7 @@ export default class Assignment extends Record {
       entry.last = r.taken_at ?? entry.last
       const key = `${r.flight_id}/${r.shot_key}`
       const current = entry.shotKeys.get(key)
-      // Wärmebild schlägt alles andere
+      // Thermal beats everything else
       if (r.thumb_path && (!current || r.variant === 'T')) entry.shotKeys.set(key, r.thumb_path)
       else if (!current) entry.shotKeys.set(key, null)
     }
@@ -113,7 +113,7 @@ export default class Assignment extends Record {
     return map
   }
 
-  // ── Validierung ────────────────────────────────────────────────────────────
+  // ── Validation ────────────────────────────────────────────────────────────
 
   validate() {
     this.validatesPresenceOf('mission_id', 'kind')
@@ -123,45 +123,45 @@ export default class Assignment extends Record {
     if (this.due_at && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(this.due_at)) this.addError('due_at', 'ist keine gültige Uhrzeit')
   }
 
-  // ── Eigenschaften ──────────────────────────────────────────────────────────
+  // ── Properties ──────────────────────────────────────────────────────────
 
   get kindLabel() {
     return Assignment.KINDS[this.kind] ?? this.kind
   }
 
   get isOpen() {
-    return this.status === 'offen'
+    return this.status === 'open'
   }
 
   get dueAt() {
     return parseLocal(this.due_at)
   }
 
-  // Für die Sortierung: geplante Zeit, sonst Zeitpunkt des Anlegens ("sofort")
+  // For sorting: scheduled time, otherwise time of creation ("sofort")
   get effectiveDue() {
     return this.dueAt ?? (this.created_at ? new Date(this.created_at) : new Date())
   }
 
   get isControl() {
-    return this.kind === 'kontrolle'
+    return this.kind === 'control'
   }
 
-  // Welche Bearbeitung passt? (Schritt 2 im Bildmodul)
+  // Which processing fits? (step 2 in the image module)
   get processing() {
-    return { kontrolle: 'vergleich', kartierung: 'orthophoto' }[this.kind] ?? 'lagebild'
+    return { control: 'comparison', mapping: 'orthophoto' }[this.kind] ?? 'situation'
   }
 
-  // Beginn der Arbeit = erste Aufnahme (Grundlage für "30 Min. nach Start")
+  // Start of work = first shot (basis for "30 Min. nach Start")
   async startedAt() {
     const [row] = await db.select('SELECT MIN(taken_at) AS t FROM media_files WHERE assignment_id = ?', [this.id])
     return parseLocal(row?.t ?? null)
   }
 
   async complete() {
-    return this.update({ status: 'erledigt', completed_at: new Date().toISOString() })
+    return this.update({ status: 'done', completed_at: new Date().toISOString() })
   }
 
   async reopen() {
-    return this.update({ status: 'offen', completed_at: null })
+    return this.update({ status: 'open', completed_at: null })
   }
 }

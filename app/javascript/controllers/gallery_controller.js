@@ -7,13 +7,13 @@ import { variantLabel, PREFERRED_VARIANTS } from '/app/helpers/media_helper.js'
 import { viewpointNameTag } from '/app/helpers/mission_helper.js'
 import { escapeHtml } from '/app/helpers/application_helper.js'
 
-// Galerie (fast Vollbild):
-//   ← / →  vorherige / nächste Aufnahme der Seite (chronologisch)
-//   ↑ / ↓  dieselbe Stelle (Wegpunkt) früher / später – über alle Aufträge des Einsatzes;
-//          Zoom und Ausschnitt bleiben dabei erhalten (zum Vergleichen)
-//   + / − / 0, Trackpad-Geste, Strg+Mausrad, Doppelklick: zoomen; Ziehen: verschieben
-//   Esc    schließen
-// Zuerst erscheint sofort das Vorschaubild, das Original wird nachgeladen.
+// Gallery (almost full screen):
+//   ← / →  previous / next shot on the page (chronological)
+//   ↑ / ↓  same spot (viewpoint) earlier / later – across all assignments of the mission;
+//          zoom and crop are kept (for comparing)
+//   + / − / 0, trackpad gesture, Ctrl+mouse wheel, double-click: zoom; drag: pan
+//   Esc    close
+// The preview image appears immediately, the original is loaded afterwards.
 export default class extends Controller {
   static targets = ['stage', 'image', 'notice', 'prev', 'next', 'vertical', 'verticalLabel', 'earlier', 'later', 'caption', 'position', 'variants', 'zoomLevel']
 
@@ -21,9 +21,9 @@ export default class extends Controller {
   static DOUBLE_CLICK_ZOOM = 2.5
 
   connect() {
-    this.full = new Map() // Pfad → Object-URL (zuletzt genutzte Originale)
-    this.viewpoints = new Map() // Wegpunkt → Aufnahmen
-    // Wegpunkt umbenannt (z. B. per Doppelklick hier in der Galerie) → Daten nachziehen
+    this.full = new Map() // path → object URL (recently used originals)
+    this.viewpoints = new Map() // viewpoint → shots
+    // Viewpoint renamed (e.g. by double-click here in the gallery) → update data
     this.renamed = ({ detail }) => {
       for (const item of [...(this.items ?? []), ...(this.vertical?.items ?? [])]) {
         if (item.viewpointId === detail.id) item.viewpointName = detail.name
@@ -31,7 +31,7 @@ export default class extends Controller {
       this.viewpoints.delete(detail.id)
     }
     window.addEventListener('viewpoint:renamed', this.renamed)
-    // Datei umbenannt → Pfade in den angezeigten Aufnahmen aktualisieren
+    // File renamed → update paths in the displayed shots
     this.moved = ({ detail }) => {
       const map = new Map(detail.changes.map((c) => [c.from, c.to]))
       for (const item of [...(this.items ?? []), ...(this.vertical?.items ?? [])]) {
@@ -40,10 +40,10 @@ export default class extends Controller {
     }
     window.addEventListener('media:renamed', this.moved)
 
-    // Trackpad/Mausrad: Zwei-Finger-Geste bzw. Strg+Rad zoomt, Wischen verschiebt (wenn gezoomt)
+    // Trackpad/mouse wheel: two-finger gesture or Ctrl+wheel zooms, swiping pans (when zoomed)
     this.wheel = (event) => this.onWheel(event)
     this.stageTarget.addEventListener('wheel', this.wheel, { passive: false })
-    // macOS (WebKit): Zoomgeste am Trackpad kommt als "gesture"-Ereignis statt als Strg+Rad
+    // macOS (WebKit): trackpad zoom gesture arrives as a "gesture" event instead of Ctrl+wheel
     this.gestureStart = (event) => {
       event.preventDefault()
       this.gestureBase = this.view.scale
@@ -66,7 +66,7 @@ export default class extends Controller {
     this.releaseAll()
   }
 
-  // ── Öffnen & Navigation ───────────────────────────────────────────────────
+  // ── Opening & navigation ──────────────────────────────────────────────────
 
   open({ detail }) {
     this.items = detail.items
@@ -75,7 +75,7 @@ export default class extends Controller {
     this.vertical = null
     this.resetZoom()
     if (!this.element.open) this.element.showModal()
-    // Fokus auf die Galerie selbst – nicht auf einen Knopf, der gleich deaktiviert sein könnte
+    // Focus the gallery itself – not a button that might be disabled right away
     this.element.focus()
     this.render()
   }
@@ -88,9 +88,9 @@ export default class extends Controller {
     this.releaseAll()
   }
 
-  // Tasten im ganzen Fenster, solange die Galerie offen ist – unabhängig davon, wo der Fokus
-  // gerade liegt (ein deaktivierter Knopf am Listenende verliert ihn sonst). Eingabefelder
-  // (z. B. Umbenennen) behalten ihre Pfeiltasten.
+  // Keys in the whole window while the gallery is open – regardless of where focus
+  // currently is (a disabled button at the end of the list would lose it otherwise). Input fields
+  // (e.g. renaming) keep their arrow keys.
   key(event) {
     if (!this.element.open || event.target.closest?.('input, textarea, select')) return
     const actions = { ArrowLeft: 'prev', ArrowRight: 'next', ArrowUp: 'earlier', ArrowDown: 'later', '+': 'zoomIn', '=': 'zoomIn', '-': 'zoomOut', 0: 'resetZoom' }
@@ -108,7 +108,7 @@ export default class extends Controller {
     this.move(1)
   }
 
-  // Links/Rechts geht immer durch die Aufnahmen der Seite – von dort aus, wo man war
+  // Left/right always steps through the page's shots – from where you were
   move(step) {
     this.vertical = null
     const index = this.index + step
@@ -141,13 +141,13 @@ export default class extends Controller {
 
   showVariant({ params }) {
     this.variant = params.variant
-    this.resetZoom() // Wärme- und Sichtkamera haben andere Bildausschnitte
+    this.resetZoom() // thermal and visual cameras have different fields of view
     this.render()
   }
 
-  // ── Zoom & Verschieben ────────────────────────────────────────────────────
-  // Zustand: scale + Verschiebung (x/y in Bildschirmpixeln, bezogen auf die Bildmitte).
-  // Bleibt bei ↑/↓ erhalten – gleiche Kamera, gleiche Auflösung, gleicher Ausschnitt.
+  // ── Zoom & pan ────────────────────────────────────────────────────────────
+  // State: scale + offset (x/y in screen pixels, relative to the image center).
+  // Kept on ↑/↓ – same camera, same resolution, same crop.
 
   zoomIn() {
     this.zoomAt(this.view.scale * 1.5)
@@ -167,7 +167,7 @@ export default class extends Controller {
     this.zoomAt(this.constructor.DOUBLE_CLICK_ZOOM, this.pointFromEvent(event))
   }
 
-  // Punkt relativ zur (unverschobenen) Bildmitte
+  // Point relative to the (unpanned) image center
   pointFromEvent(event) {
     const img = this.imageTarget
     const cx = img.offsetLeft + img.offsetWidth / 2
@@ -176,7 +176,7 @@ export default class extends Controller {
     return { x: event.clientX - stage.left - cx, y: event.clientY - stage.top - cy }
   }
 
-  // Zoomen so, dass der Punkt unter dem Mauszeiger an seiner Stelle bleibt
+  // Zoom so that the point under the mouse pointer stays in place
   zoomAt(scale, point = { x: 0, y: 0 }, { animate = true } = {}) {
     const s1 = this.view.scale
     const s2 = Math.min(this.constructor.MAX_ZOOM, Math.max(1, scale))
@@ -190,7 +190,7 @@ export default class extends Controller {
     if (!this.element.open) return
     event.preventDefault()
     if (event.ctrlKey || event.metaKey) {
-      // Trackpad-Zoomgeste (kommt als Strg+Rad) bzw. Strg+Mausrad
+      // Trackpad zoom gesture (arrives as Ctrl+wheel) or Ctrl+mouse wheel
       this.zoomAt(this.view.scale * Math.exp(-event.deltaY * 0.01), this.pointFromEvent(event), { animate: false })
     } else if (this.view.scale > 1) {
       this.view.x -= event.deltaX
@@ -222,7 +222,7 @@ export default class extends Controller {
     img.addEventListener('pointercancel', end)
   }
 
-  // Verschiebung begrenzen (Bild bleibt im Bild) und anwenden
+  // Clamp the offset (image stays in view) and apply it
   applyView({ animate }) {
     if (!this.hasImageTarget) return
     const img = this.imageTarget
@@ -241,7 +241,7 @@ export default class extends Controller {
     return this.vertical ? this.vertical.items[this.vertical.index] : this.items[this.index]
   }
 
-  // ── Darstellung ───────────────────────────────────────────────────────────
+  // ── Rendering ─────────────────────────────────────────────────────────────
 
   async render() {
     const item = this.current
@@ -249,7 +249,7 @@ export default class extends Controller {
     if (!item.files[this.variant]) this.variant = PREFERRED_VARIANTS.find((v) => variants.includes(v)) ?? variants[0]
     const file = item.files[this.variant]
 
-    // Beschriftung
+    // Caption
     const date = item.takenAt ? `${formatDate(item.takenAt, { weekday: false })} ${formatTime(item.takenAt)} Uhr` : file.name
     this.captionTarget.innerHTML = [
       escapeHtml(date),
@@ -260,7 +260,7 @@ export default class extends Controller {
     this.prevTarget.disabled = !!this.vertical ? false : this.index === 0
     this.nextTarget.disabled = !!this.vertical ? false : this.index === this.items.length - 1
 
-    // Gleiche Stelle (↑/↓)
+    // Same spot (↑/↓)
     const base = this.vertical ? null : this.items[this.index]
     const list = this.vertical?.items ?? (base?.viewpointId ? await this.loadViewpoint(base.viewpointId, base.viewpointName) : [])
     const vIndex = this.vertical?.index ?? list.findIndex((i) => i.key === base?.key)
@@ -269,13 +269,13 @@ export default class extends Controller {
     this.earlierTarget.disabled = vIndex <= 0
     this.laterTarget.disabled = vIndex >= list.length - 1
 
-    // Bildtyp-Umschalter
+    // Image type switcher
     this.variantsTarget.innerHTML = variants
       .sort((a, b) => PREFERRED_VARIANTS.indexOf(a) - PREFERRED_VARIANTS.indexOf(b))
       .map((v) => `<button type="button" class="${v === this.variant ? 'is-active' : ''}" data-action="gallery#showVariant" data-gallery-variant-param="${v}">${variantLabel(v)}</button>`)
       .join('')
 
-    // Bild: erst Vorschau, dann Original
+    // Image: preview first, then original
     this.noticeTarget.hidden = !file.video
     this.noticeTarget.textContent = file.video ? 'Video – mit „Öffnen“ abspielen' : ''
     if (file.thumb) this.imageTarget.src = file.thumb
@@ -293,7 +293,7 @@ export default class extends Controller {
   async fullImage(path) {
     if (!this.full.has(path)) {
       this.full.set(path, platform.readImage(path).then((blob) => URL.createObjectURL(blob)))
-      // nur die letzten Originale behalten
+      // keep only the most recent originals
       while (this.full.size > 8) {
         const [oldest, url] = this.full.entries().next().value
         this.full.delete(oldest)
@@ -303,7 +303,7 @@ export default class extends Controller {
     return this.full.get(path)
   }
 
-  // Nachbarn vorladen, damit das Blättern flüssig ist
+  // Preload neighbours so paging is smooth
   preload() {
     const neighbours = this.vertical
       ? [this.vertical.items[this.vertical.index - 1], this.vertical.items[this.vertical.index + 1]]
@@ -320,7 +320,7 @@ export default class extends Controller {
     this.viewpoints?.clear()
   }
 
-  // Alle Aufnahmen eines Wegpunkts im Einsatz, chronologisch
+  // All shots of a viewpoint in the mission, chronological
   async loadViewpoint(viewpointId, viewpointName = null) {
     if (!this.viewpoints.has(viewpointId)) {
       this.viewpoints.set(viewpointId, (async () => {
@@ -341,7 +341,7 @@ export default class extends Controller {
     return this.viewpoints.get(viewpointId)
   }
 
-  // ── Aktionen ──────────────────────────────────────────────────────────────
+  // ── Actions ───────────────────────────────────────────────────────────────
 
   openExternal() {
     platform.openPath(this.current.files[this.variant].path).catch((e) => console.error(e))

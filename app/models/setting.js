@@ -1,5 +1,5 @@
-// Key/Value-Einstellungen. Alle Werte werden beim Start einmal geladen und
-// liegen danach im Speicher – Setting.get() ist deshalb synchron.
+// Key/value settings. All values are loaded once at startup and then
+// kept in memory – which is why Setting.get() is synchronous.
 
 import { db } from '/lib/db.js'
 import schema from '/config/settings.js'
@@ -45,7 +45,7 @@ export default class Setting {
     cache.set(fullKey, value)
   }
 
-  // Speichert alle Felder einer Rubrik; liefert { feld: [fehler] }
+  // Saves all fields of a section; returns { field: [errors] }
   static async updateSection(sectionKey, values = {}) {
     const section = this.section(sectionKey)
     const errors = {}

@@ -1,10 +1,10 @@
--- Auftrag innerhalb eines Flugs (meist genau einer pro Flug)
+-- Assignment within a flight (usually exactly one per flight)
 CREATE TABLE assignments (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   mission_id INTEGER NOT NULL REFERENCES missions (id),
   flight_id  INTEGER NOT NULL REFERENCES flights (id),
   kind       TEXT NOT NULL,      -- lagebild | vergleich | orthophoto | position | gebietszuordnung
-  media_dir  TEXT,               -- Zielordner der Bilder (wird beim ersten Import festgelegt)
+  media_dir  TEXT,               -- target folder of the images (set on first import)
   notes      TEXT,
   created_at TEXT,
   updated_at TEXT
@@ -12,14 +12,14 @@ CREATE TABLE assignments (
 
 CREATE INDEX index_assignments_on_flight_id ON assignments (flight_id);
 
--- Bestehende Flüge bekommen einen Standard-Auftrag
+-- Existing flights get a default assignment
 INSERT INTO assignments (mission_id, flight_id, kind, created_at, updated_at)
   SELECT mission_id, id, 'lagebild', created_at, updated_at FROM flights;
 
 ALTER TABLE missions ADD COLUMN media_dir TEXT;
 ALTER TABLE flights ADD COLUMN media_dir TEXT;
 
--- Eine importierte Datei. Dateien einer Aufnahme (Weitwinkel/Zoom/Wärmebild) teilen sich den shot_key.
+-- An imported file. Files of one shot (wide/zoom/thermal) share the shot_key.
 CREATE TABLE media_files (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
   mission_id        INTEGER NOT NULL REFERENCES missions (id),
@@ -34,7 +34,7 @@ CREATE TABLE media_files (
   thumb_path        TEXT,
   size              INTEGER,
   fingerprint       TEXT NOT NULL,
-  taken_at          TEXT,              -- YYYY-MM-DDTHH:MM:SS (lokal)
+  taken_at          TEXT,              -- YYYY-MM-DDTHH:MM:SS (local)
   camera            TEXT,
   width             INTEGER,
   height            INTEGER,
@@ -48,7 +48,7 @@ CREATE TABLE media_files (
   focal_length      REAL,
   focal_length_35mm REAL,
   digital_zoom      REAL,
-  metadata          TEXT,              -- JSON mit allen DJI-Rohwerten
+  metadata          TEXT,              -- JSON with all raw DJI values
   created_at        TEXT,
   updated_at        TEXT
 );

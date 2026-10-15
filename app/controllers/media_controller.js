@@ -2,7 +2,7 @@ import ApplicationController from '/app/controllers/application_controller.js'
 import Mission from '/app/models/mission.js'
 import Assignment from '/app/models/assignment.js'
 
-// Modul "Bilddaten": anstehende Aufträge und Verlauf aller aktiven Einsätze
+// Module "Bilddaten": upcoming assignments and history of all active missions
 export default class MediaController extends ApplicationController {
   async index() {
     const groups = []

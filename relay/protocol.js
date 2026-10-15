@@ -1,8 +1,8 @@
-// Location Relay Protocol v1 – gemeinsamer Code für Desktop (di-drop) und Smartphone-Webseite.
-// Spezifikation: docs/location-relay-protocol.md
+// Location Relay Protocol v1 – shared code for the desktop (di-drop) and the phone web page.
+// Specification: docs/location-relay-protocol.md
 //
-// Reines Browser-JavaScript (WebCrypto), keine Abhängigkeiten. Der Relay selbst benutzt
-// diese Datei nicht – er sieht nur verschlüsselte Daten.
+// Plain browser JavaScript (WebCrypto), no dependencies. The relay itself doesn't use
+// this file – it only sees encrypted data.
 
 export const VERSION = 1
 export const MAX_MESSAGE_BYTES = 4096
@@ -54,7 +54,7 @@ export function sessionSocketUrl(relayBaseUrl, sessionId) {
   return url.toString()
 }
 
-// ── Schlüssel ─────────────────────────────────────────────────────────────────
+// ── Keys ─────────────────────────────────────────────────────────────────────
 
 export const DIRECTIONS = { toDesktop: 'phone->desktop', toPhone: 'desktop->phone' }
 
@@ -73,7 +73,7 @@ export async function sha256B64url(text) {
   return toB64url(await crypto.subtle.digest('SHA-256', enc.encode(text)))
 }
 
-// Ein Kanal = Schlüssel für Senden und Empfangen + Sequenzzähler (Replay-Schutz)
+// A channel = keys for sending and receiving + sequence counters (replay protection)
 //   role: 'desktop' | 'phone'
 export async function createChannel({ sessionId, phoneSecret, role }) {
   const sendDir = role === 'desktop' ? DIRECTIONS.toPhone : DIRECTIONS.toDesktop
@@ -87,7 +87,7 @@ export async function createChannel({ sessionId, phoneSecret, role }) {
   const aad = (dir) => enc.encode(`v1|${sessionId}|${dir}`)
 
   return {
-    // Klartext-Objekt → {"v":1,"type":"data","iv","ct"} (seq wird automatisch gesetzt)
+    // plaintext object → {"v":1,"type":"data","iv","ct"} (seq is set automatically)
     async seal(payload) {
       const iv = crypto.getRandomValues(new Uint8Array(12))
       const body = enc.encode(JSON.stringify({ ...payload, seq: ++sendSeq }))
@@ -95,7 +95,8 @@ export async function createChannel({ sessionId, phoneSecret, role }) {
       return { v: VERSION, type: 'data', iv: toB64url(iv), ct: toB64url(ct) }
     },
 
-    // {"type":"data",…} → Klartext-Objekt; wirft bei Manipulation, falschem Schlüssel oder Replay
+    // {"type":"data",…} → plaintext object; throws on tampering, wrong key or replay.
+    // The error messages may be shown on the phone page, so they stay German.
     async open(message) {
       if (message?.type !== 'data' || typeof message.iv !== 'string' || typeof message.ct !== 'string') {
         throw new ProtocolError('INVALID_MESSAGE', 'Keine verschlüsselte Nachricht')
@@ -124,9 +125,9 @@ export class ProtocolError extends Error {
   }
 }
 
-// ── Positionen ────────────────────────────────────────────────────────────────
+// ── Positions ─────────────────────────────────────────────────────────────────
 
-// Browser-Geolocation → Protokoll-Position
+// Browser geolocation → protocol position
 export function positionFromGeolocation(pos) {
   const c = pos.coords
   const n = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
@@ -143,7 +144,7 @@ export function positionFromGeolocation(pos) {
   }
 }
 
-// Plausibel? (Bereich, Zeitstempel nicht in der Zukunft)
+// Plausible? (range, timestamp not in the future)
 export function isPlausiblePosition(p) {
   return p && p.type === 'position' &&
     Number.isFinite(p.lat) && Math.abs(p.lat) <= 90 &&

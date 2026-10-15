@@ -3,12 +3,12 @@ import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
 import { summary } from '/app/services/upload_queue.js'
 
-// Seitenleiste unten links: Gesamtfortschritt, Geschwindigkeit, Restzeit (Klick → Übersicht)
+// Sidebar bottom left: overall progress, speed, remaining time (click → overview)
 export default class extends Controller {
   connect() {
     this.onChange = () => this.paint()
     window.addEventListener('uploads:changed', this.onChange)
-    this.timer = setInterval(this.onChange, 1000) // Geschwindigkeit/Restzeit auch ohne Ereignis aktualisieren
+    this.timer = setInterval(this.onChange, 1000) // update speed/remaining time even without an event
     this.paint()
   }
 
@@ -22,6 +22,6 @@ export default class extends Controller {
     this.element.hidden = !s.visible
     if (!s.visible) return
     morph(this.element, render('uploads/_status', { s }))
-    this.element.title = this.element.textContent.replace(/\s+/g, ' ').trim() // Tooltip für die schmale Seitenleiste
+    this.element.title = this.element.textContent.replace(/\s+/g, ' ').trim() // tooltip for the narrow sidebar
   }
 }

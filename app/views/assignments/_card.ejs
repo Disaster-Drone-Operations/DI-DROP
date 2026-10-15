@@ -1,7 +1,7 @@
 <%# locals: assignment, counts, returnTo, showMission -%>
 <% const c = counts?.get(assignment.id) -%>
 <% const path = `/missions/${assignment.mission_id}/assignments/${assignment.id}` -%>
-<% const dropTarget = assignment.isOpen && returnTo && assignment.kind !== 'sonstiges' -%>
+<% const dropTarget = assignment.isOpen && returnTo && assignment.kind !== 'other' -%>
 <article class="task-card task-card--<%= assignment.kind %> <%= assignment.isOpen ? '' : 'is-done' %>"
   <% if (dropTarget) { %>data-media-import-target="zone" data-assignment-id="<%= assignment.id %>"<% } %>
   <% if (assignment.isOpen && assignment.dueAt) { %>data-controller="countdown" data-countdown-at-value="<%= assignment.dueAt.toISOString() %>"<% } %>>
@@ -20,7 +20,7 @@
   <a class="task-card__title" href="#<%= path %>"><%= assignment.title %></a>
   <% if (showMission) { %><div class="task-card__mission subtle"><%- icon('pin', { size: 12 }) %><%= assignment.mission_title %></div><% } %>
   <% if (assignment.notes) { %><p class="task-card__notes subtle"><%= assignment.notes %></p><% } %>
-  <% if (counts && assignment.kind !== 'sonstiges') { -%>
+  <% if (counts && assignment.kind !== 'other') { -%>
     <div class="task-card__meta subtle">
       <span><%= c ? pluralize(c.shots, 'Aufnahme', 'Aufnahmen') : 'noch keine Bilder' %></span>
       <% if (c) { %><span data-provision-assignment="<%= assignment.id %>"></span><% } %>
@@ -28,7 +28,7 @@
   <% } -%>
   <% if (dropTarget) { %><div class="task-card__drop"><%- icon('import', { size: 14 }) %> Bilder hier ablegen</div><% } %>
   <% if (assignment.isOpen && returnTo) { -%>
-    <%# Mit Bildern: „Erledigt“ fragt nach, solange nichts bereitgestellt ist (provision_controller) -%>
+    <%# With images: „Erledigt“ asks for confirmation as long as nothing has been provided (provision_controller) -%>
     <div class="task-card__actions" <% if (c?.shots) { %>data-provision-complete="<%= assignment.id %>" data-provision-title="<%= assignment.title %>"<% } %>>
       <% if (assignment.completion) { -%>
         <%- include('assignments/_complete_dialog', { assignment, completion: assignment.completion, returnTo }) %>

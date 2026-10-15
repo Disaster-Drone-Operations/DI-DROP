@@ -1,4 +1,4 @@
-//! Tauri-Befehle für das Bereitstellen (Aufrufe aus lib/platform/tauri.js)
+//! Tauri commands for delivering files (called from lib/platform/tauri.js)
 
 use super::{folder, nextcloud, register, unregister, Outcome};
 use serde::Serialize;
@@ -13,7 +13,7 @@ pub struct Progress {
     pub total: u64,
 }
 
-/// Fortschritt höchstens alle 100 ms melden (und immer am Ende)
+/// Report progress at most every 100 ms (and always at the end)
 fn throttled(channel: Channel<Progress>) -> Arc<dyn Fn(u64, u64) + Send + Sync> {
     let last = Mutex::new(Instant::now() - Duration::from_secs(1));
     Arc::new(move |done, total| {

@@ -1,12 +1,13 @@
 // di-drop Location Relay – Cloudflare Worker + Durable Object
-// Protokoll: docs/location-relay-protocol.md
+// Protocol: docs/location-relay-protocol.md
 //
-// Der Relay verbindet je Session genau einen Desktop und höchstens ein Smartphone und reicht
-// verschlüsselte Nachrichten durch. Er kennt keine Schlüssel, sieht keine Positionen und
-// speichert nichts dauerhaft (nur ein Wecker für das Session-Ende).
+// Per session the relay connects exactly one desktop and at most one phone and passes
+// encrypted messages through. It knows no keys, sees no positions and
+// stores nothing persistently (only an alarm for the session end).
 //
-// Diese Datei wird von relay/bundle.js zusammen mit der Smartphone-Webseite zu einem
-// einzigen Worker-Modul gebündelt (die Platzhalter für ASSETS und BUNDLE werden dabei ersetzt).
+// relay/bundle.js bundles this file together with the phone web page into a
+// single worker module (replacing the ASSETS and BUNDLE placeholders).
+// Error texts sent to clients may be shown on the phone page, so they stay German.
 
 const ASSETS = /*@@ASSETS@@*/ {} // { "/": {type, body}, "/app.js": …, "/protocol.js": … }
 const BUNDLE = /*@@BUNDLE@@*/ {} // { version, protocol }
@@ -16,7 +17,7 @@ const MAX_MESSAGE_BYTES = 4096
 const RATE_WINDOW_MS = 10_000
 const RATE_MAX = 20
 
-// Desktop-Herkunft (Tauri unter macOS/Windows, Entwicklungsserver). Smartphone = gleiche Herkunft.
+// Desktop origins (Tauri on macOS/Windows, dev server). Phone = same origin.
 const DESKTOP_ORIGINS = ['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost', 'http://localhost:1420']
 
 export default {
@@ -24,7 +25,7 @@ export default {
     const url = new URL(request.url)
 
     if (url.pathname === '/health') {
-      // Darf von überall abgefragt werden (Verbindungstest in der Desktop-App), enthält nichts Sensibles
+      // May be queried from anywhere (connection test in the desktop app), contains nothing sensitive
       const response = json({ ok: true, protocol: BUNDLE.protocol, relay: 'cloudflare', bundle: BUNDLE.version })
       response.headers.set('Access-Control-Allow-Origin', '*')
       return response
@@ -71,14 +72,14 @@ async function sha256(text) {
 
 const randomId = () => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(9)))).replace(/[+/=]/g, 'x')
 
-// Eine Session = ein Durable Object. Zustand steckt ausschließlich in den Anhängen
-// (Attachments) der WebSockets – so überlebt er das Schlafen (Hibernation).
+// One session = one Durable Object. State lives exclusively in the WebSocket attachments –
+// that way it survives hibernation.
 //   Desktop: { role: 'desktop', tokenHash, expiresAt }
 //   Phone:   { role: 'phone', id, paired, pairUsed, tokenHash, expiresAt }
 export class RelaySession {
   constructor(ctx) {
     this.ctx = ctx
-    this.rates = new Map() // WebSocket → Zeitstempel (nur flüchtig, für Rate-Limit)
+    this.rates = new Map() // WebSocket → timestamps (volatile only, for rate limiting)
   }
 
   async fetch() {
@@ -88,7 +89,7 @@ export class RelaySession {
     return new Response(null, { status: 101, webSocket: client })
   }
 
-  // ── Hilfen ─────────────────────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
   sockets(role) {
     return this.ctx.getWebSockets().filter((ws) => ws.deserializeAttachment()?.role === role)
@@ -102,7 +103,7 @@ export class RelaySession {
     return this.sockets('phone').find((ws) => ws.deserializeAttachment().paired) ?? null
   }
 
-  // Anspruch der Session (Hash des Desktop-Tokens), gespeichert in allen Anhängen
+  // Session claim (hash of the desktop token), stored in all attachments
   claim() {
     for (const ws of this.ctx.getWebSockets()) {
       const a = ws.deserializeAttachment()
@@ -115,7 +116,7 @@ export class RelaySession {
     try {
       ws.send(JSON.stringify({ v: 1, ...message }))
     } catch {
-      // Verbindung schon weg
+      // connection already gone
     }
   }
 
@@ -128,7 +129,7 @@ export class RelaySession {
     try {
       ws.close(code, reason)
     } catch {
-      // schon geschlossen
+      // already closed
     }
   }
 
@@ -140,7 +141,7 @@ export class RelaySession {
     return times.length > RATE_MAX
   }
 
-  // ── WebSocket-Ereignisse ───────────────────────────────────────────────────
+  // ── WebSocket events ───────────────────────────────────────────────────────
 
   async webSocketMessage(ws, raw) {
     if (typeof raw !== 'string' || raw.length > MAX_MESSAGE_BYTES) return this.fail(ws, 'INVALID_MESSAGE', 'Nachricht zu groß oder kein Text')
@@ -173,7 +174,7 @@ export class RelaySession {
 
       const expiresAt = claim?.expiresAt ?? Date.now() + SESSION_MAX_MS
       if (!claim) await this.ctx.storage.setAlarm(expiresAt)
-      // Reconnect: ältere Desktop-Verbindung ersetzen
+      // Reconnect: replace older desktop connection
       for (const old of this.sockets('desktop')) this.close(old, 4001, 'REPLACED')
       ws.serializeAttachment({ role: 'desktop', tokenHash, expiresAt })
       this.send(ws, { type: 'desktop-ready', expiresAt })
@@ -186,7 +187,7 @@ export class RelaySession {
       const desktop = this.desktop()
       if (!claim || !desktop) return this.fail(ws, 'NO_RECEIVER', 'Kein Empfänger verbunden')
       if (this.pairedPhone()) return this.fail(ws, 'ALREADY_PAIRED', 'Es ist bereits ein Smartphone verbunden')
-      // Ein neues, noch unbestätigtes Smartphone ersetzt ein älteres unbestätigtes
+      // A new, not yet confirmed phone replaces an older unconfirmed one
       for (const old of this.sockets('phone')) this.close(old, 4001, 'REPLACED')
       const id = randomId()
       ws.serializeAttachment({ role: 'phone', id, paired: false, pairUsed: false, ...claim })
@@ -225,7 +226,7 @@ export class RelaySession {
     if (msg.type === 'data') {
       if (!desktop) return this.send(ws, { type: 'error', code: 'DESKTOP_GONE', message: 'Empfänger nicht verbunden' })
       if (!att.paired) {
-        // Vor der Bestätigung genau eine Nachricht: die Kopplungsprobe
+        // Exactly one message before confirmation: the pairing proof
         if (att.pairUsed) return this.fail(ws, 'INVALID_MESSAGE', 'Warte auf Bestätigung')
         ws.serializeAttachment({ ...att, pairUsed: true })
       }
@@ -243,7 +244,7 @@ export class RelaySession {
     this.close(ws, code === 1005 ? 1000 : code)
     const att = ws.deserializeAttachment() ?? {}
     if (att.role === 'desktop' && !this.sockets('desktop').some((other) => other !== ws)) {
-      // Smartphone informieren; Desktop darf sich innerhalb der Session neu verbinden
+      // Inform the phone; the desktop may reconnect within the session
       for (const phone of this.sockets('phone')) this.send(phone, { type: 'error', code: 'DESKTOP_GONE', message: 'Empfänger getrennt' })
     }
     if (att.role === 'phone') {

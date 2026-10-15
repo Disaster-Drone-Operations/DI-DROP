@@ -1,8 +1,8 @@
-// "Mein Standort": aktuelle Position und laufende Übertragung vom Smartphone.
+// "Mein Standort": current position and running transfer from the smartphone.
 //
-// Liegt nur im Arbeitsspeicher (keine Positionshistorie, nichts in der Datenbank) und
-// überlebt Seitenwechsel innerhalb der App – eine Live-Übertragung läuft also weiter,
-// während man woanders arbeitet. Seiten hören auf das Ereignis "location:changed".
+// Kept in memory only (no position history, nothing in the database) and
+// survives page changes within the app – so a live transfer keeps running
+// while working elsewhere. Pages listen to the "location:changed" event.
 
 import { LocationRelayClient } from '/lib/location/relay_client.js'
 import Setting from '/app/models/setting.js'
@@ -37,7 +37,7 @@ export async function startTransfer(mode) {
       emit()
     },
   })
-  const id = Date.now() // Dialoge öffnen sich einmal pro neuer Übertragung
+  const id = Date.now() // dialogs open once per new transfer
   state.session = { id, mode, status: 'connecting', text: 'Verbinde mit dem Relay …' }
   emit()
   try {
@@ -61,7 +61,7 @@ export function closeTransfer() {
   emit()
 }
 
-// Position, die nicht älter als maxAgeMs ist (z. B. für „Hier“ im Einsatzformular)
+// Position no older than maxAgeMs (e.g. for „Hier“ in the mission form)
 export function freshPosition(maxAgeMs = 5 * 60_000) {
   const p = state.position
   return p && Date.now() - p.timestamp <= maxAgeMs ? p : null

@@ -1,7 +1,7 @@
-//! Deutsches App-Menü für macOS. App-eigene Punkte (Einstellungen, Neuer Auftrag …)
-//! schicken ihre Kennung als Ereignis "menu" an die Oberfläche – dort laufen Menü und
-//! Tastenkürzel durch denselben Code (app/javascript/shortcuts.js).
-//! Unter Windows gibt es kein Menü (unüblich); dort fängt die Oberfläche die Kürzel selbst ab.
+//! German app menu for macOS. App-specific items (Settings, New assignment …)
+//! send their id as a "menu" event to the UI – there menu and keyboard shortcuts
+//! run through the same code (app/javascript/shortcuts.js).
+//! On Windows there is no menu (unusual there); the UI catches the shortcuts itself.
 
 use tauri::menu::{Menu, MenuItemBuilder, SubmenuBuilder};
 use tauri::{AppHandle, Runtime};
@@ -12,7 +12,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     };
 
     let app_menu = SubmenuBuilder::new(app, "di-drop")
-        // Eigene Seite statt Systemfenster: dort stehen auch Quellenangaben und Lizenzen
+        // Own page instead of the system window: it also lists attributions and licenses
         .item(&MenuItemBuilder::with_id("about", "Über di-drop").build(app)?)
         .item(&MenuItemBuilder::with_id("check_updates", "Nach Updates suchen …").build(app)?)
         .separator()
@@ -37,8 +37,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .close_window_with_text("Fenster schließen")
         .build()?;
 
-    // Widerrufen/Wiederholen sind eigene Punkte: In Textfeldern wirken sie auf den Text,
-    // sonst auf die letzte Aktion der App (lib/undo.js)
+    // Undo/Redo are custom items: in text fields they act on the text,
+    // otherwise on the app's last action (lib/undo.js)
     let edit = SubmenuBuilder::new(app, "Bearbeiten")
         .item(&item("undo", "Widerrufen", "CmdOrCtrl+Z")?)
         .item(&item("redo", "Wiederholen", "CmdOrCtrl+Shift+Z")?)
@@ -76,8 +76,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     Menu::with_items(app, &[&app_menu, &file, &edit, &view, &window, &help])
 }
 
-/// Nach dem Start (das Menü hängt dann an der App): „Fenster“ und „Hilfe“ bei macOS anmelden.
-/// macOS listet dann die Fenster und ergänzt im Hilfe-Menü das übliche Suchfeld für alle Menübefehle.
+/// After start (the menu is attached to the app by then): register "Fenster" (Window) and "Hilfe" (Help) with macOS.
+/// macOS then lists the windows and adds the usual search field for all menu commands to the Help menu.
 #[cfg(target_os = "macos")]
 pub fn register_special_menus<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     use tauri::menu::MenuItemKind;

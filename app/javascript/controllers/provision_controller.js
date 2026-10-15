@@ -3,12 +3,12 @@ import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
 import { load, summarize } from '/app/services/provision_status.js'
 
-// Zeigt auf jeder Seite, was schon bereitgestellt ist – live während der Uploads.
-//   <span data-provision-assignment="12"></span>        Status eines Auftrags
-//   <span data-provision-files="5" data-compact data-label="W"></span>  Status einer Datei (Symbol)
-//   data-wide: Text + langer Balken (Kopf der Auftragsseite)
-//   <div data-provision-complete="12" data-provision-title="…">  „Erledigt“: Rückfrage, solange
-//        nichts bereitgestellt ist; danach hervorgehoben
+// Shows on every page what has already been provided – live during uploads.
+//   <span data-provision-assignment="12"></span>        status of an assignment
+//   <span data-provision-files="5" data-compact data-label="W"></span>  status of a file (icon)
+//   data-wide: text + long bar (header of the assignment page)
+//   <div data-provision-complete="12" data-provision-title="…">  „Erledigt“: asks for confirmation
+//        as long as nothing has been provided; highlighted afterwards
 export default class extends Controller {
   connect() {
     this.onChange = () => this.schedule()
@@ -21,7 +21,7 @@ export default class extends Controller {
     clearTimeout(this.timer)
   }
 
-  // Höchstens etwa einmal pro Sekunde nachschauen
+  // Check at most about once per second
   schedule() {
     this.timer ??= setTimeout(() => {
       this.timer = null
@@ -51,7 +51,7 @@ export default class extends Controller {
     for (const el of completeSlots) this.markComplete(el, forAssignment(Number(el.dataset.provisionComplete)))
   }
 
-  // „Erledigt“-Knopf: hervorheben, sobald etwas bereitgestellt ist – sonst vorher nachfragen
+  // „Erledigt“ button: highlight as soon as something has been provided – otherwise ask first
   markComplete(el, status) {
     const provided = status.done > 0
     const message = `Für „${el.dataset.provisionTitle}“ wurde noch nichts bereitgestellt (Nextcloud oder USB-Stick). Trotzdem als erledigt markieren?`

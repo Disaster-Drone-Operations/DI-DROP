@@ -2,7 +2,7 @@ import Record from '/lib/record.js'
 import { db } from '/lib/db.js'
 import { parseLocal } from '/lib/time.js'
 
-// Eine importierte Bild- oder Videodatei
+// An imported image or video file
 export default class MediaFile extends Record {
   static tableName = 'media_files'
 
@@ -41,8 +41,8 @@ export default class MediaFile extends Record {
     metadata: 'text',
   }
 
-  // Dateiendungen der DJI-Kameras. Die M4TD liefert "V" (Sichtbild – je nach Einstellung
-  // von der Weitwinkel- oder Zoomkamera) und "T" (Wärmebild). Andere Modelle trennen W/Z.
+  // File suffixes of the DJI cameras. The M4TD delivers "V" (visible image – depending on the
+  // setting from the wide or zoom camera) and "T" (thermal). Other models separate W/Z.
   static VARIANTS = { V: 'Sichtbild', W: 'Weitwinkel', Z: 'Zoom', T: 'Wärmebild' }
   static VARIANT_ORDER = ['V', 'W', 'Z', 'T']
   static SOURCES = { WideCamera: 'Weitwinkel', ZoomCamera: 'Zoom', InfraredCamera: 'Wärmebild' }
@@ -55,7 +55,7 @@ export default class MediaFile extends Record {
     return this.where('flight_id = ?', [flightId], { order: 'taken_at ASC, shot_key ASC, variant ASC' })
   }
 
-  // Welche Fingerprints sind in diesem Einsatz schon importiert – und wo?
+  // Which fingerprints have already been imported in this mission – and where?
   // → Map(fingerprint → { flight_number, mission_title })
   static async findByFingerprints(fingerprints, missionId) {
     const found = new Map()
@@ -76,7 +76,7 @@ export default class MediaFile extends Record {
     return found
   }
 
-  // Anzahl Aufnahmen/Dateien je Flug → Map(flight_id → { shots, files })
+  // Number of shots/files per flight → Map(flight_id → { shots, files })
   static async countsByFlight(missionId) {
     const rows = await db.select(
       `SELECT flight_id, COUNT(*) AS files, COUNT(DISTINCT shot_key) AS shots
@@ -90,7 +90,7 @@ export default class MediaFile extends Record {
     return MediaFile.VARIANTS[this.variant] ?? this.variant ?? 'Datei'
   }
 
-  // Welche Kamera hat das Bild aufgenommen? "Zoomkamera", "Weitwinkelkamera" …
+  // Which camera took the image? "Zoomkamera", "Weitwinkelkamera" …
   get cameraLabel() {
     const source = MediaFile.SOURCES[this.image_source]
     return source && this.variant !== 'T' ? `${source}kamera` : null
@@ -105,8 +105,8 @@ export default class MediaFile extends Record {
   }
 }
 
-// Dateien zu Aufnahmen gruppieren: [{ key, takenAt, files, byVariant, primary }]
-// Funktioniert sowohl für MediaFile-Instanzen als auch für Scan-Ergebnisse aus Rust.
+// Group files into shots: [{ key, takenAt, files, byVariant, primary }]
+// Works for MediaFile instances as well as for scan results from Rust.
 export function groupShots(files) {
   const shots = new Map()
   for (const file of files) {

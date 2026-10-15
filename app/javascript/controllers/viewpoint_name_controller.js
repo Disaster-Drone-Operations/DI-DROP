@@ -3,9 +3,9 @@ import Viewpoint from '/app/models/viewpoint.js'
 import { syncFileNames } from '/app/services/file_namer.js'
 import { recordViewpointRename } from '/app/services/viewpoint_renamer.js'
 
-// Name eines Wegpunkts ("Ost 1") – Doppelklick zum Umbenennen.
-// Enter speichert, Esc bricht ab, leerer Name = wieder automatisch (Himmelsrichtung).
-// Nach dem Speichern wird der Name überall auf der Seite (auch in der Galerie) ersetzt.
+// Name of a viewpoint ("Ost 1") – double-click to rename.
+// Enter saves, Esc cancels, empty name = automatic again (compass direction).
+// After saving, the name is replaced everywhere on the page (including the gallery).
 export default class extends Controller {
   static values = { id: Number }
 
@@ -42,7 +42,7 @@ export default class extends Controller {
       if (save && value !== current) await this.save(value)
     }
     this.input.addEventListener('keydown', (e) => {
-      e.stopPropagation() // Pfeiltasten nicht an die Galerie weitergeben
+      e.stopPropagation() // don't pass arrow keys on to the gallery
       if (e.key === 'Enter') finish(true)
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -57,10 +57,10 @@ export default class extends Controller {
       const viewpoint = await Viewpoint.find(this.idValue)
       const before = viewpoint.custom_name
       await viewpoint.update({ custom_name: value })
-      // Anzeigename neu bestimmen (ohne eigenen Namen ggf. mit Nummer, z. B. "Ost 2")
+      // Recompute the display name (without a custom name possibly with a number, e.g. "Ost 2")
       const name = (await Viewpoint.forMission(viewpoint.mission_id)).find((v) => v.id === viewpoint.id)?.name ?? value
       window.dispatchEvent(new CustomEvent('viewpoint:renamed', { detail: { id: viewpoint.id, name } }))
-      // Dateien mit umbenennen und offene Ansichten (Vorschau, Galerie) über neue Pfade informieren
+      // Rename files too and notify open views (preview, gallery) about new paths
       const changes = await syncFileNames(viewpoint.mission_id)
       if (changes.length) window.dispatchEvent(new CustomEvent('media:renamed', { detail: { changes } }))
       recordViewpointRename(viewpoint, before)

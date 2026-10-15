@@ -16,9 +16,9 @@ export function kindBadge(mission) {
   return `<span class="badge badge--${escapeHtml(mission.kind)}">${escapeHtml(mission.kindLabel)}</span>`
 }
 
-// ── Aufträge ────────────────────────────────────────────────────────────────
+// ── Assignments ─────────────────────────────────────────────────────────────
 
-const ASSIGNMENT_ICONS = { initial: 'initial', kontrolle: 'kontrolle', spezial: 'spezial', sonstiges: 'clock', kartierung: 'images', position: 'pin', gebiet: 'pin' }
+const ASSIGNMENT_ICONS = { initial: 'initial', control: 'control', special: 'special', other: 'clock', mapping: 'images', position: 'pin', area: 'pin' }
 
 export const assignmentKind = (kind) => ({ key: kind, label: Assignment.KINDS[kind], description: Assignment.DESCRIPTIONS[kind] })
 export const assignmentKindOptions = () => Object.entries(Assignment.KINDS)
@@ -26,8 +26,8 @@ export const commonAssignmentKinds = () => Assignment.COMMON_KINDS.map(assignmen
 export const moreAssignmentKinds = () => Assignment.MORE_KINDS.map(assignmentKind)
 export const namedAssignmentKinds = () => Assignment.NAMED_KINDS
 
-// Badge mit Art des Auftrags. Heißt der Auftrag wie seine Art ("Lageerkundung"),
-// reicht das Symbol – sonst stünde es doppelt da.
+// Badge with the assignment's kind. If the assignment is named like its kind
+// ("Lageerkundung"), the icon suffices – otherwise it would appear twice.
 export function assignmentBadge(assignment) {
   const kind = assignment.kind
   const label = Assignment.KINDS[kind] ?? kind
@@ -37,7 +37,7 @@ export function assignmentBadge(assignment) {
 
 export const addMinutesTo = (date, minutes) => addMinutes(date, minutes)
 
-// Name eines Wegpunkts – per Doppelklick umbenennbar (überall, wo er angezeigt wird)
+// Name of a viewpoint – renamable by double-click (wherever it is shown)
 export function viewpointNameTag(id, name, cls = '') {
   if (!id) return escapeHtml(name)
   return `<span class="renamable ${escapeHtml(cls)}" data-controller="viewpoint-name" data-viewpoint-name-id-value="${escapeHtml(id)}" title="Doppelklick zum Umbenennen">${escapeHtml(name)}</span>`

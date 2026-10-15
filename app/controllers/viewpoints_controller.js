@@ -4,13 +4,13 @@ import { syncFileNames } from '/app/services/file_namer.js'
 import { recordViewpointRename } from '/app/services/viewpoint_renamer.js'
 
 export default class ViewpointsController extends ApplicationController {
-  // Umbenennen; leerer Name → wieder automatischer Name (Himmelsrichtung)
+  // Rename; empty name → automatic name again (compass direction)
   async update() {
     const viewpoint = await Viewpoint.findBy('id = ? AND mission_id = ?', [Number(this.params.id), Number(this.params.mission_id)])
     if (!viewpoint) await Viewpoint.find(-1)
     const before = viewpoint.custom_name
     await viewpoint.update({ custom_name: this.params.viewpoint?.custom_name ?? '' })
-    await syncFileNames(viewpoint.mission_id) // Dateinamen enthalten den Wegpunkt-Namen
+    await syncFileNames(viewpoint.mission_id) // file names contain the viewpoint name
     recordViewpointRename(viewpoint, before)
     this.redirectTo(`/missions/${viewpoint.mission_id}/comparisons`, {
       notice: viewpoint.custom_name ? `Wegpunkt heißt jetzt „${viewpoint.custom_name}“.` : 'Automatischer Name wiederhergestellt.',

@@ -1,5 +1,5 @@
 <%# locals: name, value, suggestion, inputTarget, inputAction -%>
-<%# Nextcloud-Ordner wählen (Basisordner eines Einsatzes) -%>
+<%# Choose a Nextcloud folder (base folder of a mission) -%>
 <div class="nextcloud-folder" data-controller="nextcloud-folder" data-nextcloud-folder-suggestion-value="<%= suggestion ?? '' %>">
   <div class="input-with-button">
     <input type="text" name="<%= name %>" value="<%= value ?? '' %>" placeholder="z. B. /Einsätze/<%= suggestion ?? '' %>" spellcheck="false"

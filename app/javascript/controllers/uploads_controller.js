@@ -4,7 +4,7 @@ import { morph } from '/lib/morph.js'
 import platform from '/lib/platform/index.js'
 import * as queue from '/app/services/upload_queue.js'
 
-// Seite "Uploads": alle Dateien der Warteschlange mit Fortschritt und Steuerung
+// "Uploads" page: all files in the queue with progress and controls
 export default class extends Controller {
   connect() {
     this.onChange = () => this.paint()

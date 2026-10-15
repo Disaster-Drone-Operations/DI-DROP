@@ -1,9 +1,9 @@
-//! Zugriff auf die Cloudflare-API für den Einrichtungsassistenten des Standort-Relays.
+//! Access to the Cloudflare API for the location relay setup wizard.
 //!
-//! Der API-Token liegt ausschließlich im Schlüsselbund des Betriebssystems (macOS-Schlüsselbund,
-//! Windows-Anmeldeinformationsverwaltung). Die Oberfläche kann ihn speichern und löschen,
-//! aber nie auslesen – nur diese Befehle benutzen ihn. Er landet nie in Logs, im Worker,
-//! im QR-Code oder in WebSocket-Nachrichten und wird für den normalen Standortbetrieb nicht gebraucht.
+//! The API token lives exclusively in the OS keychain (macOS Keychain,
+//! Windows Credential Manager). The UI can store and delete it,
+//! but never read it – only these commands use it. It never ends up in logs, the worker,
+//! the QR code or WebSocket messages, and it is not needed for normal location sharing.
 
 use serde_json::Value;
 
@@ -41,7 +41,7 @@ pub fn cf_delete_token() -> Result<(), String> {
     }
 }
 
-/// Nur die Endpunkte, die der Assistent braucht – keine beliebigen API-Aufrufe
+/// Only the endpoints the wizard needs – no arbitrary API calls
 fn check_path(path: &str) -> Result<(), String> {
     let allowed = path == "/user/tokens/verify" || path.starts_with("/accounts");
     let clean = !path.contains("..") && path.chars().all(|c| c.is_ascii_alphanumeric() || "/_-?=&.".contains(c));
@@ -56,7 +56,7 @@ fn client() -> Result<reqwest::Client, String> {
         .map_err(|e| e.to_string())
 }
 
-/// Antwort der Cloudflare-API: { status: <HTTP-Status>, body: <JSON> }
+/// Cloudflare API response: { status: <HTTP status>, body: <JSON> }
 async fn respond(response: reqwest::Response) -> Result<Value, String> {
     let status = response.status().as_u16();
     let body: Value = response.json().await.unwrap_or(Value::Null);
@@ -74,7 +74,7 @@ pub async fn cf_api(method: String, path: String, body: Option<Value>) -> Result
     respond(request.send().await.map_err(|e| format!("Cloudflare nicht erreichbar: {e}"))?).await
 }
 
-/// Worker als ES-Modul hochladen (PUT …/workers/scripts/{name}, multipart) – deployt sofort
+/// Uploads the worker as an ES module (PUT …/workers/scripts/{name}, multipart) – deploys immediately
 #[tauri::command]
 pub async fn cf_upload_worker(account_id: String, script_name: String, metadata: Value, script: String) -> Result<Value, String> {
     let valid_account = account_id.len() == 32 && account_id.chars().all(|c| c.is_ascii_hexdigit());

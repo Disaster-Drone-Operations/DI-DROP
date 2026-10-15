@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 
-// Optionen mit eigenem Eingabefeld ("um [15:00] Uhr"): Wer ins Feld klickt,
-// wählt damit automatisch die zugehörige Option.
+// Options with their own input field ("um [15:00] Uhr"): clicking into the field
+// automatically selects the corresponding option.
 //   <input type="radio" id="x"> … <input type="time" data-choice="x">
 export default class extends Controller {
   connect() {

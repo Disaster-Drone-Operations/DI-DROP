@@ -1,12 +1,12 @@
-// Schema für das Einstellungs-Menü.
+// Schema for the settings menu.
 //
-// Eine neue Rubrik = ein neues Objekt in dieser Liste. Formular, Speichern und
-// Standardwerte ergeben sich automatisch. Gespeichert wird als "<section>.<field>",
-// abrufbar über Setting.get('general.unit_name').
+// A new section = a new object in this list. Form, saving and default
+// values follow automatically. Stored as "<section>.<field>",
+// readable via Setting.get('general.unit_name').
 //
-// Feldtypen: text, textarea, number, select, url, folder
-// partial: eigene Ansicht statt des Standardformulars (z. B. ein Einrichtungs-Assistent)
-//   folder öffnet in der Desktop-App den nativen Ordner-Dialog.
+// Field types: text, textarea, number, select, url, folder
+// partial: custom view instead of the default form (e.g. a setup assistant)
+//   folder opens the native folder dialog in the desktop app.
 
 export default [
   {
@@ -19,8 +19,8 @@ export default [
         hint: 'Erscheint in der Seitenleiste und später in Berichten.' },
       { key: 'operator_name', label: 'Dein Name (Drone Operator)', type: 'text', default: '',
         hint: 'Wird bei neuen Einsätzen automatisch als Drone Operator eingetragen.' },
-      { key: 'default_mission_kind', label: 'Standard für neue Einträge', type: 'select', default: 'uebung',
-        options: [['einsatz', 'Einsatz'], ['uebung', 'Übung']] },
+      { key: 'default_mission_kind', label: 'Standard für neue Einträge', type: 'select', default: 'exercise',
+        options: [['operation', 'Einsatz'], ['exercise', 'Übung']] },
     ],
   },
   {

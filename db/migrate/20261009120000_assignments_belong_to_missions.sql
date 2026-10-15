@@ -1,14 +1,14 @@
 -- migrate: foreign_keys=off
 --
--- Umbau: Aufträge gehören jetzt zum Einsatz (nicht mehr zu einem Flug).
--- Flüge entstehen beim Import; ein Flug kann mehrere Aufträge bedienen.
+-- Restructuring: assignments now belong to the mission (no longer to a flight).
+-- Flights are created on import; one flight can serve several assignments.
 
--- Serie wiederkehrender Aufträge (Kontrollflüge)
+-- Series of recurring assignments (control flights)
 CREATE TABLE assignment_series (
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
   mission_id       INTEGER NOT NULL REFERENCES missions (id),
   kind             TEXT NOT NULL DEFAULT 'kontrolle',
-  interval_minutes INTEGER,         -- zuletzt gewählter Abstand (Vorschlag für den nächsten)
+  interval_minutes INTEGER,         -- last chosen interval (suggestion for the next one)
   status           TEXT NOT NULL DEFAULT 'aktiv',   -- aktiv | beendet
   created_at       TEXT,
   updated_at       TEXT
@@ -18,11 +18,11 @@ CREATE TABLE assignments_new (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   mission_id   INTEGER NOT NULL REFERENCES missions (id),
   series_id    INTEGER REFERENCES assignment_series (id),
-  sequence     INTEGER,             -- Nummer innerhalb der Serie ("Kontrollflug 3")
+  sequence     INTEGER,             -- number within the series ("Kontrollflug 3")
   kind         TEXT NOT NULL,       -- initial | kontrolle | spezial | kartierung | position | gebiet | sonstiges
   title        TEXT NOT NULL,
   status       TEXT NOT NULL DEFAULT 'offen',       -- offen | erledigt
-  due_at       TEXT,                -- geplant für (lokal, YYYY-MM-DDTHH:MM); leer = sofort
+  due_at       TEXT,                -- planned for (local, YYYY-MM-DDTHH:MM); empty = immediately
   completed_at TEXT,
   media_dir    TEXT,
   notes        TEXT,
@@ -30,13 +30,13 @@ CREATE TABLE assignments_new (
   updated_at   TEXT
 );
 
--- Bisherige Kontrollflüge eines Einsatzes werden zu einer (beendeten) Serie
+-- A mission's existing control flights become one (finished) series
 INSERT INTO assignment_series (mission_id, kind, interval_minutes, status, created_at, updated_at)
   SELECT m.id, 'kontrolle', m.control_interval_minutes, 'beendet', m.created_at, m.updated_at
     FROM missions m
    WHERE EXISTS (SELECT 1 FROM flights f WHERE f.mission_id = m.id AND f.kind = 'kontrolle');
 
--- Bisherige Aufträge übernehmen (alle als erledigt – sie stammen aus vergangenen Flügen)
+-- Carry over existing assignments (all as done – they come from past flights)
 INSERT INTO assignments_new (id, mission_id, series_id, sequence, kind, title, status, due_at, completed_at, media_dir, notes, created_at, updated_at)
   SELECT a.id,
          a.mission_id,
@@ -71,7 +71,7 @@ ALTER TABLE assignments_new RENAME TO assignments;
 CREATE INDEX index_assignments_on_mission_id ON assignments (mission_id);
 CREATE INDEX index_assignments_on_series_id ON assignments (series_id);
 
--- Flüge: Ende des Flugs (letzte Aufnahme)
+-- Flights: end of the flight (last shot)
 ALTER TABLE flights ADD COLUMN landed_at TEXT;
 UPDATE flights SET landed_at = (SELECT MAX(substr(taken_at, 1, 16)) FROM media_files WHERE media_files.flight_id = flights.id);
 UPDATE flights SET flown_at = (SELECT MIN(substr(taken_at, 1, 16)) FROM media_files WHERE media_files.flight_id = flights.id)

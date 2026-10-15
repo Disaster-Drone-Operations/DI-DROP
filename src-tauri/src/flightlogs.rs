@@ -1,21 +1,21 @@
-//! Flugprotokolle der DJI-Fernsteuerung (DJI Pilot 2: `DJIFlightRecord_YYYY-MM-DD_[HH-MM-SS].txt`).
+//! Flight logs from the DJI remote controller (DJI Pilot 2: `DJIFlightRecord_YYYY-MM-DD_[HH-MM-SS].txt`).
 //!
-//! - Eckdaten lesen (Start, Dauer, Strecke, Akku …) mit `dji-log-parser`. Ab Format 13 sind die
-//!   Messreihen verschlüsselt (dafür bräuchte es einen DJI-Schlüssel); die Eckdaten im Kopf der
-//!   Datei sind es nicht und reichen für das Flugbuch.
-//! - Übernehmen aus einem Ordner (USB-Stick, kopierter Ordner) oder direkt von der Fernsteuerung
-//!   per MTP (`mtp-rs`: unter Windows über WPD, auf dem Mac über USB).
-//! - Die Originaldateien werden unverändert in den Flugprotokoll-Ordner kopiert und behalten –
-//!   für spätere, genauere Auswertungen. Vorhandene Dateien werden nie überschrieben.
-//! - Mit dabei (Unterordner von FlightRecord, gleiche Struktur im Zielordner):
-//!   `FlightTaskReplay/` (Flugwiedergabe, klein) immer, `MCDatFlightRecords/` (Rohdaten des
-//!   Flugcontrollers, ca. 20 MB je Flug) nur mit `include_dat`.
+//! - Reads key data (start, duration, distance, battery …) with `dji-log-parser`. From format 13 on the
+//!   time series are encrypted (that would need a DJI key); the key data in the file header
+//!   is not, and it is enough for the flight log book.
+//! - Imports from a folder (USB stick, copied folder) or directly from the remote controller
+//!   via MTP (`mtp-rs`: WPD on Windows, USB on the Mac).
+//! - The original files are copied unchanged into the flight log folder and kept –
+//!   for later, more detailed analysis. Existing files are never overwritten.
+//! - Also included (subfolders of FlightRecord, same structure in the target folder):
+//!   `FlightTaskReplay/` (flight replay, small) always, `MCDatFlightRecords/` (raw data of the
+//!   flight controller, approx. 20 MB per flight) only with `include_dat`.
 
 use serde::Serialize;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-/// Wo DJI-Apps auf der Fernsteuerung ihre Protokolle ablegen (Pilot 2 zuerst)
+/// Where DJI apps store their logs on the remote controller (Pilot 2 first)
 const DEVICE_FOLDERS: [&str; 4] = [
     "DJI/com.dji.industry.pilot/FlightRecord",
     "DJI/dji.go.v5/FlightRecord",
@@ -51,11 +51,11 @@ pub struct Summary {
 
 #[derive(Serialize, Debug, Default)]
 pub struct ImportReport {
-    /// neu übernommene Flugprotokolle
+    /// newly imported flight logs
     pub copied: usize,
-    /// neu übernommene Zusatzdateien (FlightTaskReplay, auf Wunsch MCDatFlightRecords)
+    /// newly imported extra files (FlightTaskReplay, optionally MCDatFlightRecords)
     pub extras_copied: usize,
-    /// Eckdaten aller Dateien im Zielordner, die der Aufrufer noch nicht kannte
+    /// key data of all files in the target folder the caller didn't know yet
     pub summaries: Vec<Summary>,
     pub failed: Vec<(String, String)>,
 }
@@ -64,7 +64,7 @@ pub fn is_log_name(name: &str) -> bool {
     name.starts_with("DJIFlightRecord_") && name.to_ascii_lowercase().ends_with(".txt")
 }
 
-/// Eckdaten eines Protokolls
+/// Key data of one log
 pub fn summarize(path: &Path) -> Result<Summary, String> {
     let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
     let size = bytes.len() as u64;
@@ -77,7 +77,7 @@ pub fn summarize(path: &Path) -> Result<Summary, String> {
         log_version: log.version,
         start_time: d.start_time.to_rfc3339(),
         duration_s: d.total_time,
-        distance_m: f64::from(d.total_distance) * 1000.0, // DJI speichert Kilometer
+        distance_m: f64::from(d.total_distance) * 1000.0, // DJI stores kilometers
         max_height_m: f64::from(d.max_height),
         max_speed_ms: f64::from(d.max_horizontal_speed),
         battery_sn: d.battery_sn.trim().to_string(),
@@ -93,12 +93,12 @@ pub fn summarize(path: &Path) -> Result<Summary, String> {
     })
 }
 
-/// Gibt es die Datei im Zielordner schon (gleicher Name, gleiche Größe)?
+/// Does the file already exist in the target folder (same name, same size)?
 fn already_there(dest_dir: &Path, name: &str, size: u64) -> bool {
     std::fs::metadata(dest_dir.join(name)).map(|m| m.len() == size).unwrap_or(false)
 }
 
-/// Freier Zielname: gleichnamige, aber andere Datei → "…_2.txt" (nie überschreiben)
+/// Free target name: different file with the same name → "…_2.txt" (never overwrite)
 fn free_target(dest_dir: &Path, name: &str) -> PathBuf {
     let mut n = 1;
     loop {
@@ -111,7 +111,7 @@ fn free_target(dest_dir: &Path, name: &str) -> PathBuf {
     }
 }
 
-/// Schreibt erst in eine Zwischendatei und benennt dann um – nie eine halbe Datei
+/// Writes to a temporary file first and then renames – never a half-written file
 fn write_new(dest_dir: &Path, name: &str, data: &[u8]) -> Result<(), String> {
     let target = free_target(dest_dir, name);
     let part = target.with_file_name(format!("{}.didrop-part", target.file_name().unwrap().to_string_lossy()));
@@ -119,7 +119,7 @@ fn write_new(dest_dir: &Path, name: &str, data: &[u8]) -> Result<(), String> {
     std::fs::rename(&part, &target).map_err(|e| e.to_string())
 }
 
-/// Alle Protokolle im Zielordner, die der Aufrufer noch nicht kennt, auslesen
+/// Reads all logs in the target folder that the caller doesn't know yet
 fn summarize_unknown(dest_dir: &Path, known: &HashSet<String>, report: &mut ImportReport) {
     let Ok(entries) = std::fs::read_dir(dest_dir) else { return };
     let mut paths: Vec<PathBuf> = entries
@@ -136,7 +136,7 @@ fn summarize_unknown(dest_dir: &Path, known: &HashSet<String>, report: &mut Impo
     }
 }
 
-/// Protokolldateien in einem Ordner (oder darunter, z. B. ein ganzer USB-Stick)
+/// Log files in a folder (or below it, e.g. a whole USB stick)
 fn find_logs(src: &Path) -> Vec<PathBuf> {
     walkdir::WalkDir::new(src)
         .max_depth(8)
@@ -147,8 +147,7 @@ fn find_logs(src: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
-/// Übernehmen aus einem Ordner (USB-Stick, kopierter FlightRecord-Ordner …)
-/// Ordner-Bäume FlightTaskReplay / MCDatFlightRecords unter `src` in den Zielordner übernehmen
+/// Copies the FlightTaskReplay / MCDatFlightRecords folder trees below `src` into the target folder
 fn copy_extras(src: &Path, dest_dir: &Path, include_dat: bool, report: &mut ImportReport) {
     let wanted = |name: &str| name == REPLAY_DIR || (include_dat && name == DAT_DIR);
     let roots: Vec<PathBuf> = walkdir::WalkDir::new(src)
@@ -180,6 +179,7 @@ fn copy_extras(src: &Path, dest_dir: &Path, include_dat: bool, report: &mut Impo
     }
 }
 
+/// Imports from a folder (USB stick, copied FlightRecord folder …)
 pub fn import_folder(src: &Path, dest_dir: &Path, known: &HashSet<String>, include_dat: bool) -> Result<ImportReport, String> {
     std::fs::create_dir_all(dest_dir).map_err(|e| format!("Ordner für Flugprotokolle nicht anlegbar: {e}"))?;
     let mut report = ImportReport::default();
@@ -199,18 +199,18 @@ pub fn import_folder(src: &Path, dest_dir: &Path, known: &HashSet<String>, inclu
     Ok(report)
 }
 
-/// Nur auslesen, was schon im Zielordner liegt, aber noch nicht bekannt ist (Reparatur/Neuaufbau)
+/// Only reads what is already in the target folder but not yet known (repair/rebuild)
 pub fn scan_local(dest_dir: &Path, known: &HashSet<String>) -> ImportReport {
     let mut report = ImportReport::default();
     summarize_unknown(dest_dir, known, &mut report);
     report
 }
 
-// ── Fernsteuerung (MTP) ──────────────────────────────────────────────────
+// ── Remote controller (MTP) ──────────────────────────────────────────────────
 
 #[derive(Serialize, Debug, Clone)]
 pub struct DeviceInfo {
-    /// Kennung zum erneuten Öffnen (Seriennummer, sonst USB-Position)
+    /// Key for reopening (serial number, otherwise USB location)
     pub key: String,
     pub name: String,
 }
@@ -229,9 +229,9 @@ pub fn is_dji(info: &mtp_rs::mtp::MtpDeviceInfo) -> bool {
 }
 
 pub fn device_info(info: &mtp_rs::mtp::MtpDeviceInfo) -> DeviceInfo {
-    // Über die USB-Position öffnen, nicht über die Seriennummer: unter Windows kennt WPD das Gerät
-    // unter einer anderen Seriennummer als der USB-Deskriptor; open_by_location ordnet es dort
-    // über Hersteller-/Produktkennung zu (siehe mtp-rs MtpDeviceBuilder::open_by_location).
+    // Open by USB location, not by serial number: on Windows WPD knows the device under
+    // a different serial number than the USB descriptor; open_by_location matches it there
+    // via vendor/product id (see mtp-rs MtpDeviceBuilder::open_by_location).
     let key = format!("loc:{}", info.location_id);
     let name = [info.manufacturer.as_deref(), info.product.as_deref()]
         .into_iter()
@@ -241,7 +241,7 @@ pub fn device_info(info: &mtp_rs::mtp::MtpDeviceInfo) -> DeviceInfo {
     DeviceInfo { key, name: if name.trim().is_empty() { "DJI-Fernsteuerung".into() } else { name } }
 }
 
-/// Angeschlossene DJI-Geräte (ohne sie zu öffnen)
+/// Connected DJI devices (without opening them)
 pub fn list_devices() -> Result<Vec<DeviceInfo>, String> {
     let devices = mtp_rs::mtp::MtpDevice::list_devices().map_err(|e| e.to_string())?;
     Ok(devices.iter().filter(|d| is_dji(d)).map(device_info).collect())
@@ -272,7 +272,7 @@ async fn open_device(key: &str) -> Result<mtp_rs::mtp::MtpDevice, String> {
     };
     match opened {
         Ok(device) => Ok(device),
-        // Windows: Zuordnung USB ↔ WPD hat nicht geklappt → direkt über WPD öffnen, aber nur ein DJI-Gerät
+        // Windows: matching USB ↔ WPD failed → open directly via WPD, but only a DJI device
         #[cfg(windows)]
         Err(first) => {
             let device = MtpDevice::builder()
@@ -292,12 +292,13 @@ async fn open_device(key: &str) -> Result<mtp_rs::mtp::MtpDevice, String> {
     }
 }
 
-/// Fehlermeldung mit dem Schritt, an dem es hakt (für die Fehlersuche ohne Gerät beim Entwickler)
+/// Error message with the step where it fails (for debugging without the device at hand).
+/// The step names are shown to the user as part of the error message, so they stay German.
 fn at_step(step: &str) -> impl Fn(String) -> String + '_ {
     move |e| format!("{e} [Schritt: {step}]")
 }
 
-/// Protokoll-Ordner auf dem Gerät suchen → (Speicher, Ordner, Pfad)
+/// Finds the log folder on the device → (storage, folder, path)
 async fn find_log_folder(
     device: &mtp_rs::mtp::MtpDevice,
 ) -> Result<Option<(mtp_rs::mtp::Storage, mtp_rs::mtp::ObjectHandle, String)>, String> {
@@ -338,7 +339,7 @@ async fn device_logs(key: &str) -> Result<(DeviceInfo, Option<Found>), String> {
     Ok((device_info, Some((storage, path, files, folder))))
 }
 
-/// Wie viele Protokolle liegen auf der Fernsteuerung, wie viele davon sind neu?
+/// How many logs are on the remote controller, and how many of them are new?
 pub async fn device_status(key: &str, dest_dir: &Path) -> Result<DeviceStatus, String> {
     let (device, found) = device_logs(key).await?;
     Ok(match found {
@@ -352,7 +353,7 @@ pub async fn device_status(key: &str, dest_dir: &Path) -> Result<DeviceStatus, S
     })
 }
 
-/// Zusatzdateien auf dem Gerät: (Datei, Zielordner relativ zum Flugprotokoll-Ordner)
+/// Extra files on the device: (file, target folder relative to the flight log folder)
 async fn device_extras(
     storage: &mtp_rs::mtp::Storage,
     folder: mtp_rs::mtp::ObjectHandle,
@@ -364,7 +365,7 @@ async fn device_extras(
             continue;
         }
         if sub.filename == REPLAY_DIR {
-            // FlightTaskReplay/<FTR_Record_…>/<Dateien>
+            // FlightTaskReplay/<FTR_Record_…>/<files>
             for flight in storage.list_objects(Some(sub.handle)).await.map_err(mtp_error)? {
                 if flight.is_folder() {
                     for file in storage.list_objects(Some(flight.handle)).await.map_err(mtp_error)? {
@@ -387,7 +388,7 @@ async fn device_extras(
     Ok(plan)
 }
 
-/// Neue Protokolle (und Zusatzdateien) von der Fernsteuerung übernehmen. progress(fertig, gesamt)
+/// Imports new logs (and extra files) from the remote controller. progress(done, total)
 pub async fn device_import(
     key: &str,
     dest_dir: &Path,
@@ -399,7 +400,7 @@ pub async fn device_import(
     let (_, found) = device_logs(key).await?;
     let mut report = ImportReport::default();
     if let Some((storage, _, files, folder)) = found {
-        // Plan: erst die Flugprotokolle (wichtig, klein), dann die Zusatzdateien
+        // Plan: flight logs first (important, small), then the extra files
         let mut plan: Vec<(mtp_rs::mtp::ObjectInfo, PathBuf, bool)> =
             files.into_iter().map(|f| (f, PathBuf::new(), true)).collect();
         match device_extras(&storage, folder, include_dat).await {

@@ -1,15 +1,15 @@
-// Import der Bilder eines Flugs in einen Einsatz.
+// Import of a flight's images into a mission.
 //
-// Ablauf: Nach der Landung kommen alle neuen Bilder auf einmal rein. Die App teilt
-// sie in Blöcke (Wegpunkt-Flug vs. Handaufnahmen, Ordner, Zeitlücken) und schlägt
-// je Block einen Auftrag vor. Neue Aufträge lassen sich dabei direkt anlegen –
-// falls ein Auftrag erst während des Flugs kam.
+// Flow: after landing all new images come in at once. The app splits them
+// into blocks (waypoint flight vs. manual shots, folders, time gaps) and suggests
+// an assignment per block. New assignments can be created right there –
+// in case an assignment only came in during the flight.
 //
 //   const importer = new MediaImporter({ mission })
 //   const review = await importer.scan(paths, { preferredAssignmentId })
 //   await importer.import({ blocks: [{ id, target, newKind, newTitle }], shotKeys, variants }, onProgress)
 //
-// Ablage: <Basis>/<2026_09_11__Einsatz>/<2026_09_11__1355_Kontrollflug 3>/DJI_….JPG
+// Storage: <base>/<2026_09_11__Einsatz>/<2026_09_11__1355_Kontrollflug 3>/DJI_….JPG
 
 import platform from '/lib/platform/index.js'
 import { sanitizeFolderName, dateTimeFolder } from '/lib/folders.js'
@@ -28,7 +28,7 @@ export async function mediaBaseDir() {
   return Setting.isSet('storage.base_path') ? Setting.get('storage.base_path') : platform.defaultMediaDir()
 }
 
-// W, V, Z, T zuerst, dann alles andere
+// W, V, Z, T first, then everything else
 function sortVariants(variants) {
   const order = [...MediaFile.VARIANT_ORDER, 'other', 'video']
   const rank = (v) => (order.includes(v) ? order.indexOf(v) : order.length - 2)
@@ -44,7 +44,7 @@ export default class MediaImporter {
     this.entries = []
   }
 
-  // ── 1. Scannen, Duplikate erkennen, Blöcke bilden, Aufträge vorschlagen ─────
+  // ── 1. Scan, detect duplicates, build blocks, suggest assignments ─────
 
   async scan(paths, { preferredAssignmentId = null } = {}) {
     const { files, skipped } = await platform.media.scan(paths)
@@ -86,7 +86,7 @@ export default class MediaImporter {
     }
   }
 
-  // Neue Blöcke bei: anderem Ordner, Wechsel Wegpunkt-Flug ↔ Handaufnahmen, Zeitlücke
+  // New blocks on: different folder, switch waypoint flight ↔ manual shots, time gap
   buildBlocks(shots) {
     const blocks = []
     for (const shot of shots) {
@@ -106,13 +106,13 @@ export default class MediaImporter {
     return blocks
   }
 
-  // Vorschlag: Wegpunkt-Bilder → fälliger Kontrollflug; sonst → ältester offener Auftrag
+  // Suggestion: waypoint images → due control flight; otherwise → oldest open assignment
   // → { target: '<id>' | 'new', newKind }
-  // Ein Block: der fälligste passende Auftrag (Kontrollflüge werden auch mal von Hand geflogen).
-  // Mehrere Blöcke: Wegpunkt-Bilder → Kontrollflug, Handaufnahmen → anderer Auftrag oder neuer.
+  // One block: the most due matching assignment (control flights are sometimes flown manually).
+  // Several blocks: waypoint images → control flight, manual shots → other assignment or a new one.
   suggest(block, open, preferredId, several) {
-    const newKind = block.hasWaypoint ? 'kontrolle' : 'spezial'
-    if (preferredId) return { target: String(preferredId), newKind } // gezielt auf einen Auftrag gezogen
+    const newKind = block.hasWaypoint ? 'control' : 'special'
+    if (preferredId) return { target: String(preferredId), newKind } // dragged onto a specific assignment
     const controls = open.filter((a) => a.isControl)
     const others = open.filter((a) => !a.isControl)
     const match = block.hasWaypoint
@@ -121,14 +121,14 @@ export default class MediaImporter {
     return { target: match ? String(match.id) : 'new', newKind }
   }
 
-  // ── 2. Importieren ─────────────────────────────────────────────────────────
-  // blocks: [{ id, target: '<assignmentId>' | 'new', newKind, newTitle }]   ('skip' = nicht importieren)
+  // ── 2. Import ─────────────────────────────────────────────────────────
+  // blocks: [{ id, target: '<assignmentId>' | 'new', newKind, newTitle }]   ('skip' = don't import)
 
   async import({ blocks, shotKeys, variants }, onProgress = () => {}) {
     const chosenBlocks = blocks.filter((b) => b.target !== 'skip')
     const blockById = new Map(this.blocks.map((b) => [b.id, b]))
 
-    // Dateien je Block (nur ausgewählte Aufnahmen und Bildtypen, keine Duplikate)
+    // Files per block (only selected shots and image types, no duplicates)
     const plan = []
     for (const choice of chosenBlocks) {
       const block = blockById.get(choice.id)
@@ -143,10 +143,10 @@ export default class MediaImporter {
     await this.ensureMissionFolder()
     const flight = await this.findOrCreateFlight(plan.flatMap((p) => p.entries))
 
-    // Aufträge auflösen bzw. anlegen; Zielordner je Block
+    // Resolve or create assignments; target folder per block
     const items = []
     const targets = new Map()
-    const created = new Map() // gleicher neuer Auftrag für mehrere Blöcke → nur einmal anlegen
+    const created = new Map() // same new assignment for several blocks → create only once
     for (const p of plan) {
       const key = p.choice.target === 'new' ? `${p.choice.newKind}|${(p.choice.newTitle ?? '').trim().toLowerCase()}` : null
       p.assignment = (key && created.get(key)) ?? await this.resolveAssignment(p.choice)
@@ -200,14 +200,14 @@ export default class MediaImporter {
 
     if (imported) {
       await Viewpoint.sync(this.mission.id)
-      await syncFileNames(this.mission.id) // sprechende Dateinamen (Datum, Zeit, Wegpunkt, Bildtyp)
+      await syncFileNames(this.mission.id) // descriptive file names (date, time, viewpoint, image type)
     }
     return { imported, failed, flight, assignments: [...new Map(plan.map((p) => [p.assignment.id, p.assignment])).values()] }
   }
 
   async resolveAssignment(choice) {
     if (choice.target !== 'new') return Assignment.find(choice.target)
-    if (choice.newKind === 'kontrolle') {
+    if (choice.newKind === 'control') {
       return AssignmentSeries.start(this.mission.id, { intervalMinutes: this.mission.control_interval_minutes })
     }
     const assignment = new Assignment({
@@ -219,7 +219,7 @@ export default class MediaImporter {
     return assignment
   }
 
-  // Bilder, die zeitlich an einen vorhandenen Flug anschließen, gehören zu ihm
+  // Images that follow an existing flight in time belong to it
   async findOrCreateFlight(entries) {
     const times = entries.map((e) => e.taken_at).filter(Boolean).sort()
     const start = (times[0] ?? toLocalDateTime()).slice(0, 16)

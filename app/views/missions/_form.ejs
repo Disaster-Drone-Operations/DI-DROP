@@ -19,7 +19,7 @@
     </div>
   </fieldset>
 
-  <%# Seltener gebraucht – aufklappbar, öffnet sich bei Fehlern von selbst -%>
+  <%# Needed less often – collapsible, opens by itself on errors -%>
   <details class="disclosure disclosure--card" <%= moreFields.some((a) => mission.errors[a]) ? 'open' : '' %>>
     <summary>Weitere Angaben <span class="disclosure__hint">– Alarmierung, Einsatznummer, Drohnen-Einheit, Nextcloud-Ordner, Notizen</span></summary>
     <div class="disclosure__body">

@@ -15,14 +15,14 @@
     </div>
   </div>
   <div class="toolbar">
-    <a class="button" href="#<%= path %>/comparisons"><%- icon('kontrolle') %><span>Vergleichsbilder</span></a>
+    <a class="button" href="#<%= path %>/comparisons"><%- icon('control') %><span>Vergleichsbilder</span></a>
     <a class="button" href="#<%= path %>/edit"><%- icon('pencil') %><span>Bearbeiten</span></a>
     <% if (mission.isActive) { -%>
-      <%- buttonTo('Abschließen', path, { method: 'patch', icon: 'archive', params: { 'mission[status]': 'abgeschlossen' },
+      <%- buttonTo('Abschließen', path, { method: 'patch', icon: 'archive', params: { 'mission[status]': 'closed' },
             confirm: `„${mission.title}“ abschließen? Er erscheint dann unter „Abgeschlossen“ und kann jederzeit wieder geöffnet werden.`,
             confirmButton: 'Abschließen' }) %>
     <% } else { -%>
-      <%- buttonTo('Wieder öffnen', path, { method: 'patch', icon: 'reopen', params: { 'mission[status]': 'aktiv' } }) %>
+      <%- buttonTo('Wieder öffnen', path, { method: 'patch', icon: 'reopen', params: { 'mission[status]': 'active' } }) %>
     <% } -%>
   </div>
 </header>

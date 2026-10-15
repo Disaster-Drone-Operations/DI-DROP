@@ -16,7 +16,7 @@ export default class MissionsController extends ApplicationController {
   }
 
   async index() {
-    // Angefangener "Neuer Einsatz"? → dorthin zurück (Entwurf, siehe form_draft_controller)
+    // Started a "Neuer Einsatz"? → go back there (draft, see form_draft_controller)
     if (hasDraft('mission-new')) return this.redirectTo('/missions/new')
     await this.render('missions/index', {
       active: await Mission.active(),
@@ -30,9 +30,9 @@ export default class MissionsController extends ApplicationController {
     await this.renderShow(this.mission)
   }
 
-  // Auch vom AssignmentsController genutzt (Fehler im Dialog "Neuer Auftrag")
+  // Also used by AssignmentsController (errors in the "Neuer Auftrag" dialog)
   async renderShow(mission, { newAssignment = null, newAssignmentParams = {} } = {}) {
-    // Wegpunkte zuordnen und Dateinamen nachziehen (auch für früher importierte Bilder)
+    // Assign viewpoints and update file names (also for previously imported images)
     await Viewpoint.sync(mission.id)
     await syncFileNames(mission.id)
 
@@ -44,7 +44,7 @@ export default class MissionsController extends ApplicationController {
     ])
     for (const a of open) a.completion = await completionOptions(a)
 
-    // Verlauf: alle Aufträge mit Bildern, die jüngsten zuerst
+    // History: all assignments with images, most recent first
     const history = [...open, ...done]
       .filter((a) => timeline.has(a.id))
       .sort((a, b) => (timeline.get(b.id).last ?? '').localeCompare(timeline.get(a.id).last ?? ''))
@@ -67,7 +67,7 @@ export default class MissionsController extends ApplicationController {
     await this.render('missions/new', { mission: new Mission() }, { title: 'Neuer Einsatz' })
   }
 
-  // Jeder Einsatz beginnt mit dem Auftrag "Lageerkundung"
+  // Every mission starts with the "Lageerkundung" assignment
   async create() {
     const mission = new Mission(this.params.mission)
     if (await mission.save()) {

@@ -51,15 +51,15 @@
     </div>
   </header>
 
-  <% if (assignment.processing === 'vergleich' && shotCount) { -%>
+  <% if (assignment.processing === 'comparison' && shotCount) { -%>
     <div class="next-step">
-      <%- icon('kontrolle', { size: 20 }) %>
+      <%- icon('control', { size: 20 }) %>
       <div class="next-step__text"><strong>Nächster Schritt:</strong> Vergleichsbilder aus diesem und früheren Kontrollflügen erstellen.</div>
       <a class="button button--primary" href="#/missions/<%= mission.id %>/comparisons">Vergleichsbilder erstellen</a>
     </div>
   <% } -%>
 
-  <% if (assignment.isOpen && assignment.kind !== 'sonstiges') { %><%- include('media/_import_zone', { canImport, label: 'Bilder für diesen Auftrag importieren' }) %><% } %>
+  <% if (assignment.isOpen && assignment.kind !== 'other') { %><%- include('media/_import_zone', { canImport, label: 'Bilder für diesen Auftrag importieren' }) %><% } %>
 
   <% if (variants.length > 1) { -%>
     <nav class="filterbar" aria-label="Kamera">
@@ -73,7 +73,7 @@
     </nav>
   <% } -%>
 
-  <% if (!shots.length && assignment.kind !== 'sonstiges') { -%>
+  <% if (!shots.length && assignment.kind !== 'other') { -%>
     <div class="empty empty--compact"><p class="subtle"><%= variant ? `Keine Aufnahmen mit ${variantLabel(variant)}.` : 'Noch keine Bilder zu diesem Auftrag.' %></p></div>
   <% } else if (shots.length) { -%>
     <p class="hint gallery-hint">Klick auf ein Bild öffnet die große Ansicht – dort mit ← → blättern, mit ↑ ↓ dieselbe Stelle zu anderen Zeiten.</p>

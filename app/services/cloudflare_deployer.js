@@ -1,9 +1,9 @@
-// Richtet den Standort-Relay im eigenen Cloudflare-Konto des Nutzers ein.
+// Sets up the location relay in the user's own Cloudflare account.
 //
-//   Schlüssel prüfen → Konto wählen → workers.dev-Adresse → Worker hochladen → Verbindung testen
+//   verify token → choose account → workers.dev address → upload worker → test connection
 //
-// Der API-Schlüssel liegt nur im Schlüsselbund des Betriebssystems (Rust: src-tauri/src/cloudflare.rs);
-// hier kommen nur die Antworten der Cloudflare-API an. Für den laufenden Betrieb wird er nicht gebraucht.
+// The API token lives only in the operating system's keychain (Rust: src-tauri/src/cloudflare.rs);
+// only the Cloudflare API's responses arrive here. It is not needed for regular operation.
 
 import platform from '/lib/platform/index.js'
 import { buildWorkerScript, RELAY_BUNDLE_VERSION, RELAY_PROTOCOL_VERSION } from '/relay/bundle.js'
@@ -14,7 +14,7 @@ import protocol from '/relay/protocol.js?raw'
 
 export const SCRIPT_NAME = 'di-drop-relay'
 export const SIGNUP_URL = 'https://dash.cloudflare.com/sign-up'
-// Token-Seite mit vorausgefüllten, minimalen Rechten: Workers-Skripte bearbeiten, Kontoeinstellungen lesen
+// Token page with prefilled minimal permissions: edit Workers scripts, read account settings
 export const TOKEN_URL = 'https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=di-drop'
 const COMPATIBILITY_DATE = '2026-09-01'
 
@@ -27,7 +27,7 @@ const cf = () => {
   return platform.cloudflare
 }
 
-// Fehlermeldungen der API verständlich machen
+// Make the API's error messages understandable
 function explain({ status, body }) {
   const codes = (body?.errors ?? []).map((e) => e.code)
   if (status === 401 || codes.includes(1000) || codes.includes(9109)) return 'Der Schlüssel ist ungültig oder abgelaufen.'
@@ -45,12 +45,12 @@ async function api(method, path, body) {
   throw error
 }
 
-// ── Schlüssel ─────────────────────────────────────────────────────────────
+// ── Token ─────────────────────────────────────────────────────────────
 
 export const hasToken = () => (isAvailable() ? cf().hasToken() : Promise.resolve(false))
 export const deleteToken = () => cf().deleteToken()
 
-// Speichert den Schlüssel im Schlüsselbund und prüft ihn; liefert die Konten
+// Stores the token in the keychain and verifies it; returns the accounts
 export async function saveToken(token) {
   const clean = token.trim()
   if (!/^[A-Za-z0-9_-]{30,}$/.test(clean)) {
@@ -68,7 +68,7 @@ export async function listAccounts() {
   return accounts.map((a) => ({ id: a.id, name: a.name }))
 }
 
-// ── workers.dev-Adresse ───────────────────────────────────────────────────
+// ── workers.dev address ───────────────────────────────────────────────────
 
 export async function getSubdomain(accountId) {
   try {
@@ -99,7 +99,7 @@ export async function createSubdomain(accountId, name) {
 
 export const relayUrl = (scriptName, subdomain) => `https://${scriptName}.${subdomain}.workers.dev`
 
-// ── Relay installieren ────────────────────────────────────────────────────
+// ── Install relay ────────────────────────────────────────────────────
 
 export async function health(baseUrl, { timeout = 8000 } = {}) {
   const controller = new AbortController()
@@ -116,7 +116,7 @@ export async function health(baseUrl, { timeout = 8000 } = {}) {
   }
 }
 
-// Vorhandenen Worker gleichen Namens nur überschreiben, wenn er von di-drop stammt
+// Only overwrite an existing worker with the same name if it comes from di-drop
 async function chooseScript(accountId, subdomain) {
   const scripts = (await api('GET', `/accounts/${accountId}/workers/scripts`)) ?? []
   for (const name of [SCRIPT_NAME, `${SCRIPT_NAME}-2`, `${SCRIPT_NAME}-3`]) {
@@ -128,7 +128,7 @@ async function chooseScript(accountId, subdomain) {
   throw new CloudflareError('Im Konto gibt es schon mehrere fremde Worker mit dem Namen „di-drop-relay“.')
 }
 
-// onStep(key, text) meldet den Fortschritt: 'script' → 'upload' → 'route' → 'check'
+// onStep(key, text) reports progress: 'script' → 'upload' → 'route' → 'check'
 export async function deployRelay(accountId, subdomain, { onStep = () => {} } = {}) {
   onStep('script', 'Worker vorbereiten …')
   const target = await chooseScript(accountId, subdomain)
@@ -152,7 +152,7 @@ export async function deployRelay(accountId, subdomain, { onStep = () => {} } = 
   onStep('route', 'Adresse freischalten …')
   await api('POST', `/accounts/${accountId}/workers/scripts/${target.name}/subdomain`, { enabled: true, previews_enabled: false })
 
-  // Eine neue workers.dev-Adresse braucht manchmal ein, zwei Minuten, bis sie erreichbar ist
+  // A new workers.dev address sometimes takes a minute or two until it is reachable
   const url = relayUrl(target.name, subdomain)
   const started = Date.now()
   for (let attempt = 1; Date.now() - started < 180_000; attempt++) {

@@ -1,15 +1,15 @@
-// Ziele für das Bereitstellen. Ein neues Ziel = ein neuer Eintrag hier (+ Übertragung in
-// src-tauri/src/transfer und lib/platform). Die Warteschlange (upload_queue.js) kennt nur:
+// Targets for provisioning. A new target = a new entry here (+ transfer in
+// src-tauri/src/transfer and lib/platform). The queue (upload_queue.js) only knows:
 //
-//   available()                       gibt es das Ziel auf dieser Plattform?
-//   status()                          { ready, text, setupPath? } – eingerichtet?
-//   missionBase(mission)              Vorschlag für den Basisordner des Einsatzes
-//   join(...teile)                    Zielpfad zusammensetzen
-//   transfer(item, id, onProgress)    Datei übertragen → { bytes, skipped, name }
-//                                     (nie überschreiben; name = Ausweichname wie "…_2.JPG")
-//   cancel(id)                        laufende Übertragung abbrechen
-//   mirrorDepth                       so viele letzte Pfadteile spiegeln den lokalen Pfad
-//                                     (für Umbenennungen nach dem Einreihen)
+//   available()                       does the target exist on this platform?
+//   status()                          { ready, text, setupPath? } – set up?
+//   missionBase(mission)              suggestion for the mission's base folder
+//   join(...parts)                    build the target path
+//   transfer(item, id, onProgress)    transfer a file → { bytes, skipped, name }
+//                                     (never overwrite; name = fallback name like "…_2.JPG")
+//   cancel(id)                        cancel a running transfer
+//   mirrorDepth                       this many trailing path parts mirror the local path
+//                                     (for renames after enqueueing)
 
 import platform from '/lib/platform/index.js'
 import Setting from '/app/models/setting.js'
@@ -29,19 +29,19 @@ export const TARGETS = {
     label: 'Nextcloud',
     icon: 'cloud',
     action: 'In die Nextcloud hochladen',
-    mirrorDepth: 2, // <Einsatz-Basisordner>/<Auftragsordner>/<Datei>
+    mirrorDepth: 2, // <mission base folder>/<assignment folder>/<file>
     available: () => !!platform.nextcloud,
     async status() {
       const account = await platform.nextcloud.account().catch(() => null)
       if (!account) return { ready: false, text: 'Noch keine Nextcloud eingerichtet.', setupPath: '/settings/nextcloud' }
       return { ready: true, text: `${account.login_name} · ${hostOf(account.server)}` }
     },
-    // Basisordner wird pro Einsatz festgelegt (Einsatz bearbeiten oder beim ersten Hochladen)
+    // The base folder is set per mission (edit mission or on first upload)
     missionBase(mission) {
       return mission.nextcloud_path || null
     },
     join: (...parts) => joinSlash(...parts),
-    // Ordner und Dateiname getrennt: Rust schreibt ausschließlich in diesen Ordner
+    // Folder and file name separately: Rust writes exclusively into this folder
     transfer(item, id, onProgress) {
       const cut = item.dest_path.lastIndexOf('/')
       return platform.transfer.nextcloud(id, item.source_path, item.dest_path.slice(0, cut), item.dest_path.slice(cut + 1), onProgress)
@@ -54,12 +54,12 @@ export const TARGETS = {
     label: 'Ordner / USB-Stick',
     icon: 'folder',
     action: 'In Ordner exportieren',
-    mirrorDepth: 3, // <Zielordner>/<Einsatzordner>/<Auftragsordner>/<Datei>
+    mirrorDepth: 3, // <target folder>/<mission folder>/<assignment folder>/<file>
     available: () => !!platform.transfer,
     async status() {
       return { ready: true, text: '' }
     },
-    // Zuletzt gewählter Ordner (z. B. der USB-Stick); darin entsteht der Einsatzordner
+    // Last chosen folder (e.g. the USB stick); the mission folder is created inside it
     missionBase(mission) {
       const base = Setting.get('uploads.folder_path')
       return base ? joinSlash(base, mission.folderName) : null
@@ -72,7 +72,7 @@ export const TARGETS = {
 
 export const availableTargets = () => Object.values(TARGETS).filter((t) => t.available())
 
-// Ordnername des Auftrags (wie auf der Festplatte): "2026_10_11__13_08_Kontrollflug 3"
+// Folder name of the assignment (as on disk): "2026_10_11__13_08_Kontrollflug 3"
 export function assignmentFolderName(assignment) {
   return assignment.media_dir?.split(/[\\/]/).filter(Boolean).pop() ?? assignment.title
 }

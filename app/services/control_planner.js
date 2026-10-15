@@ -1,7 +1,7 @@
-// Planung wiederkehrender Kontrollflüge: "Erledigt" → nächsten Termin wählen.
+// Planning of recurring control flights: "Erledigt" → choose the next appointment.
 //
-// Optionen im Dialog: 30 / 60 / X Minuten nach Start des letzten Flugs oder feste Uhrzeit.
-// "Start" = erste Aufnahme des erledigten Kontrollflugs (sonst geplante Zeit, sonst jetzt).
+// Options in the dialog: 30 / 60 / X minutes after the start of the last flight, or a fixed time.
+// "Start" = first shot of the completed control flight (otherwise scheduled time, otherwise now).
 
 import AssignmentSeries from '/app/models/assignment_series.js'
 import Assignment from '/app/models/assignment.js'
@@ -19,24 +19,24 @@ export async function nextDue(assignment, next) {
   return { dueAt: addMinutes(await baseTime(assignment), minutes), minutes }
 }
 
-// Daten für den "Erledigt"-Dialog – null, wenn es keine laufende Serie gibt
+// Data for the "Erledigt" dialog – null if there is no running series
 export async function completionOptions(assignment) {
   if (!assignment.isControl || !assignment.isOpen || !assignment.series_id) return null
-  const series = await AssignmentSeries.findBy('id = ? AND status = ?', [assignment.series_id, 'aktiv'])
+  const series = await AssignmentSeries.findBy('id = ? AND status = ?', [assignment.series_id, 'active'])
   if (!series) return null
   const started = await assignment.startedAt()
   return { base: started ?? assignment.dueAt ?? new Date(), fromImages: !!started, interval: series.interval_minutes || 30 }
 }
 
-// Auftrag erledigen; bei Kontrollflügen den nächsten planen oder die Serie beenden.
-// → { notice, planned, finishedSeries } (für Meldung und Widerrufen)
+// Complete an assignment; for control flights schedule the next one or end the series.
+// → { notice, planned, finishedSeries } (for the notice and undo)
 export async function completeAssignment(assignment, next = {}) {
   await assignment.complete()
   let notice = `„${assignment.title}“ erledigt.`
   let planned = null
   let finishedSeries = null
 
-  const series = assignment.series_id ? await AssignmentSeries.findBy('id = ? AND status = ?', [assignment.series_id, 'aktiv']) : null
+  const series = assignment.series_id ? await AssignmentSeries.findBy('id = ? AND status = ?', [assignment.series_id, 'active']) : null
   if (series && next.mode === 'none') {
     await series.finish()
     finishedSeries = series
@@ -50,7 +50,7 @@ export async function completeAssignment(assignment, next = {}) {
   return { notice, planned, finishedSeries }
 }
 
-// Widerrufen von completeAssignment: wieder offen, geplanten Folgeauftrag entfernen, Serie fortsetzen
+// Undo of completeAssignment: open again, remove the scheduled follow-up, continue the series
 export async function revertCompletion(assignmentId, { planned, finishedSeries }) {
   if (planned) {
     const next = await Assignment.findBy('id = ?', [planned.id])
@@ -59,7 +59,7 @@ export async function revertCompletion(assignmentId, { planned, finishedSeries }
       await next.destroy()
     }
   }
-  if (finishedSeries) await finishedSeries.update({ status: 'aktiv' })
+  if (finishedSeries) await finishedSeries.update({ status: 'active' })
   const assignment = await Assignment.find(assignmentId)
   await assignment.reopen()
 }

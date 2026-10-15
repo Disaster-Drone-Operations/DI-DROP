@@ -1,13 +1,13 @@
-//! Import von Drohnenbildern und -videos.
+//! Import of drone images and videos.
 //!
-//! 1. `scan`   – findet Mediendateien in Dateien/Ordnern, liest Metadaten und
-//!               berechnet einen Fingerprint (für die Duplikat-Erkennung).
-//!               Liest nur Anfang und Ende jeder Datei → auch auf SD-Karten schnell.
-//! 2. `import` – kopiert die ausgewählten Dateien in den Flug-Ordner und erzeugt
-//!               Vorschaubilder.
+//! 1. `scan`   – finds media files in files/folders, reads metadata and
+//!               computes a fingerprint (for duplicate detection).
+//!               Reads only the start and end of each file → fast even on SD cards.
+//! 2. `import` – copies the selected files into the flight folder and creates
+//!               thumbnails.
 //!
-//! Was davon neu oder schon importiert ist, entscheidet das Frontend anhand
-//! der Datenbank.
+//! Which of them are new or already imported is decided by the frontend based on
+//! the database.
 
 pub mod metadata;
 pub mod thumbnail;
@@ -24,7 +24,7 @@ const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg"];
 const RAW_EXTENSIONS: &[&str] = &["dng"];
 const VIDEO_EXTENSIONS: &[&str] = &["mp4", "mov"];
 
-/// So viel wird vom Dateianfang (Metadaten + Fingerprint) und -ende (Fingerprint) gelesen
+/// How much is read from the start (metadata + fingerprint) and end (fingerprint) of a file
 const HEAD_BYTES: usize = 256 * 1024;
 const TAIL_BYTES: u64 = 256 * 1024;
 
@@ -36,9 +36,9 @@ pub struct ScannedFile {
     pub fingerprint: String,
     /// "image" | "raw" | "video"
     pub kind: String,
-    /// Gemeinsamer Schlüssel aller Dateien einer Aufnahme, z. B. "DJI_20261006143012_0001"
+    /// Shared key of all files of one shot, e.g. "DJI_20261006143012_0001"
     pub shot_key: String,
-    /// Kamera-Variante aus dem Dateinamen: "W" (Weitwinkel), "Z" (Zoom), "T" (Wärmebild), "V" …
+    /// Camera variant from the file name: "W" (wide), "Z" (zoom), "T" (thermal), "V" …
     pub variant: Option<String>,
     pub meta: Metadata,
 }
@@ -100,12 +100,12 @@ pub fn scan(paths: &[String]) -> ScanResult {
     result
 }
 
-/// Fasst die Dateien einer Aufnahme (Wärmebild + Sichtbild …) unter einem Schlüssel zusammen.
+/// Groups the files of one shot (thermal + visible …) under one key.
 ///
-/// Die Kameras der M4TD lösen nicht exakt gleichzeitig aus: "…135744_0001_T" und
-/// "…135745_0001_V" gehören zusammen. Kriterium: gleicher Ordner, gleiche Laufnummer,
-/// höchstens 3 Sekunden auseinander. Die Laufnummer allein reicht nicht – sie beginnt
-/// in einem Ordner auch mal wieder bei 0001.
+/// The M4TD cameras don't trigger at exactly the same time: "…135744_0001_T" and
+/// "…135745_0001_V" belong together. Criterion: same folder, same sequence number,
+/// at most 3 seconds apart. The sequence number alone is not enough – within a folder
+/// it sometimes starts again at 0001.
 fn assign_shot_keys(files: &mut [ScannedFile]) {
     const MAX_GAP_SECONDS: i64 = 3;
 
@@ -120,7 +120,7 @@ fn assign_shot_keys(files: &mut [ScannedFile]) {
     parsed.sort_by(|a, b| (&a.1, &a.2.index, a.2.seconds).cmp(&(&b.1, &b.2.index, b.2.seconds)));
 
     let mut used = std::collections::HashSet::new();
-    let mut group_start: Option<(String, String, i64, String)> = None; // dir, index, Sekunden, Schlüssel
+    let mut group_start: Option<(String, String, i64, String)> = None; // dir, index, seconds, key
     for (i, dir, name) in parsed {
         let same_shot = group_start.as_ref().is_some_and(|(d, idx, secs, _)| {
             *d == dir && *idx == name.index && name.seconds - secs <= MAX_GAP_SECONDS
@@ -143,8 +143,8 @@ fn scan_file(path: &Path) -> Result<ScannedFile, String> {
     let mut head = vec![0; HEAD_BYTES.min(size as usize)];
     file.read_exact(&mut head).map_err(|e| e.to_string())?;
 
-    // Fingerprint: Größe + Anfang + Ende. Kamera-Dateien unterscheiden sich schon
-    // im Kopf (Zeitstempel, Seriennummern) – so müssen wir nicht die ganze Datei lesen.
+    // Fingerprint: size + start + end. Camera files already differ
+    // in the header (timestamps, serial numbers) – so we don't have to read the whole file.
     let mut hasher = blake3::Hasher::new();
     hasher.update(&size.to_le_bytes());
     hasher.update(&head);
@@ -159,7 +159,7 @@ fn scan_file(path: &Path) -> Result<ScannedFile, String> {
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
     let dji_name = parse_dji_name(&name);
     let stem = name.rsplit_once('.').map(|(s, _)| s).unwrap_or(&name);
-    // Vorläufig – assign_shot_keys() fasst zusammengehörige Dateien danach zusammen
+    // Preliminary – assign_shot_keys() groups related files afterwards
     let shot_key = dji_name.as_ref().map(|n| format!("DJI_{}_{}", n.stamp, n.index)).unwrap_or_else(|| stem.to_string());
     let variant = dji_name.as_ref().map(|n| n.variant.clone());
 
@@ -171,16 +171,16 @@ fn scan_file(path: &Path) -> Result<ScannedFile, String> {
     Ok(ScannedFile { path: path.display().to_string(), name, size, fingerprint, kind: kind.into(), shot_key, variant, meta })
 }
 
-/// Bestandteile eines DJI-Dateinamens: "DJI_20261006143012_0001_T.JPG"
+/// Parts of a DJI file name: "DJI_20261006143012_0001_T.JPG"
 #[derive(Debug, Clone, PartialEq)]
 pub struct DjiName {
     /// "20261006143012"
     pub stamp: String,
-    /// Laufnummer "0001"
+    /// sequence number "0001"
     pub index: String,
-    /// "T" (Wärmebild), "V" (Sichtbild), "W", "Z" …
+    /// "T" (thermal), "V" (visible), "W", "Z" …
     pub variant: String,
-    /// Sekunden seit 1970 (für Zeitabstände; Zeitzone egal)
+    /// seconds since 1970 (for time differences; time zone irrelevant)
     pub seconds: i64,
 }
 
@@ -210,7 +210,7 @@ pub fn parse_dji_name(name: &str) -> Option<DjiName> {
     })
 }
 
-/// Tage seit 1970-01-01 (Algorithmus von Howard Hinnant)
+/// Days since 1970-01-01 (algorithm by Howard Hinnant)
 fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
     let y = if m <= 2 { y - 1 } else { y };
     let era = y.div_euclid(400);
@@ -250,7 +250,7 @@ pub fn import(items: Vec<ImportItem>, thumbs_dir: &Path, progress: impl Fn(Impor
     use rayon::prelude::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    // Kopieren nacheinander (schont SD-Karten), Vorschaubilder danach parallel
+    // Copy sequentially (easier on SD cards), thumbnails afterwards in parallel
     let total = items.len();
     let done = AtomicUsize::new(0);
     let report = |name: String| progress(ImportProgress { done: done.load(Ordering::Relaxed), total, name });
@@ -299,7 +299,7 @@ pub fn import(items: Vec<ImportItem>, thumbs_dir: &Path, progress: impl Fn(Impor
     results
 }
 
-/// "bild.jpg" → "bild.jpg", oder "bild_2.jpg", "bild_3.jpg" … wenn schon vorhanden
+/// "image.jpg" → "image.jpg", or "image_2.jpg", "image_3.jpg" … if it already exists
 pub fn unique_path(path: &Path) -> PathBuf {
     if !path.exists() {
         return path.to_path_buf();
@@ -312,7 +312,7 @@ pub fn unique_path(path: &Path) -> PathBuf {
         .unwrap()
 }
 
-/// Umbenennen innerhalb desselben Ordners – siehe Befehl `rename_file`
+/// Rename within the same folder – see command `rename_file`
 pub fn rename_file(from: &Path, to: &Path) -> Result<PathBuf, String> {
     if from.parent() != to.parent() {
         return Err("Umbenennen nur innerhalb desselben Ordners".into());
@@ -324,14 +324,14 @@ pub fn rename_file(from: &Path, to: &Path) -> Result<PathBuf, String> {
     if !from.exists() {
         return Err(format!("Nicht gefunden: {}", from.display()));
     }
-    // Gleiche Datei (z. B. nur andere Groß-/Kleinschreibung auf macOS) → direkt umbenennen
+    // Same file (e.g. only different case on macOS) → rename directly
     let same = to.exists() && fs::canonicalize(from).ok() == fs::canonicalize(to).ok();
     let target = if to.exists() && !same { unique_path(to) } else { to.to_path_buf() };
     fs::rename(from, &target).map_err(|e| e.to_string())?;
     Ok(target)
 }
 
-/// Ordner umbenennen (gleicher übergeordneter Ordner, nie überschreiben → "_2" …)
+/// Renames a folder (same parent folder, never overwrite → "_2" …)
 pub fn rename_dir(from: &Path, to: &Path) -> Result<PathBuf, String> {
     if from.parent() != to.parent() {
         return Err("Umbenennen nur innerhalb desselben Ordners".into());
@@ -350,8 +350,8 @@ pub fn rename_dir(from: &Path, to: &Path) -> Result<PathBuf, String> {
     Ok(target)
 }
 
-/// Kopiert in den Zielordner. Gibt es dort schon eine Datei gleichen Namens:
-/// gleicher Inhalt → wiederverwenden, anderer Inhalt → "_1", "_2" … anhängen.
+/// Copies into the target folder. If a file with the same name already exists there:
+/// same content → reuse it, different content → append "_1", "_2" …
 fn copy_into(item: &ImportItem, name: &str) -> Result<PathBuf, String> {
     let dir = PathBuf::from(&item.dest_dir);
     fs::create_dir_all(&dir).map_err(|e| format!("Ordner konnte nicht angelegt werden: {e}"))?;
@@ -386,13 +386,13 @@ mod tests {
         fs::write(&b, b"b").unwrap();
         let target = dir.join("2026_09_11__133152_Ost 1_Wärmebild.JPG");
         assert_eq!(rename_file(&a, &target).unwrap(), target);
-        // Ziel belegt → "_2"
+        // target taken → "_2"
         let second = rename_file(&b, &target).unwrap();
         assert_eq!(second.file_name().unwrap(), "2026_09_11__133152_Ost 1_Wärmebild_2.JPG");
         assert_eq!(fs::read(&target).unwrap(), b"a");
-        // Umbenennen auf sich selbst ändert nichts
+        // renaming to itself changes nothing
         assert_eq!(rename_file(&target, &target).unwrap(), target);
-        // anderer Ordner ist nicht erlaubt
+        // a different folder is not allowed
         assert!(rename_file(&target, &std::env::temp_dir().join("x.JPG")).is_err());
         fs::remove_dir_all(dir).unwrap();
     }
@@ -436,10 +436,10 @@ mod tests {
             file("/sd/a/DJI_20260911135745_0001_V.JPG"),
             file("/sd/a/DJI_20260911135816_0002_T.JPG"),
             file("/sd/a/DJI_20260911135816_0002_V.JPG"),
-            // Laufnummer beginnt neu → eigene Aufnahme
+            // sequence number restarts → separate shot
             file("/sd/a/DJI_20260911140029_0001_T.JPG"),
             file("/sd/a/DJI_20260911140029_0001_V.JPG"),
-            // gleicher Name in anderem Ordner → eigene Aufnahme
+            // same name in another folder → separate shot
             file("/sd/b/DJI_20260911135744_0001_T.JPG"),
         ];
         assign_shot_keys(&mut files);
@@ -450,12 +450,12 @@ mod tests {
         assert_eq!(keys[4], "DJI_20260911140029_0001");
         assert_eq!(keys[4], keys[5]);
         assert_ne!(keys[0], keys[4]);
-        assert_eq!(keys[6], "DJI_20260911135744_0001_2"); // gleicher Name in anderem Ordner bleibt getrennt
+        assert_eq!(keys[6], "DJI_20260911135744_0001_2"); // same name in another folder stays separate
     }
 }
 
-/// Prüft Scan + Import an echten Bildern (z. B. aus script/make_test_images.sh):
-///   DIDROP_TEST_IMAGES=/pfad/zur/sdkarte cargo test -- --ignored --nocapture
+/// Tests scan + import on real images (e.g. from script/make_test_images.sh):
+///   DIDROP_TEST_IMAGES=/path/to/sdcard cargo test -- --ignored --nocapture
 #[cfg(test)]
 mod integration {
     use super::*;
@@ -463,41 +463,41 @@ mod integration {
     #[test]
     #[ignore]
     fn scans_and_imports_test_images() {
-        let src = std::env::var("DIDROP_TEST_IMAGES").expect("DIDROP_TEST_IMAGES setzen");
+        let src = std::env::var("DIDROP_TEST_IMAGES").expect("set DIDROP_TEST_IMAGES");
         let result = scan(&[src]);
         assert!(result.skipped.is_empty(), "{:?}", result.skipped);
         assert!(!result.files.is_empty());
         for f in &result.files {
-            println!("{} {:?} {:<15} t={:?} yaw={:?} line={:?} ziel={:?}",
+            println!("{} {:?} {:<15} t={:?} yaw={:?} line={:?} target={:?}",
                 f.shot_key, f.variant, f.meta.image_source.as_deref().unwrap_or("-"), f.meta.taken_at, f.meta.gimbal_yaw,
                 f.meta.flight_line.as_deref().map(|l| &l[..8]), f.meta.target_lat);
         }
-        // Jede Aufnahme einer M4TD hat Wärme- und Sichtbild
+        // Every M4TD shot has a thermal and a visible image
         let mut per_shot = std::collections::BTreeMap::<&str, Vec<&str>>::new();
         for f in &result.files { per_shot.entry(&f.shot_key).or_default().push(f.variant.as_deref().unwrap_or("?")); }
         let incomplete: Vec<_> = per_shot.iter().filter(|(_, v)| v.len() != 2).collect();
-        println!("{} Dateien, {} Aufnahmen, unvollständig: {:?}", result.files.len(), per_shot.len(), incomplete);
+        println!("{} files, {} shots, incomplete: {:?}", result.files.len(), per_shot.len(), incomplete);
 
         let out = std::env::temp_dir().join(format!("didrop-test-{}", std::process::id()));
         let items = result.files.iter().map(|f| ImportItem {
-            src: f.path.clone(), dest_dir: out.join("flug").display().to_string(), fingerprint: f.fingerprint.clone(), kind: f.kind.clone(),
+            src: f.path.clone(), dest_dir: out.join("flight").display().to_string(), fingerprint: f.fingerprint.clone(), kind: f.kind.clone(),
         }).collect();
         let started = std::time::Instant::now();
         let imported = import(items, &out.join("thumbs"), |_| {});
         println!("Import: {:?}", started.elapsed());
         assert!(imported.iter().all(|r| r.error.is_none() && r.thumb_path.is_some()), "{imported:?}");
 
-        // Zweiter Import derselben Dateien: gleiche Zielpfade, keine Kopien mit _1
+        // Second import of the same files: same target paths, no copies with _1
         let again = import(result.files.iter().map(|f| ImportItem {
-            src: f.path.clone(), dest_dir: out.join("flug").display().to_string(), fingerprint: f.fingerprint.clone(), kind: f.kind.clone(),
+            src: f.path.clone(), dest_dir: out.join("flight").display().to_string(), fingerprint: f.fingerprint.clone(), kind: f.kind.clone(),
         }).collect(), &out.join("thumbs"), |_| {});
         assert_eq!(again.iter().map(|r| &r.dest_path).collect::<Vec<_>>(), imported.iter().map(|r| &r.dest_path).collect::<Vec<_>>());
         let _ = fs::remove_dir_all(out);
     }
 }
 
-/// Vorschaubild für eine einzelne Bilddatei (z. B. ein Vergleichsbild) im Vorschau-Ordner.
-/// Der Name hängt von Pfad, Größe und Änderungszeit ab – eine geänderte Datei bekommt ein neues.
+/// Thumbnail for a single image file (e.g. a comparison image) in the thumbnail folder.
+/// The name depends on path, size and modification time – a changed file gets a new one.
 pub fn thumbnail_for(src: &Path, thumbs_dir: &Path) -> Result<PathBuf, String> {
     let ext = src.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase());
     if !matches!(ext.as_deref(), Some("jpg") | Some("jpeg")) {

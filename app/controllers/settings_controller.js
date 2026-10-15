@@ -20,7 +20,7 @@ export default class SettingsController extends ApplicationController {
 
   async renderSection(key, { values, errors = {} } = {}) {
     const section = Setting.section(key)
-    if (!section) throw new RecordNotFound(`Unbekannte Einstellungs-Rubrik: ${key}`)
+    if (!section) throw new RecordNotFound(`Unknown settings section: ${key}`)
     values ??= Object.fromEntries(section.fields.map((f) => [f.key, Setting.get(`${key}.${f.key}`)]))
     await this.render('settings/show', { sections: Setting.schema, section, values, errors }, { title: `Einstellungen – ${section.title}` })
   }

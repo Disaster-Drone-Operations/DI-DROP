@@ -1,9 +1,9 @@
-//! Ziel "Nextcloud" über WebDAV.
+//! Target "Nextcloud" via WebDAV.
 //!
-//! Anmeldung bevorzugt per Nextcloud "Login Flow v2": di-drop öffnet die Anmeldeseite der
-//! Nextcloud im Browser, der Nutzer meldet sich dort an und di-drop bekommt ein eigenes
-//! App-Passwort (jederzeit in der Nextcloud widerrufbar). Alternativ Benutzer + App-Passwort.
-//! Der Zugang liegt im Schlüsselbund des Betriebssystems und wird nie an die Oberfläche gegeben.
+//! Login preferably via Nextcloud "Login Flow v2": di-drop opens the Nextcloud login page
+//! in the browser, the user logs in there and di-drop gets its own
+//! app password (revocable in the Nextcloud at any time). Alternatively user + app password.
+//! The credentials live in the OS keychain and are never handed to the UI.
 
 use super::{check_file_name, suffixed, Outcome, CANCELED, MAX_SUFFIX};
 use futures_util::stream;
@@ -28,7 +28,7 @@ pub struct Account {
     pub password: String,
 }
 
-/// Was die Oberfläche sehen darf (ohne Passwort)
+/// What the UI may see (without password)
 #[derive(Serialize)]
 pub struct AccountInfo {
     pub server: String,
@@ -49,13 +49,13 @@ fn client() -> &'static Client {
             .user_agent(concat!("di-drop/", env!("CARGO_PKG_VERSION")))
             .connect_timeout(Duration::from_secs(15))
             .build()
-            .expect("HTTP-Client")
+            .expect("HTTP client")
     })
 }
 
-// ── Zugang speichern ─────────────────────────────────────────────────────
-// Für die Entwicklung (Browser-Brücke) kann statt des Schlüsselbunds eine Datei dienen:
-// DIDROP_NC_ACCOUNT_FILE=/pfad/datei.json
+// ── Storing credentials ──────────────────────────────────────────────────
+// For development (browser bridge) a file can be used instead of the keychain:
+// DIDROP_NC_ACCOUNT_FILE=/path/file.json
 
 fn dev_file() -> Option<std::path::PathBuf> {
     std::env::var_os("DIDROP_NC_ACCOUNT_FILE").map(Into::into)
@@ -99,9 +99,9 @@ fn account() -> Result<Account, String> {
     load()?.ok_or_else(|| "Keine Nextcloud eingerichtet (Einstellungen → Nextcloud).".to_string())
 }
 
-// ── Adressen ─────────────────────────────────────────────────────────────
+// ── Addresses ────────────────────────────────────────────────────────────
 
-/// "cloud.example.de/" → "https://cloud.example.de"; nur https (http nur für localhost-Tests)
+/// "cloud.example.de/" → "https://cloud.example.de"; https only (http only for localhost tests)
 pub fn normalize_server(input: &str) -> Result<String, String> {
     let mut s = input.trim().trim_end_matches('/').to_string();
     if !s.contains("://") {
@@ -120,7 +120,7 @@ pub fn normalize_server(input: &str) -> Result<String, String> {
     Ok(s)
 }
 
-/// WebDAV-Adresse einer Datei/eines Ordners, z. B. "/Einsätze/2026_10_11__B3/x.jpg"
+/// WebDAV URL of a file/folder, e.g. "/Einsätze/2026_10_11__B3/x.jpg"
 fn dav_url(account: &Account, path: &str) -> Result<Url, String> {
     let mut url = Url::parse(&format!("{}/remote.php/dav/files/", account.server)).map_err(|e| e.to_string())?;
     {
@@ -155,9 +155,9 @@ fn net_error(e: reqwest::Error) -> String {
     }
 }
 
-// ── Anmeldung ────────────────────────────────────────────────────────────
+// ── Login ────────────────────────────────────────────────────────────────
 
-/// Benutzerkennung (für WebDAV), Anzeigename und Speicherplatz über die OCS-Schnittstelle
+/// User id (for WebDAV), display name and storage quota via the OCS API
 async fn user_info(server: &str, login: &str, password: &str) -> Result<Value, String> {
     let response = client()
         .get(format!("{server}/ocs/v2.php/cloud/user?format=json"))
@@ -186,7 +186,7 @@ async fn finish_login(server: &str, login: &str, password: &str) -> Result<Accou
     Ok((&account).into())
 }
 
-/// Login Flow v2 starten: liefert die Anmeldeseite (im Browser öffnen) und die Abfrage-Daten
+/// Starts Login Flow v2: returns the login page (to open in the browser) and the polling data
 pub async fn login_start(server: &str) -> Result<Value, String> {
     let server = normalize_server(server)?;
     let response = client()
@@ -204,7 +204,7 @@ pub async fn login_start(server: &str) -> Result<Value, String> {
     else {
         return Err("Unerwartete Antwort der Nextcloud.".into());
     };
-    // Abfrage-Adresse muss zur selben Nextcloud gehören
+    // The polling URL must belong to the same Nextcloud
     let same_host = Url::parse(endpoint).ok().and_then(|u| u.host_str().map(String::from))
         == Url::parse(&server).ok().and_then(|u| u.host_str().map(String::from));
     if !same_host {
@@ -213,7 +213,7 @@ pub async fn login_start(server: &str) -> Result<Value, String> {
     Ok(json!({ "server": server, "login_url": login, "token": token, "endpoint": endpoint }))
 }
 
-/// Ist die Anmeldung im Browser abgeschlossen? → Zugang speichern (sonst null)
+/// Is the login in the browser complete? → store the credentials (otherwise null)
 pub async fn login_poll(server: &str, endpoint: &str, token: &str) -> Result<Option<AccountInfo>, String> {
     let response = client()
         .post(endpoint)
@@ -223,7 +223,7 @@ pub async fn login_poll(server: &str, endpoint: &str, token: &str) -> Result<Opt
         .await
         .map_err(net_error)?;
     if response.status() == StatusCode::NOT_FOUND {
-        return Ok(None); // noch nicht angemeldet
+        return Ok(None); // not logged in yet
     }
     if !response.status().is_success() {
         return Err(http_error(response.status()));
@@ -234,12 +234,12 @@ pub async fn login_poll(server: &str, endpoint: &str, token: &str) -> Result<Opt
     finish_login(&normalize_server(body["server"].as_str().unwrap_or(server))?, login, password).await.map(Some)
 }
 
-/// Manuell: Benutzer + App-Passwort
+/// Manual: user + app password
 pub async fn login_manual(server: &str, login: &str, password: &str) -> Result<AccountInfo, String> {
     finish_login(&normalize_server(server)?, login.trim(), password.trim()).await
 }
 
-/// Verbindung testen: Anmeldung gültig, WebDAV erreichbar; liefert Anzeigename und freien Speicher
+/// Tests the connection: login valid, WebDAV reachable; returns display name and free space
 pub async fn test() -> Result<Value, String> {
     let account = account()?;
     let info = user_info(&account.server, &account.login_name, &account.password).await?;
@@ -252,7 +252,7 @@ pub async fn test() -> Result<Value, String> {
     }))
 }
 
-// ── Ordner ───────────────────────────────────────────────────────────────
+// ── Folders ──────────────────────────────────────────────────────────────
 
 #[derive(Serialize)]
 pub struct Folder {
@@ -260,7 +260,7 @@ pub struct Folder {
     pub path: String,
 }
 
-/// Unterordner eines Ordners (PROPFIND, Tiefe 1)
+/// Subfolders of a folder (PROPFIND, depth 1)
 pub async fn list(account: &Account, path: &str) -> Result<Vec<Folder>, String> {
     let url = dav_url(account, path)?;
     let response = client()
@@ -294,7 +294,7 @@ pub async fn list(account: &Account, path: &str) -> Result<Vec<Folder>, String> 
     Ok(folders)
 }
 
-/// hrefs aller Ordner in einer PROPFIND-Antwort
+/// hrefs of all folders in a PROPFIND response
 fn parse_folders(xml: &str) -> Result<Vec<String>, String> {
     let doc = roxmltree::Document::parse(xml).map_err(|e| format!("Unerwartete Antwort der Nextcloud: {e}"))?;
     Ok(doc
@@ -305,7 +305,7 @@ fn parse_folders(xml: &str) -> Result<Vec<String>, String> {
         .collect())
 }
 
-/// Ordner samt übergeordneten anlegen (vorhandene sind kein Fehler)
+/// Creates a folder including its parents (existing ones are not an error)
 pub async fn mkdirs(account: &Account, dir: &str) -> Result<(), String> {
     let mut current = String::new();
     for part in dir.split('/').filter(|p| !p.is_empty()) {
@@ -319,7 +319,7 @@ pub async fn mkdirs(account: &Account, dir: &str) -> Result<(), String> {
             .await
             .map_err(net_error)?;
         match response.status().as_u16() {
-            201 | 405 => {} // angelegt bzw. gibt es schon
+            201 | 405 => {} // created or already exists
             _ => return Err(http_error(response.status())),
         }
     }
@@ -334,9 +334,9 @@ pub async fn list_folders(path: &str) -> Result<Vec<Folder>, String> {
     list(&account()?, path).await
 }
 
-// ── Hochladen ────────────────────────────────────────────────────────────
+// ── Upload ───────────────────────────────────────────────────────────────
 
-/// Größe einer vorhandenen Datei in der Nextcloud (None = gibt es nicht)
+/// Size of an existing file in the Nextcloud (None = doesn't exist)
 async fn remote_size(account: &Account, url: &Url) -> Result<Option<u64>, String> {
     let response = client()
         .head(url.clone())
@@ -354,7 +354,7 @@ async fn remote_size(account: &Account, url: &Url) -> Result<Option<u64>, String
     Ok(response.headers().get("content-length").and_then(|v| v.to_str().ok()?.parse().ok()))
 }
 
-/// Zielordner prüfen: "/Einsätze/X/Auftrag" – nie der Hauptordner, keine "."/".."-Teile
+/// Validates the target folder: "/Einsätze/X/Auftrag" – never the root folder, no "."/".." parts
 pub fn check_dir(dir: &str) -> Result<String, String> {
     let parts: Vec<&str> = dir.split('/').filter(|p| !p.is_empty()).collect();
     if parts.is_empty() {
@@ -368,12 +368,12 @@ pub fn check_dir(dir: &str) -> Result<String, String> {
 
 enum Put {
     Done,
-    Exists, // Nextcloud meldet: Datei gibt es schon (If-None-Match)
+    Exists, // Nextcloud reports: file already exists (If-None-Match)
 }
 
-/// Datei in einen Ordner der Nextcloud laden. Schreibt ausschließlich in `dir`
-/// (Basisordner des Einsatzes + Auftragsordner) und überschreibt nie eine vorhandene Datei:
-/// gleiche Größe → übersprungen, sonst Ausweichname "…_2.JPG".
+/// Uploads a file into a Nextcloud folder. Writes exclusively into `dir`
+/// (mission base folder + assignment folder) and never overwrites an existing file:
+/// same size → skipped, otherwise alternative name "…_2.JPG".
 pub async fn upload(
     src: &Path,
     dir: &str,
@@ -397,12 +397,12 @@ pub async fn upload(
                 progress(total, total);
                 return Ok(Outcome { bytes: 0, skipped: true, name: renamed });
             }
-            Some(_) => continue, // andere Datei gleichen Namens → nicht anfassen
+            Some(_) => continue, // different file with the same name → don't touch
             None => {}
         }
         match put(&account, url, src, &meta, cancel.clone(), progress.clone()).await? {
             Put::Done => return Ok(Outcome { bytes: total, skipped: false, name: renamed }),
-            Put::Exists => continue, // zwischenzeitlich entstanden → nächster Name
+            Put::Exists => continue, // appeared in the meantime → next name
         }
     }
     Err("Zu viele gleichnamige Dateien im Zielordner.".into())
@@ -451,13 +451,13 @@ async fn put(
     let mut request = client()
         .put(url)
         .basic_auth(&account.login_name, Some(&account.password))
-        // Sicherung auf Serverseite: nur anlegen, nie eine vorhandene Datei ersetzen
+        // Server-side safeguard: only create, never replace an existing file
         .header("If-None-Match", "*")
         .header("Content-Length", total.to_string())
         .header("Content-Type", mime_for(src))
         .body(reqwest::Body::wrap_stream(body));
     if let Some(mtime) = mtime {
-        request = request.header("X-OC-MTime", mtime); // Aufnahmezeitpunkt der Datei behalten
+        request = request.header("X-OC-MTime", mtime); // keep the file's capture time
     }
 
     let response = match request.send().await {

@@ -1,5 +1,5 @@
-// Erzeugt public/data/licenses.json: alle Bibliotheken, die in der App stecken, mit Lizenztexten
-// (für „Über di-drop“). Nach Änderungen an package.json oder Cargo.toml neu ausführen:
+// Generates public/data/licenses.json: all libraries included in the app, with license texts
+// (for the "Über di-drop" (About) page). Rerun after changes to package.json or Cargo.toml:
 //   node script/build_licenses.mjs
 import fs from 'node:fs'
 import path from 'node:path'
@@ -19,12 +19,12 @@ function licenseTexts(dir) {
   return files.map((f) => fs.readFileSync(path.join(dir, f), 'utf8').trim()).join('\n\n---\n\n')
 }
 
-// ── JavaScript: nur Laufzeit-Abhängigkeiten ("dependencies"), rekursiv ──
+// ── JavaScript: runtime dependencies only ("dependencies"), recursively ──
 const seen = new Set()
 function addNpm(name, from = '.') {
   let dir = path.join(from, 'node_modules', name)
   while (!fs.existsSync(dir) && from !== '.') {
-    from = path.dirname(path.dirname(from)) // in übergeordneten node_modules suchen
+    from = path.dirname(path.dirname(from)) // look in parent node_modules
     dir = path.join(from, 'node_modules', name)
   }
   if (!fs.existsSync(dir)) dir = path.join('node_modules', name)
@@ -39,7 +39,7 @@ function addNpm(name, from = '.') {
 const root = JSON.parse(fs.readFileSync('package.json', 'utf8'))
 for (const dep of Object.keys(root.dependencies)) addNpm(dep)
 
-// ── Rust: normale Abhängigkeiten der App (ohne Entwicklungs-/Build-Werkzeuge) ──
+// ── Rust: normal dependencies of the app (without dev/build tools) ──
 const meta = JSON.parse(execFileSync('cargo', ['metadata', '--format-version', '1', '--manifest-path', 'src-tauri/Cargo.toml'], { maxBuffer: 1 << 28 }))
 const packages = new Map(meta.packages.map((p) => [p.id, p]))
 const nodes = new Map(meta.resolve.nodes.map((n) => [n.id, n]))
@@ -60,7 +60,7 @@ for (const id of visit) {
   entries.push({ name: p.name, version: p.version, license: p.license ?? 'unbekannt', text: licenseTexts(path.dirname(p.manifest_path)), kind: 'Rust', authors })
 }
 
-// Pakete ohne Lizenzdatei: Standardtext der (ersten passenden) Lizenz einsetzen
+// Packages without a license file: insert the standard text of the (first matching) license
 const apacheText = entries.find((e) => /Apache License\s+Version 2\.0, January 2004/.test(e.text) && e.text.length < 12_000)?.text
 const MIT = (holders) => `MIT License
 
@@ -96,7 +96,8 @@ for (const e of entries) {
   if (id) e.text = fallback[id](e) ?? ''
 }
 
-// Gleiche Texte zusammenfassen (z. B. hunderte identische MIT-/Apache-Texte)
+// Merge identical texts (e.g. hundreds of identical MIT/Apache texts).
+// The texts end up in the About page, so the fallback strings ('unbekannt' etc.) stay German.
 const groups = new Map()
 for (const e of entries) {
   const text = e.text || `Kein Lizenztext im Paket enthalten. Lizenz laut Paketangabe: ${e.license}.`
@@ -110,6 +111,6 @@ const result = [...groups.values()]
 fs.mkdirSync('public/data', { recursive: true })
 fs.writeFileSync('public/data/licenses.json', JSON.stringify({ count: entries.length, groups: result }))
 const withoutText = entries.filter((e) => !e.text)
-console.log(`${entries.length} Pakete (${entries.filter((e) => e.kind === 'Rust').length} Rust), ${result.length} Lizenztexte, ${withoutText.length} ohne Text`)
-console.log(`Größe: ${(fs.statSync('public/data/licenses.json').size / 1024).toFixed(0)} KB`)
-if (withoutText.length) console.log('Ohne Lizenzdatei:', withoutText.map((e) => `${e.name} (${e.license})`).join(', '))
+console.log(`${entries.length} packages (${entries.filter((e) => e.kind === 'Rust').length} Rust), ${result.length} license texts, ${withoutText.length} without text`)
+console.log(`Size: ${(fs.statSync('public/data/licenses.json').size / 1024).toFixed(0)} KB`)
+if (withoutText.length) console.log('Without license file:', withoutText.map((e) => `${e.name} (${e.license})`).join(', '))

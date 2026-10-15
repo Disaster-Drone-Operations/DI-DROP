@@ -3,8 +3,8 @@ import platform from '/lib/platform/index.js'
 import { formatFlightDuration, formatDistance } from '/app/helpers/index.js'
 import { importFromFolder, importFromDevice, connectedDevices } from '/app/services/flightlog_importer.js'
 
-// Seite "Flugprotokolle": Auswahl wie in macOS-Listen (Klick, ⌘/Strg-Klick, ⇧-Klick) und
-// Summenleiste unten wie in Numbers (Anzahl, Gesamtdauer, Gesamtstrecke)
+// "Flugprotokolle" page: selection like in macOS lists (click, ⌘/Ctrl-click, ⇧-click) and
+// a totals bar at the bottom like in Numbers (count, total duration, total distance)
 export default class extends Controller {
   static targets = ['row', 'all', 'sum', 'deviceButton']
 
@@ -20,10 +20,10 @@ export default class extends Controller {
     }
   }
 
-  // ── Auswahl ──────────────────────────────────────────────────────────
+  // ── Selection ────────────────────────────────────────────────────────
 
   select(event) {
-    if (event.detail >= 2) return // zweiter Klick eines Doppelklicks (z. B. zum Benennen)
+    if (event.detail >= 2) return // second click of a double-click (e.g. for renaming)
     if (event.target.closest('.renamable__input')) return
     const row = event.currentTarget
     const index = this.rowTargets.indexOf(row)
@@ -39,7 +39,7 @@ export default class extends Controller {
       this.rowTargets.forEach((r) => this.mark(r, !only && r === row))
       this.anchor = index
     }
-    window.getSelection()?.removeAllRanges() // ⇧-Klick markiert sonst Text
+    window.getSelection()?.removeAllRanges() // otherwise ⇧-click selects text
     this.updateSum()
   }
 
@@ -81,7 +81,7 @@ export default class extends Controller {
     }
   }
 
-  // ── Übernehmen ───────────────────────────────────────────────────────
+  // ── Import ───────────────────────────────────────────────────────────
 
   async importFolder() {
     const folder = await platform.pickFolder({ title: 'Ordner mit Flugprotokollen wählen (z. B. „FlightRecord“ auf dem USB-Stick)' })

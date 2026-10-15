@@ -11,13 +11,13 @@ import platform from '/lib/platform/index.js'
 import { TARGETS, availableTargets, assignmentFolderName } from '/app/services/upload_targets.js'
 import { enqueue, pendingBytes, rememberedSpeed } from '/app/services/upload_queue.js'
 
-// Bereitstellen eines Auftrags: Dateien auswählen und in ein Ziel (Nextcloud, Ordner …) geben.
-// Pro Durchgang ein Ziel; für ein zweites Ziel einfach erneut bereitstellen.
+// Provisioning an assignment: select files and hand them to a target (Nextcloud, folder …).
+// One target per run; for a second target simply provision again.
 export default class ProvisionsController extends ApplicationController {
   async beforeAction() {
     this.mission = await Mission.find(this.params.mission_id)
     this.assignment = await Assignment.findBy('id = ? AND mission_id = ?', [Number(this.params.id), this.mission.id])
-    if (!this.assignment) await Assignment.find(-1) // → "Nicht gefunden"
+    if (!this.assignment) await Assignment.find(-1) // → "Nicht gefunden" (not found)
     this.path = `/missions/${this.mission.id}/assignments/${this.assignment.id}`
   }
 
@@ -42,7 +42,7 @@ export default class ProvisionsController extends ApplicationController {
     const provided = target ? await this.providedKeys(targetKey) : new Set()
     const previous = await this.previousProvision()
 
-    // Vorauswahl: wie beim letzten Kontrollflug, sonst alles – jeweils ohne bereits Hochgeladenes
+    // Preselection: like the last control flight, otherwise everything – excluding already uploaded files
     const lastKey = (f) => `${f.viewpoint_id ?? ''}|${f.variant ?? ''}`
     const selected = new Set()
     for (const f of files) {
@@ -132,21 +132,21 @@ export default class ProvisionsController extends ApplicationController {
     this.redirectTo(this.path, { notice: `${entries.length} ${entries.length === 1 ? 'Datei wird' : 'Dateien werden'} bereitgestellt (${target.label}). Fortschritt links unten.` })
   }
 
-  // ── Hilfen ───────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────
 
   baseFor(targetKey) {
     if (targetKey === 'folder') return Setting.get('uploads.folder_path') ?? ''
     return TARGETS[targetKey].missionBase(this.mission)
   }
 
-  // Vergleichsbilder dieses Auftrags (liegen im Ordner des Auftrags)
+  // Comparison images of this assignment (stored in the assignment's folder)
   async comparisons() {
     const dir = this.assignment.media_dir
     if (!dir) return []
     return (await Comparison.forMission(this.mission.id)).filter((c) => c.path.startsWith(dir))
   }
 
-  // Schon an dieses Ziel bereitgestellt: "m<id>" (Bild) bzw. "c<id>" (Vergleichsbild)
+  // Already provisioned to this target: "m<id>" (image) or "c<id>" (comparison image)
   async providedKeys(targetKey) {
     const rows = await db.select(
       `SELECT media_file_id, comparison_id FROM upload_items WHERE assignment_id = ? AND target = ? AND status = 'done'`,
@@ -155,13 +155,13 @@ export default class ProvisionsController extends ApplicationController {
     return new Set(rows.map((r) => (r.media_file_id ? `m${r.media_file_id}` : `c${r.comparison_id}`)))
   }
 
-  // Was beim vorigen Kontrollflug bereitgestellt wurde (Wegpunkt + Kamera) – als Vorschlag
+  // What was provisioned for the previous control flight (viewpoint + camera) – as a suggestion
   async previousProvision() {
-    if (this.assignment.kind !== 'kontrolle') return null
+    if (this.assignment.kind !== 'control') return null
     const rows = await db.select(
       `SELECT a.id, a.title, MAX(u.finished_at) AS at FROM assignments a
          JOIN upload_items u ON u.assignment_id = a.id AND u.status = 'done'
-       WHERE a.mission_id = ? AND a.kind = 'kontrolle' AND a.id <> ? AND COALESCE(a.sequence, 0) < ?
+       WHERE a.mission_id = ? AND a.kind = 'control' AND a.id <> ? AND COALESCE(a.sequence, 0) < ?
        GROUP BY a.id ORDER BY a.sequence DESC LIMIT 1`,
       [this.mission.id, this.assignment.id, this.assignment.sequence ?? 1e9],
     )

@@ -3,7 +3,7 @@ import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
 import platform from '/lib/platform/index.js'
 
-// "Über di-drop": Lizenzliste nachladen (public/data/licenses.json, script/build_licenses.mjs) und filtern
+// "Über di-drop": lazy-load the license list (public/data/licenses.json, script/build_licenses.mjs) and filter it
 export default class extends Controller {
   static targets = ['licenses']
 

@@ -3,12 +3,16 @@
 Desktop-App (Tauri 2) für den Drone Operator der Bergwacht im Katastrophenschutz.
 Aufbau und Konventionen: siehe README.md.
 
+**Code ist durchgehend englisch** (Kommentare, Bezeichner, gespeicherte Werte wie
+`operation`/`exercise`, `open`/`done`, `control`). Deutsch nur, was Nutzer sehen: Texte,
+Meldungen, Menüs sowie Datei- und Ordnernamen auf der Festplatte („Flugprotokolle“, „…_Wärmebild.JPG“).
+
 ## Datenmodell (Kurzfassung)
 
 ```
 Einsatz (missions)
  ├─ Aufträge (assignments)      Lageerkundung, Kontrollflug n, Spezialauftrag „…“, Sonstiges …
- │   status offen/erledigt, due_at (leer = sofort); Kontrollflüge gehören zu einer
+ │   status open/done, due_at (leer = sofort); Kontrollflüge gehören zu einer
  │   Serie (assignment_series) – „Erledigt“ plant den nächsten oder beendet die Serie
  ├─ Flüge (flights)             entstehen intern beim Import (für ein späteres Flugprotokoll);
  │                              in der Oberfläche nicht sichtbar – dort zählt nur der Auftrag

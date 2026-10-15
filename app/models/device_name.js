@@ -1,16 +1,16 @@
 import { db } from '/lib/db.js'
 
-// Eigene Namen für Seriennummern von Drohnen und Akkus ("Akku A" statt "87UPN2LCA00061")
+// Custom names for serial numbers of drones and batteries ("Akku A" instead of "87UPN2LCA00061")
 export default class DeviceName {
   static KINDS = ['aircraft', 'battery']
 
-  // → Map "kind:serial" → Name
+  // → Map "kind:serial" → name
   static async all() {
     const rows = await db.select('SELECT kind, serial, name FROM device_names')
     return new Map(rows.map((r) => [`${r.kind}:${r.serial}`, r.name]))
   }
 
-  // Leerer Name = Benennung entfernen (dann wird wieder die Seriennummer gezeigt)
+  // Empty name = remove the naming (the serial number is shown again)
   static async set(kind, serial, name) {
     if (!DeviceName.KINDS.includes(kind) || !serial) throw new Error('Unbekanntes Gerät')
     const clean = String(name ?? '').trim().slice(0, 60)

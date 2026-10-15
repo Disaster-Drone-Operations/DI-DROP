@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 import { isLive } from '/app/services/location_service.js'
 
-// Seitenleiste: "Live" neben "Mein Standort", solange das Smartphone laufend sendet
+// Sidebar: "Live" next to "Mein Standort" while the smartphone is continuously sending
 export default class extends Controller {
   static targets = ['live']
 

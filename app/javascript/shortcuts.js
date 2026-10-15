@@ -1,13 +1,13 @@
-// Tastenkürzel und Menübefehle.
+// Keyboard shortcuts and menu commands.
 //
-// macOS: Das native Menü (src-tauri/src/menu.rs) fängt die Kürzel ab und schickt den Befehl
-//        hierher. Windows/Browser: Wir hören selbst auf die Tasten (Strg statt ⌘).
+// macOS: the native menu (src-tauri/src/menu.rs) intercepts the shortcuts and sends the command
+//        here. Windows/browser: we listen to the keys ourselves (Ctrl instead of ⌘).
 //
-//   ⌘ ,   Einstellungen          ⌘ N   Neuer Auftrag        ⇧⌘ N  Neuer Einsatz
-//   ⌘ O   Bilder importieren     ⌘ S   Sichern               ⌘ 1/2 Einsätze / Bilddaten
-//   ⌘ [ ] Zurück / Vorwärts      ⌘ Z   Widerrufen            ⇧⌘ Z  Wiederholen (Strg+Y)
-//   ⇧⌘ /  Tastaturkürzel         F11 / ⌃⌘F Vollbild
-//   Pfeiltasten + Leertaste in der Bildübersicht: Bild wählen und groß anzeigen
+//   ⌘ ,   Settings               ⌘ N   New assignment       ⇧⌘ N  New mission
+//   ⌘ O   Import images          ⌘ S   Save                  ⌘ 1/2 Missions / image data
+//   ⌘ [ ] Back / forward         ⌘ Z   Undo                  ⇧⌘ Z  Redo (Ctrl+Y)
+//   ⇧⌘ /  Keyboard shortcuts     F11 / ⌃⌘F Full screen
+//   Arrow keys + space in the image overview: select an image and show it large
 
 import platform from '/lib/platform/index.js'
 import Router from '/lib/router.js'
@@ -24,7 +24,7 @@ function controller(identifier, selector = `[data-controller~="${identifier}"]`)
   return el ? window.Stimulus.getControllerForElementAndIdentifier(el, identifier) : null
 }
 
-// Wartet kurz, bis nach einem Seitenwechsel ein Controller da ist
+// Waits briefly until a controller is present after a page change
 async function waitForController(identifier, selector) {
   for (let i = 0; i < 40; i++) {
     const c = controller(identifier, selector)
@@ -34,7 +34,7 @@ async function waitForController(identifier, selector) {
   return null
 }
 
-// Einsatz für Befehle wie "Neuer Auftrag": der geöffnete, sonst der einzige aktive
+// Mission for commands like "new assignment": the open one, otherwise the only active one
 async function targetMissionId() {
   const current = currentMissionId()
   if (current) return current
@@ -88,7 +88,7 @@ export const commands = {
   back: () => history.back(),
   forward: () => history.forward(),
 
-  // In Textfeldern: Text widerrufen; sonst: letzte Aktion der App
+  // In text fields: undo text; otherwise: the app's last action
   undo() {
     if (isTextField(document.activeElement)) document.execCommand('undo')
     else runUndo()
@@ -107,7 +107,7 @@ export function run(command) {
   commands[command]?.()
 }
 
-// Tasten → Befehl (Windows/Browser; auf dem Mac übernimmt das Menü)
+// Keys → command (Windows/browser; on the Mac the menu takes over)
 function commandFor(event) {
   const mod = event.metaKey || event.ctrlKey
   const key = event.key.toLowerCase()
@@ -123,7 +123,7 @@ function commandFor(event) {
   }[key] ?? null
 }
 
-// Pfeiltasten in der Bildübersicht: Fokus zum Nachbarbild (Leertaste/Enter öffnet es dann)
+// Arrow keys in the image overview: focus the neighboring image (space/enter then opens it)
 function moveInGrid(event) {
   const current = document.activeElement
   if (!current?.classList?.contains('shot__image')) return false
@@ -149,10 +149,10 @@ export function install() {
       event.preventDefault()
       return
     }
-    if (platform.nativeMenu) return // macOS: Menü hat die Kürzel schon behandelt
+    if (platform.nativeMenu) return // macOS: the menu already handled the shortcuts
     const command = commandFor(event)
     if (!command) return
-    // Text-Kürzel (Strg+Z in einem Feld) dem Feld überlassen, außer es sind App-Befehle
+    // Leave text shortcuts (Ctrl+Z in a field) to the field, unless they are app commands
     if ((command === 'undo' || command === 'redo') && isTextField(event.target)) return
     event.preventDefault()
     run(command)

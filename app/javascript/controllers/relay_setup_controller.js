@@ -6,8 +6,8 @@ import Router from '/lib/router.js'
 import Setting from '/app/models/setting.js'
 import * as deployer from '/app/services/cloudflare_deployer.js'
 
-// Einstellungen → Standort-Übertragung: Assistent für den Relay im eigenen Cloudflare-Konto
-//   account → token → install (Konto wählen, ggf. workers.dev-Name, hochladen, testen)
+// Settings → location transfer: wizard for the relay in your own Cloudflare account
+//   account → token → install (choose account, workers.dev name if needed, upload, test)
 export default class extends Controller {
   static targets = ['body', 'token', 'subdomain']
   static values = { url: String }
@@ -34,7 +34,7 @@ export default class extends Controller {
     this.bodyTarget.querySelector('[data-relay-setup-target="token"]:not([disabled]), [data-relay-setup-target="subdomain"]:not([disabled])')?.focus()
   }
 
-  // ── Vorhandener Relay ───────────────────────────────────────────────────
+  // ── Existing relay ──────────────────────────────────────────────────────
 
   async check() {
     this.set({ health: 'checking' })
@@ -57,7 +57,7 @@ export default class extends Controller {
     this.set({ hasToken: false })
   }
 
-  // ── Assistent ───────────────────────────────────────────────────────────
+  // ── Wizard ──────────────────────────────────────────────────────────────
 
   openSignup() {
     platform.openUrl(deployer.SIGNUP_URL)

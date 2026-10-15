@@ -1,9 +1,9 @@
-//! Dateien bereitstellen: in einen Ordner kopieren (z. B. USB-Stick) oder in eine Nextcloud laden.
-//! Beides meldet Fortschritt in Bytes und lässt sich jederzeit abbrechen (Pause, Abbruch,
-//! Umsortieren der Warteschlange – die Steuerung liegt in app/services/upload_queue.js).
+//! Delivering files: copy into a folder (e.g. USB stick) or upload to a Nextcloud.
+//! Both report progress in bytes and can be cancelled at any time (pause, cancel,
+//! reordering the queue – the control logic lives in app/services/upload_queue.js).
 //!
-//! Weitere Ziele: neues Untermodul mit einer Funktion, die Quelle, Ziel, Abbruch-Flag und
-//! Fortschritts-Rückruf bekommt, plus Tauri-Befehl in commands.rs.
+//! More targets: a new submodule with a function that receives source, target, cancel flag and
+//! progress callback, plus a Tauri command in commands.rs.
 
 pub mod commands;
 pub mod folder;
@@ -15,9 +15,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 pub const CANCELED: &str = "CANCELED";
 
-/// Ergebnis einer Übertragung: übertragene Bytes, oder übersprungen (Ziel hatte die Datei schon).
-/// `name` ist gesetzt, wenn die Datei unter anderem Namen abgelegt wurde ("…_2.JPG"), weil am
-/// Ziel schon eine andere Datei gleichen Namens lag – vorhandene Dateien werden nie überschrieben.
+/// Result of a transfer: bytes transferred, or skipped (the target already had the file).
+/// `name` is set when the file was stored under a different name ("…_2.JPG") because a
+/// different file with the same name already existed at the target – existing files are never overwritten.
 #[derive(serde::Serialize, Debug, PartialEq)]
 pub struct Outcome {
     pub bytes: u64,
@@ -25,7 +25,7 @@ pub struct Outcome {
     pub name: Option<String>,
 }
 
-/// Höchstens so viele Ausweichnamen ("_2" … "_99") werden probiert
+/// At most this many alternative names ("_2" … "_99") are tried
 pub const MAX_SUFFIX: u32 = 99;
 
 /// "a.jpg", 2 → "a_2.jpg"
@@ -36,19 +36,19 @@ pub fn suffixed(name: &str, n: u32) -> String {
     }
 }
 
-/// Reiner Dateiname ohne Ordneranteile
+/// Plain file name without folder parts
 pub fn check_file_name(name: &str) -> Result<(), String> {
     let bad = name.is_empty() || name == "." || name == ".." || name.contains(['/', '\\']) || name.chars().any(char::is_control);
     if bad { Err(format!("Ungültiger Dateiname: {name}")) } else { Ok(()) }
 }
 
-/// Laufende Übertragungen mit Abbruch-Flag (Kennung kommt aus der Oberfläche)
+/// Running transfers with cancel flag (the id comes from the UI)
 fn registry() -> &'static Mutex<HashMap<String, Arc<AtomicBool>>> {
     static REG: OnceLock<Mutex<HashMap<String, Arc<AtomicBool>>>> = OnceLock::new();
     REG.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-/// Meldet eine Übertragung an; das Flag wird beim Abbruch gesetzt
+/// Registers a transfer; the flag is set on cancel
 pub fn register(id: &str) -> Arc<AtomicBool> {
     let flag = Arc::new(AtomicBool::new(false));
     registry().lock().unwrap().insert(id.to_string(), flag.clone());

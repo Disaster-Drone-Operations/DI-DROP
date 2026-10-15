@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Erzeugt Testbilder im Stil einer DJI M4TD-SD-Karte:
-#   <ziel>/DCIM/DJI_<datum>_001_<name>/DJI_<zeit>_<nr>_{W,Z,T}.JPG
-# inkl. EXIF (Zeit, GPS, Kamera) und DJI-XMP (Gimbal, Höhe …).
+# Generates test images in the style of a DJI M4TD SD card:
+#   <target>/DCIM/DJI_<date>_001_<name>/DJI_<time>_<no>_{W,Z,T}.JPG
+# incl. EXIF (time, GPS, camera) and DJI XMP (gimbal, altitude …).
 #
-#   script/make_test_images.sh <zielordner> [startzeit HHMM] [anzahl]
-# Benötigt: ImageMagick (magick) und exiftool
+#   script/make_test_images.sh <target folder> [start time HHMM] [count]
+# Requires: ImageMagick (magick) and exiftool
 
 set -euo pipefail
-target="${1:?Zielordner angeben}"
+target="${1:?specify target folder}"
 start="${2:-1430}"
 count="${3:-4}"
 day=$(date +%Y%m%d)
@@ -24,11 +24,11 @@ for i in $(seq 1 "$count"); do
   lat="50.70$((10 + i))"; lon="10.72$((60 + i))"
 
   magick -size 4000x3000 gradient:'#4a6b3a'-'#9bb07a' -fill white -pointsize 200 -gravity center \
-    -annotate 0 "Aufnahme $i\nWeitwinkel" -quality 85 "${base}_W.JPG"
+    -annotate 0 "Shot $i\nWide" -quality 85 "${base}_W.JPG"
   magick -size 4000x3000 gradient:'#6b5a3a'-'#c9b48a' -fill white -pointsize 200 -gravity center \
-    -annotate 0 "Aufnahme $i\nZoom" -quality 85 "${base}_Z.JPG"
+    -annotate 0 "Shot $i\nZoom" -quality 85 "${base}_Z.JPG"
   magick -size 640x512 plasma:'#200040'-'#ffcc00' -seed "$i" -fill white -pointsize 48 -gravity center \
-    -annotate 0 "Aufnahme $i\nWärmebild" -quality 90 "${base}_T.JPG"
+    -annotate 0 "Shot $i\nThermal" -quality 90 "${base}_T.JPG"
 
   for v in W Z T; do
     zoom=1; [ "$v" = Z ] && zoom=7
@@ -42,4 +42,4 @@ for i in $(seq 1 "$count"); do
       "${base}_${v}.JPG"
   done
 done
-echo "$count Aufnahmen (je W/Z/T) in $dir"
+echo "$count shots (W/Z/T each) in $dir"

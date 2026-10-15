@@ -1,7 +1,7 @@
 import Record from '/lib/record.js'
 import { db } from '/lib/db.js'
 
-// Ein Flug aus dem Protokoll der DJI-Fernsteuerung (Eckdaten; Originaldatei unter `path`)
+// A flight from the DJI remote controller's log (key data; original file at `path`)
 export default class FlightLog extends Record {
   static tableName = 'flight_logs'
 
@@ -34,7 +34,7 @@ export default class FlightLog extends Record {
     return (await db.select('SELECT file_name FROM flight_logs')).map((r) => r.file_name)
   }
 
-  // Eckdaten aus Rust (src-tauri/src/flightlogs.rs) übernehmen; schon bekannte Dateien bleiben
+  // Take over key data from Rust (src-tauri/src/flightlogs.rs); already known files are kept
   static async addSummaries(summaries) {
     let added = 0
     for (const s of summaries) {

@@ -1,8 +1,8 @@
-//! Ziel "Ordner": Datei kopieren, z. B. auf einen USB-Stick.
-//! Schreibt erst in "<name>.didrop-part" und benennt am Ende um – ein abgebrochener
-//! Vorgang hinterlässt keine halbe Datei unter dem richtigen Namen.
-//! Vorhandene Dateien werden nie überschrieben: gleiche Größe → übersprungen,
-//! sonst Ausweichname "…_2.JPG".
+//! Target "folder": copy a file, e.g. onto a USB stick.
+//! Writes to "<name>.didrop-part" first and renames at the end – a cancelled
+//! transfer leaves no half-written file under the real name.
+//! Existing files are never overwritten: same size → skipped,
+//! otherwise alternative name "…_2.JPG".
 
 use super::{check_file_name, suffixed, Outcome, CANCELED, MAX_SUFFIX};
 use std::fs::File;
@@ -19,7 +19,7 @@ pub fn copy(src: &Path, dest: &Path, cancel: &AtomicBool, mut progress: impl FnM
     check_file_name(file_name)?;
     std::fs::create_dir_all(dir).map_err(|e| format!("Zielordner nicht beschreibbar ({}): {e}", dir.display()))?;
 
-    // Freien Namen suchen (oder dieselbe Datei, die schon da ist)
+    // Find a free name (or the same file that is already there)
     let mut target = None;
     for n in 1..=MAX_SUFFIX {
         let name = if n == 1 { file_name.to_string() } else { suffixed(file_name, n) };
@@ -29,7 +29,7 @@ pub fn copy(src: &Path, dest: &Path, cancel: &AtomicBool, mut progress: impl FnM
                 progress(total, total);
                 return Ok(Outcome { bytes: 0, skipped: true, name: (n > 1).then_some(name) });
             }
-            Ok(_) => continue, // andere Datei gleichen Namens → nicht anfassen
+            Ok(_) => continue, // different file with the same name → don't touch
             Err(_) => {
                 target = Some((candidate, (n > 1).then_some(name)));
                 break;
@@ -61,7 +61,7 @@ pub fn copy(src: &Path, dest: &Path, cancel: &AtomicBool, mut progress: impl FnM
     })();
 
     let finish = |bytes| {
-        // Kurz vor dem Umbenennen erneut prüfen: nie eine inzwischen entstandene Datei ersetzen
+        // Check again right before renaming: never replace a file that appeared in the meantime
         if dest.exists() {
             return Err("Im Zielordner ist währenddessen eine gleichnamige Datei entstanden – bitte erneut versuchen.".to_string());
         }
@@ -107,15 +107,15 @@ mod tests {
     fn never_overwrites_other_files() {
         let dir = tmp("keep");
         let src = dir.join("a.jpg");
-        std::fs::write(&src, b"neu").unwrap();
+        std::fs::write(&src, b"new").unwrap();
         std::fs::create_dir_all(dir.join("out")).unwrap();
-        std::fs::write(dir.join("out/a.jpg"), b"fremde datei").unwrap();
+        std::fs::write(dir.join("out/a.jpg"), b"other file").unwrap();
         let flag = AtomicBool::new(false);
         let r = copy(&src, &dir.join("out/a.jpg"), &flag, |_, _| {}).unwrap();
         assert_eq!(r.name.as_deref(), Some("a_2.jpg"));
-        assert_eq!(std::fs::read(dir.join("out/a.jpg")).unwrap(), b"fremde datei");
-        assert_eq!(std::fs::read(dir.join("out/a_2.jpg")).unwrap(), b"neu");
-        // erneut: a_2.jpg ist dieselbe Datei → übersprungen
+        assert_eq!(std::fs::read(dir.join("out/a.jpg")).unwrap(), b"other file");
+        assert_eq!(std::fs::read(dir.join("out/a_2.jpg")).unwrap(), b"new");
+        // again: a_2.jpg is the same file → skipped
         assert!(copy(&src, &dir.join("out/a.jpg"), &flag, |_, _| {}).unwrap().skipped);
     }
 

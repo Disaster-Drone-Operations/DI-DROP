@@ -1,4 +1,4 @@
 import { relayBaseUrl } from '/app/services/location_service.js'
 
-// Ist die Standort-Übertragung vom Smartphone eingerichtet?
+// Is location transfer from the smartphone set up?
 export const relayConfigured = () => !!relayBaseUrl()

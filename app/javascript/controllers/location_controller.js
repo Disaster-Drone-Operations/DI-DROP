@@ -7,14 +7,14 @@ import { formatDecimal, formatDms, formatUtm, mapLinks } from '/lib/location/coo
 import { currentLocation, startTransfer, stopTransfer } from '/app/services/location_service.js'
 import { describeLocation } from '/app/services/address_service.js'
 
-// Seite "Mein Standort": zeichnet die Position bei jeder Änderung neu (Dialog: location-transfer)
+// "Mein Standort" page: redraws the position on every change (dialog: location-transfer)
 export default class extends Controller {
   static values = { configured: Boolean }
 
   connect() {
     this.onChange = () => this.refresh()
     window.addEventListener('location:changed', this.onChange)
-    this.ticker = setInterval(() => this.paint(), 15_000) // "vor 2 Min." aktuell halten
+    this.ticker = setInterval(() => this.paint(), 15_000) // keep "vor 2 Min." up to date
     this.refresh()
   }
 
@@ -28,7 +28,7 @@ export default class extends Controller {
     this.paint()
   }
 
-  // Adresse nur neu ermitteln, wenn sich die Position spürbar bewegt hat (Live: nicht bei jeder Meldung)
+  // Only look up the address again when the position has moved noticeably (live: not on every update)
   lookupAddress() {
     const { position } = currentLocation()
     if (!position) return

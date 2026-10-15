@@ -1,6 +1,6 @@
 import { Controller } from '@hotwired/stimulus'
 
-// "Alle auswählen"-Checkbox für eine Liste
+// "Alle auswählen" checkbox for a list
 export default class extends Controller {
   static targets = ['toggle', 'item']
 

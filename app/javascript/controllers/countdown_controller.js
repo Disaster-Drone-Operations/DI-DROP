@@ -1,6 +1,6 @@
 import { Controller } from '@hotwired/stimulus'
 
-// Zeigt "in 12 Min." bzw. "seit 3 Min. fällig" und aktualisiert sich selbst
+// Shows "in 12 Min." or "seit 3 Min. fällig" and updates itself
 export default class extends Controller {
   static values = { at: String }
   static targets = ['label']
@@ -19,7 +19,7 @@ export default class extends Controller {
     const overdue = minutes < 0
     const abs = Math.abs(minutes)
     const span = abs >= 60 ? `${Math.floor(abs / 60)} Std. ${abs % 60} Min.` : `${abs} Min.`
-    // Lange überfällig: in Tagen statt "seit 769 Std. 44 Min."
+    // Long overdue: in days instead of "seit 769 Std. 44 Min."
     const days = Math.floor(abs / 1440)
     const since = days >= 1 ? `${days} ${days === 1 ? 'Tag' : 'Tagen'}` : span
 

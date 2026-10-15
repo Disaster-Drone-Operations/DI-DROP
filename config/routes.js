@@ -5,20 +5,20 @@ export default (r) => {
     r.resources('assignments', { only: ['show', 'create', 'destroy'] })
     r.patch('/assignments/:id/complete', 'assignments#complete')
     r.patch('/assignments/:id/reopen', 'assignments#reopen')
-    // Bereitstellen (Nextcloud, Ordner …)
+    // Provisioning (Nextcloud, folder …)
     r.get('/assignments/:id/provide', 'provisions#new')
     r.post('/assignments/:id/provide', 'provisions#create')
     r.resources('comparisons', { only: ['index'] })
     r.resources('viewpoints', { only: ['update'] })
   })
 
-  // Modul "Bilddaten"
+  // Module "Bilddaten" (image data)
   r.get('/media', 'media#index')
 
-  // "Mein Standort": Position vom Smartphone über den eigenen Relay
+  // "Mein Standort": position from the smartphone via your own relay
   r.get('/location', 'location#show')
 
-  // Modul "Flugprotokolle" (DJI-Fernsteuerung)
+  // Module "Flugprotokolle" (DJI remote controller)
   r.get('/flightlogs', 'flight_logs#index')
 
   r.get('/uploads', 'uploads#index')

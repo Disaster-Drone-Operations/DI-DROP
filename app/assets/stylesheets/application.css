@@ -1,7 +1,7 @@
 /* ==========================================================================
-   di-drop – Basis-Styles
-   Ziel: wirkt wie eine native App (Systemschrift, dezente Flächen, kein
-   "Webseiten-Look"). Plattform-Feinheiten über html.platform-macos / -windows.
+   di-drop – base styles
+   Goal: feel like a native app (system font, subtle surfaces, no
+   "website look"). Platform details via html.platform-macos / -windows.
    ========================================================================== */
 
 :root {
@@ -11,13 +11,13 @@
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
   --font-size: 13px;
 
-  --accent: #c8102e;           /* Rot wie Bergwacht / Rettungsdienst */
+  --accent: #c8102e;           /* red like Bergwacht / emergency services */
   --accent-hover: #a90d26;
   --accent-soft: rgba(200, 16, 46, .1);
   --on-accent: #fff;
 
-  --bg: #ffffff;               /* Inhaltsbereich */
-  --bg-sidebar: #f2f2f4;       /* Fallback, wenn kein Vibrancy/Mica */
+  --bg: #ffffff;               /* content area */
+  --bg-sidebar: #f2f2f4;       /* fallback without vibrancy/Mica */
   --surface: #ffffff;
   --surface-2: #f6f6f8;
   --field: #ffffff;
@@ -70,19 +70,19 @@
   }
 }
 
-/* Plattform-Feinschliff ---------------------------------------------------- */
+/* Platform polish ---------------------------------------------------------- */
 
 html.platform-windows { --font-size: 14px; --radius: 6px; --radius-sm: 4px; }
 
-/* macOS-Desktop: Fensterknöpfe liegen über der Seitenleiste, Vibrancy dahinter */
+/* macOS desktop: window buttons sit above the sidebar, vibrancy behind it */
 html.platform-macos.runtime-tauri { --titlebar-h: 40px; --bg-sidebar: transparent; }
-/* Windows 11: Mica scheint durch die Seitenleiste */
+/* Windows 11: Mica shines through the sidebar */
 html.platform-windows.runtime-tauri { --bg-sidebar: rgba(243, 243, 243, .55); }
 @media (prefers-color-scheme: dark) {
   html.platform-windows.runtime-tauri { --bg-sidebar: rgba(32, 32, 32, .55); }
 }
 
-/* Grundlagen --------------------------------------------------------------- */
+/* Basics ------------------------------------------------------------------- */
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -95,7 +95,7 @@ body {
   background: var(--bg);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
-  /* Native Apps: Oberfläche nicht markierbar, Mauszeiger ist ein Pfeil */
+  /* Native apps: UI not selectable, cursor is an arrow */
   -webkit-user-select: none;
   user-select: none;
   cursor: default;
@@ -121,7 +121,7 @@ p { margin: 0; }
 .boot--error { place-items: start; padding: 32px; color: var(--danger); }
 .boot--error pre { color: var(--text-2); white-space: pre-wrap; }
 
-/* Fenster-Layout ----------------------------------------------------------- */
+/* Window layout ------------------------------------------------------------ */
 
 .window {
   display: grid;
@@ -160,7 +160,7 @@ html:not(.platform-macos) .sidebar, html:not(.runtime-tauri) .sidebar { padding-
 }
 html:not(.runtime-tauri) .page, html.platform-windows .page { padding-top: 28px; }
 
-/* Seitenleiste ------------------------------------------------------------- */
+/* Sidebar ------------------------------------------------------------------ */
 
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; }
 .brand__logo {
@@ -191,10 +191,10 @@ html:not(.runtime-tauri) .page, html.platform-windows .page { padding-top: 28px;
 .nav__item .badge { margin-left: auto; }
 
 .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--text-3); }
-.dot--einsatz { background: var(--danger); }
-.dot--uebung { background: var(--info); }
+.dot--operation { background: var(--danger); }
+.dot--exercise { background: var(--info); }
 
-/* Seitenkopf --------------------------------------------------------------- */
+/* Page header -------------------------------------------------------------- */
 
 .page-header {
   display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
@@ -248,18 +248,18 @@ form.button-to { display: inline; margin: 0; }
   background: var(--selected); color: var(--text-2);
 }
 .badge--tiny { font-size: 10px; padding: 0 6px; }
-.badge--einsatz { background: var(--danger-soft); color: var(--danger); }
-.badge--uebung { background: var(--info-soft); color: var(--info); }
+.badge--operation { background: var(--danger-soft); color: var(--danger); }
+.badge--exercise { background: var(--info-soft); color: var(--info); }
 .badge--flight-initial { background: var(--warning-soft); color: var(--warning); }
-.badge--flight-kontrolle { background: var(--success-soft); color: var(--success); }
-.badge--flight-spezial { background: var(--violet-soft); color: var(--violet); }
+.badge--flight-control { background: var(--success-soft); color: var(--success); }
+.badge--flight-special { background: var(--violet-soft); color: var(--violet); }
 
 .count {
   font-size: 11px; font-weight: 600; color: var(--text-3);
   margin-left: 4px;
 }
 
-/* Hinweise ----------------------------------------------------------------- */
+/* Notices ------------------------------------------------------------------ */
 
 .callout {
   display: flex; align-items: flex-start; gap: 10px;
@@ -289,7 +289,7 @@ form.button-to { display: inline; margin: 0; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(-6px); } }
 @keyframes toast-out { to { opacity: 0; transform: translateY(-6px); } }
 
-/* Listen & Karten ---------------------------------------------------------- */
+/* Lists & cards ------------------------------------------------------------ */
 
 .section { margin-top: 26px; }
 .section__title { margin-bottom: 10px; }
@@ -350,7 +350,7 @@ form.button-to { display: inline; margin: 0; }
 .empty--compact { padding: 18px; }
 .error-details { margin-top: 18px; max-width: 100%; overflow: auto; text-align: left; font-size: 11px; color: var(--text-2); }
 
-/* Einsatz-Detailseite ------------------------------------------------------ */
+/* Mission detail page ------------------------------------------------------ */
 
 .columns { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; align-items: start; }
 .columns__side { display: flex; flex-direction: column; }
@@ -391,8 +391,8 @@ form.button-to { display: inline; margin: 0; }
   background: var(--surface); border: 2px solid var(--border-strong);
 }
 .timeline__item--initial .timeline__marker { border-color: var(--warning); color: var(--warning); }
-.timeline__item--kontrolle .timeline__marker { border-color: var(--success); color: var(--success); }
-.timeline__item--spezial .timeline__marker { border-color: var(--violet); color: var(--violet); }
+.timeline__item--control .timeline__marker { border-color: var(--success); color: var(--success); }
+.timeline__item--special .timeline__marker { border-color: var(--violet); color: var(--violet); }
 .timeline__body { flex: 1; min-width: 0; padding-top: 4px; }
 .timeline__head { display: flex; align-items: center; gap: 10px; }
 .timeline__time { color: var(--text-2); font-variant-numeric: tabular-nums; }
@@ -400,7 +400,7 @@ form.button-to { display: inline; margin: 0; }
 .timeline__item .button-to { opacity: 0; transition: opacity .1s; }
 .timeline__item:hover .button-to, .timeline__item .button-to:focus-within { opacity: 1; }
 
-/* Formulare ---------------------------------------------------------------- */
+/* Forms -------------------------------------------------------------------- */
 
 .form { display: flex; flex-direction: column; gap: 14px; }
 fieldset.card { margin: 0; min-width: 0; }
@@ -438,7 +438,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); box-sha
 .input-with-button { display: flex; gap: 8px; }
 .input-with-button .button { height: auto; }
 
-/* Segmented Control (macOS-Stil) */
+/* Segmented control (macOS style) */
 .segmented {
   display: inline-flex; align-self: flex-start;
   padding: 2px; gap: 2px;
@@ -460,33 +460,33 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); box-sha
 
 .flight-form { margin-bottom: 4px; }
 
-/* Einstellungen ------------------------------------------------------------ */
+/* Settings ----------------------------------------------------------------- */
 
 .settings { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 22px; align-items: start; }
 .settings__nav { display: flex; flex-direction: column; gap: 1px; }
 .settings__title { font-size: 17px; margin-bottom: 4px; }
 .settings__panel .form-actions { max-width: 560px; margin-top: 20px; }
 
-/* Module-Navigation -------------------------------------------------------- */
+/* Module navigation -------------------------------------------------------- */
 
 .nav__item.is-disabled { color: var(--text-3); }
 .nav__item.is-disabled .icon { color: var(--text-3); }
 .nav > .nav__heading:first-child { margin-top: 0; }
 
-/* Flüge in der Zeitleiste sind Links zur Flugseite */
+/* Flights in the timeline are links to the flight page */
 .timeline__link { color: inherit; border-radius: var(--radius-sm); padding: 4px 8px 6px; margin: -4px -8px 0; }
 .timeline__link:hover { background: var(--hover); text-decoration: none; }
 .timeline__media { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; color: var(--text-2); font-size: 12px; }
 .timeline__marker--small { width: 26px; height: 26px; font-size: 11px; }
 .timeline__marker.timeline__item--initial { border-color: var(--warning); color: var(--warning); }
-.timeline__marker.timeline__item--kontrolle { border-color: var(--success); color: var(--success); }
-.timeline__marker.timeline__item--spezial { border-color: var(--violet); color: var(--violet); }
+.timeline__marker.timeline__item--control { border-color: var(--success); color: var(--success); }
+.timeline__marker.timeline__item--special { border-color: var(--violet); color: var(--violet); }
 
 .section__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .section__header .section__title { margin: 0; display: flex; align-items: center; gap: 8px; }
 .h1-subtle { color: var(--text-2); font-weight: 500; }
 
-/* Prozess-Schritte --------------------------------------------------------- */
+/* Process steps ------------------------------------------------------------ */
 
 .stepper { display: flex; gap: 4px; list-style: none; padding: 0; margin: 0 0 18px; }
 .stepper__step {
@@ -510,14 +510,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); box-sha
 .process li:first-child .stepper__num { background: var(--accent); color: var(--on-accent); }
 .process p { font-size: 12px; margin-top: 2px; }
 
-/* Filter ------------------------------------------------------------------- */
+/* Filters ------------------------------------------------------------------- */
 
 .filterbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .segmented--links a { padding: 3px 12px; border-radius: var(--radius-sm); color: var(--text-2); font-weight: 500; }
 .segmented--links a:hover { text-decoration: none; color: var(--text); }
 .segmented--links a.is-active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
 
-/* Aufträge & Import -------------------------------------------------------- */
+/* Assignments & import ----------------------------------------------------- */
 
 .assignment { margin-bottom: 26px; }
 .assignment__header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
@@ -543,7 +543,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); box-sha
 details.disclosure:has(> .add-assignment) { border-top: 1px solid var(--border); padding-top: 12px; }
 .add-assignment .field { width: 240px; }
 
-/* Aufnahmen-Raster ----------------------------------------------------------- */
+/* Shot grid ------------------------------------------------------------------ */
 
 .shot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
 .shot { margin: 0; min-width: 0; }
@@ -576,7 +576,7 @@ button.chip:hover { color: var(--text); background: var(--border-strong); }
 .chip.is-duplicate { opacity: .45; text-decoration: line-through; }
 .chip--icon { padding: 0 4px; }
 
-/* Import-Dialog -------------------------------------------------------------- */
+/* Import dialog -------------------------------------------------------------- */
 
 .import-dialog {
   width: min(680px, calc(100vw - 48px));
@@ -618,7 +618,7 @@ button.chip:hover { color: var(--text); background: var(--border-strong); }
 .import-list__files { display: flex; align-items: center; gap: 3px; font-size: 12px; }
 .import-list__files .subtle { margin-left: 4px; }
 
-/* Schmale Fenster (Browser-Variante) --------------------------------------- */
+/* Narrow windows (browser variant) ----------------------------------------- */
 
 .page-header, .dropzone, .stepper, .filterbar, .add-assignment { flex-wrap: wrap; }
 .stepper__step { white-space: nowrap; }
@@ -632,7 +632,7 @@ button.chip:hover { color: var(--text); background: var(--border-strong); }
 }
 .import-dialog:focus, .import-dialog:focus-visible { outline: none; }
 
-/* Vergleichsbilder ------------------------------------------------------------ */
+/* Comparison images ----------------------------------------------------------- */
 
 a.stepper__step { color: var(--text-2); }
 a.stepper__step:hover { background: var(--hover); text-decoration: none; color: var(--text); }
@@ -690,7 +690,7 @@ a.stepper__step:hover { background: var(--hover); text-decoration: none; color: 
 .comparison-editor__message { padding: 20px; }
 .comparison-editor__file { margin-top: 8px; font-size: 11px; }
 
-/* Aufklappzeile für weniger häufige Angaben ("Weitere Angaben") ---------------- */
+/* Disclosure row for less common fields ("Weitere Angaben") -------------------- */
 
 .disclosure > summary {
   display: inline-flex; align-items: center; gap: 8px;
@@ -718,17 +718,17 @@ a.stepper__step:hover { background: var(--hover); text-decoration: none; color: 
 .next-step__text { flex: 1; }
 .lead { font-size: 15px; }
 
-/* Aufträge ------------------------------------------------------------------ */
+/* Assignments --------------------------------------------------------------- */
 
 .button--small { height: 26px; padding: 0 10px; font-size: 12px; }
 .button--quiet { background: transparent; border-color: transparent; box-shadow: none; color: var(--text-2); }
 .button--quiet:hover { background: var(--hover); color: var(--text); }
 
 .badge--task-initial { background: var(--warning-soft); color: var(--warning); }
-.badge--task-kontrolle { background: var(--success-soft); color: var(--success); }
-.badge--task-spezial { background: var(--violet-soft); color: var(--violet); }
-.badge--task-sonstiges { background: var(--info-soft); color: var(--info); }
-.badge--task-kartierung, .badge--task-position, .badge--task-gebiet { background: var(--selected); color: var(--text-2); }
+.badge--task-control { background: var(--success-soft); color: var(--success); }
+.badge--task-special { background: var(--violet-soft); color: var(--violet); }
+.badge--task-other { background: var(--info-soft); color: var(--info); }
+.badge--task-mapping, .badge--task-position, .badge--task-area { background: var(--selected); color: var(--text-2); }
 
 .columns { grid-template-columns: minmax(0, 1fr) 300px; }
 .tasks { display: flex; flex-direction: column; gap: 10px; position: sticky; top: calc(var(--titlebar-h) + 8px); }
@@ -755,9 +755,9 @@ a.stepper__step:hover { background: var(--hover); text-decoration: none; color: 
   box-shadow: var(--shadow);
 }
 .task-card--initial { border-left-color: var(--warning); }
-.task-card--kontrolle { border-left-color: var(--success); }
-.task-card--spezial { border-left-color: var(--violet); }
-.task-card--sonstiges { border-left-color: var(--info); }
+.task-card--control { border-left-color: var(--success); }
+.task-card--special { border-left-color: var(--violet); }
+.task-card--other { border-left-color: var(--info); }
 .task-card__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .task-card__due { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .task-card.is-due .task-card__due { color: var(--warning); font-weight: 600; }
@@ -773,7 +773,7 @@ a.stepper__step:hover { background: var(--hover); text-decoration: none; color: 
 .mission-details .details { max-width: 420px; }
 .mission-details .danger-zone { justify-content: flex-start; }
 
-/* Dialoge ("Sheets") ----------------------------------------------------------- */
+/* Dialogs ("sheets") ----------------------------------------------------------- */
 
 .dialog-host { display: contents; }
 .sheet {
@@ -810,7 +810,7 @@ input[type=number].input-inline { width: 64px !important; }
 .kind-option__label { font-weight: 600; }
 .kind-option__desc { font-size: 12px; color: var(--text-2); }
 
-/* Import: Zuordnung der Bildblöcke --------------------------------------------- */
+/* Import: assigning image blocks ----------------------------------------------- */
 
 .import-blocks { display: flex; flex-direction: column; gap: 8px; }
 .import-block { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: var(--radius); background: var(--surface-2); }
@@ -820,7 +820,7 @@ input[type=number].input-inline { width: 64px !important; }
 .import-block__new { display: flex; gap: 8px; flex: 1 1 100%; }
 .import-block__new select { width: 200px; flex: none; }
 
-/* Verlauf der Aufträge ----------------------------------------------------------- */
+/* Assignment history ------------------------------------------------------------- */
 
 .history { display: flex; flex-direction: column; gap: 8px; }
 .history-item {
@@ -844,7 +844,7 @@ input[type=number].input-inline { width: 64px !important; }
 
 .gallery-hint { margin-bottom: 10px; }
 
-/* Galerie ---------------------------------------------------------------------- */
+/* Gallery ---------------------------------------------------------------------- */
 
 .icon--flip { transform: scaleX(-1); }
 .icon--up { transform: rotate(-90deg); }
@@ -894,14 +894,14 @@ input[type=number].input-inline { width: 64px !important; }
 .segmented--dark button { padding: 3px 14px; border: 0; border-radius: var(--radius-sm); background: transparent; color: rgba(255, 255, 255, .7); font: inherit; font-weight: 500; cursor: default; }
 .segmented--dark button.is-active { background: rgba(255, 255, 255, .9); color: #111; }
 
-/* Per Doppelklick umbenennbar ---------------------------------------------------- */
+/* Renamable by double-click ------------------------------------------------------ */
 
 .renamable { cursor: text; border-radius: 3px; }
 .renamable:hover { text-decoration: underline dotted; text-underline-offset: 3px; }
 .renamable__input { font: inherit; color: inherit; background: var(--field); border: 1px solid var(--accent); border-radius: 4px; padding: 0 4px; min-height: 0 !important; width: auto !important; }
 .gallery .renamable__input { background: #1d1d1f; color: #fff; }
 
-/* Tastaturkürzel & Widerrufen ---------------------------------------------------- */
+/* Keyboard shortcuts & undo ------------------------------------------------------ */
 
 .toast__undo { margin-left: 8px; padding: 2px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); font: inherit; font-weight: 600; cursor: default; }
 .toast__undo:hover { background: var(--selected); }
@@ -912,7 +912,7 @@ input[type=number].input-inline { width: 64px !important; }
 kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 5px; background: var(--surface-2); white-space: nowrap; }
 .shot__image:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; box-shadow: none; }
 
-/* ── Mein Standort ──────────────────────────────────────────────────────── */
+/* ── My location ─────────────────────────────────────────────────────────── */
 .location-setup { align-items: center; margin-bottom: 16px; }
 .location-setup > div { flex: 1; }
 .location-setup p { margin: 2px 0 0; }
@@ -936,7 +936,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .badge--live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 5px; display: inline-block; vertical-align: 1px; animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .25; } }
 
-/* Einrichtung des Relays (Einstellungen → Standort-Übertragung) */
+/* Relay setup (Settings → location transfer) */
 .relay-steps { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 14px; }
 .relay-steps > li { display: flex; gap: 12px; }
 .relay-steps > li > div { flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -954,7 +954,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .relay-status__ok { color: var(--success); display: inline-flex; }
 .relay-status__bad { color: var(--danger); display: inline-flex; }
 
-/* Einstellungen → Aktualisierungen */
+/* Settings → updates */
 .update-list { display: flex; flex-direction: column; margin-top: 12px; }
 .update-item { display: flex; align-items: flex-start; gap: 16px; padding: 12px 0; border-top: 1px solid var(--border); }
 .update-item__text { flex: 1; display: flex; flex-direction: column; gap: 4px; }
@@ -967,7 +967,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .mission-location-hint .icon { color: var(--success); }
 .mission-location-hint .button { min-height: 22px; padding: 0 8px; font-size: 12px; }
 
-/* Über di-drop */
+/* About di-drop */
 .about { display: flex; flex-direction: column; gap: 16px; max-width: 760px; }
 .about__head { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
 .about__head h1 { margin: 0; }
@@ -990,7 +990,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .settings__subform { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
 .nextcloud-login { margin: 14px 0 8px; max-width: 520px; }
 
-/* Bereitstellen */
+/* Provide */
 .provide { display: flex; flex-direction: column; gap: 14px; padding-bottom: 70px; }
 .provide__target { display: flex; flex-direction: column; gap: 10px; }
 .provide__row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -1029,7 +1029,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .provide-browser__item:hover { background: var(--hover); }
 .provide-browser__item .truncate { flex: 1; }
 
-/* Uploads: Seitenleiste + Übersicht */
+/* Uploads: sidebar + overview */
 .progress-bar { height: 4px; border-radius: 999px; background: var(--selected); overflow: hidden; }
 .progress-bar > span { display: block; height: 100%; background: var(--accent); border-radius: inherit; transition: width .3s ease; }
 .progress-bar--large { height: 8px; }
@@ -1070,7 +1070,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .upload-list--compact .subtle { max-width: 40%; }
 .uploads-finished { margin-top: 16px; }
 @media (max-width: 760px) {
-  /* Schmale Seitenleiste: nur Symbol und Balken */
+  /* Narrow sidebar: icon and bar only */
   .upload-status { margin: 0 6px 6px; padding: 8px 6px; align-items: center; }
   .upload-status__title, .upload-status__count, .upload-status__meta { display: none; }
   .upload-status .progress-bar { width: 100%; }
@@ -1082,11 +1082,11 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .provide__missing { margin: 0; width: 100%; display: flex; align-items: center; gap: 6px; color: var(--warning); }
 .provide__destination { word-break: break-all; }
 .settings__note { margin-top: 16px; }
-/* Uploads unten links in der Ecke der Seitenleiste */
+/* Uploads in the bottom-left corner of the sidebar */
 .sidebar > .upload-status { margin-top: auto; margin-bottom: 8px; }
 .sidebar > .nav--bottom + .upload-status { margin-top: 6px; }
 
-/* Bereitstellungs-Status (Aufträge, Verlauf, Bildkacheln) */
+/* Provision status (assignments, history, image tiles) */
 .provision { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-2); white-space: nowrap; }
 .provision__icon { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--selected); color: var(--text-2); flex: none; }
 .provision--done .provision__icon { background: var(--success); color: #fff; }
@@ -1099,7 +1099,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .provision--paused .provision__bar > span, .provision--queued .provision__bar > span { background: var(--text-3); }
 .task-card__meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .history-item__provision:empty { display: none; }
-/* Kachel: kleines Symbol oben rechts, Balken darunter */
+/* Tile: small icon top right, bar below */
 .shot__provision { position: absolute; top: 6px; right: 6px; }
 .shot__provision .provision { flex-direction: column; align-items: flex-end; gap: 3px; }
 .shot__provision .provision__icon { width: 20px; height: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, .35); }
@@ -1107,7 +1107,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .shot__provision .provision--queued .provision__icon, .shot__provision .provision--paused .provision__icon { background: rgba(0, 0, 0, .55); color: #fff; }
 .shot__provision .provision--queued .provision__bar > span, .shot__provision .provision--paused .provision__bar > span { background: rgba(255, 255, 255, .85); }
 
-/* Bereitstellungs-Symbole: dunkler Grund, Warten/Hochladen animiert (überschreibt obige Grundwerte) */
+/* Provision icons: dark background, waiting/uploading animated (overrides the base values above) */
 .provision__icon { position: relative; width: 18px; height: 18px; background: rgba(28, 28, 30, .88); color: #fff; }
 .provision--done .provision__icon { background: var(--success); }
 .provision--failed .provision__icon { background: var(--danger); }
@@ -1122,16 +1122,16 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .provision__tag { font-size: 10px; font-weight: 700; color: #fff; }
 .provision--compact { gap: 3px; padding: 2px 6px 2px 3px; border-radius: 999px; background: rgba(28, 28, 30, .78); box-shadow: 0 1px 3px rgba(0, 0, 0, .35); }
 .provision--compact .provision__icon { width: 20px; height: 20px; }
-/* Kacheln: Symbole nebeneinander oben rechts, keine Balken */
+/* Tiles: icons side by side top right, no bars */
 .shot__provision { display: flex; gap: 4px; }
 .shot__provision .provision { flex-direction: row; align-items: center; }
-/* Kopf der Auftragsseite: Text + langer Balken */
+/* Header of the assignment page: text + long bar */
 .assignment-provision:empty { display: none; }
 .assignment-provision { margin-top: 8px; }
 .provision--wide { font-size: 12px; gap: 8px; }
 .provision--wide .provision__bar { width: 220px; height: 5px; }
 
-/* Hochladen: drehender Ring, dessen Länge den Fortschritt zeigt (30 % … 100 % des Kreises) */
+/* Uploading: spinning ring whose length shows progress (30 % … 100 % of the circle) */
 @property --arc { syntax: "<number>"; inherits: true; initial-value: 30; }
 .provision { transition: --arc .6s ease; }
 .provision--running .provision__icon::after {
@@ -1144,7 +1144,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .viewpoint-row__last { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-3); }
 .viewpoint-row__last.is-last-round { color: var(--info); }
 
-/* Flugprotokolle */
+/* Flight logs */
 .flightlogs { display: flex; flex-direction: column; gap: 14px; }
 .flightlogs__table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: auto; max-height: calc(100vh - 290px); }
 .flightlogs__table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
@@ -1175,7 +1175,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .sidebar > .nav--bottom ~ .flightlog-progress, .sidebar > .nav--bottom ~ .upload-status { margin-top: 6px; }
 .flightlog-progress--done .icon { color: var(--success); }
 .flightlog-progress--error { color: var(--danger); }
-.button--icon-quiet > span { display: none; } /* reine Symbol-Knöpfe: Beschriftung nur als Tooltip */
+.button--icon-quiet > span { display: none; } /* icon-only buttons: label only as tooltip */
 .flightlogs__drone td { position: sticky; top: 31px; z-index: 1; background: var(--surface-2); padding: 9px 10px; font-weight: 600; border-bottom: 1px solid var(--border); }
 .flightlogs__drone .icon { vertical-align: -2px; color: var(--text-2); margin-right: 4px; }
 .flightlogs__drone .subtle { font-weight: 400; margin-left: 8px; }

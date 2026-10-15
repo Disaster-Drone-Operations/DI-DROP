@@ -4,11 +4,11 @@ import { render } from '/lib/views.js'
 import Mission from '/app/models/mission.js'
 import MediaImporter from '/app/services/media_importer.js'
 
-// Bilder eines Flugs importieren: Drag & Drop aufs Fenster oder Ordner/Dateien wählen,
-// dann im Dialog die Bildblöcke Aufträgen zuordnen.
-//   data-media-import-mission-id-value     Einsatz
-//   data-media-import-assignment-id-value  (optional) Auftrag, der vorgeschlagen wird
-//   data-media-import-return-path-value    Seite, die danach neu geladen wird
+// Import a flight's images: drag & drop onto the window or choose folder/files,
+// then assign the image blocks to assignments in the dialog.
+//   data-media-import-mission-id-value     mission
+//   data-media-import-assignment-id-value  (optional) assignment to suggest
+//   data-media-import-return-path-value    page to reload afterwards
 export default class extends Controller {
   static targets = ['zone', 'dialog']
   static values = { missionId: Number, assignmentId: Number, returnPath: String }
@@ -28,10 +28,10 @@ export default class extends Controller {
     this.unlisten = null
   }
 
-  // ── Eingänge ─────────────────────────────────────────────────────────────
+  // ── Inputs ───────────────────────────────────────────────────────────────
 
-  // Ziel = Element unter dem Mauszeiger: eine Auftragskarte (→ Bilder direkt diesem Auftrag
-  // zuordnen) oder sonst die allgemeine Import-Zone
+  // Target = element under the mouse pointer: an assignment card (→ assign images directly to
+  // that assignment) or otherwise the general import zone
   handleDrag({ type, paths, x, y }) {
     if (this.state || !this.hasZoneTarget) return
     const under = x != null ? document.elementFromPoint(x, y)?.closest('[data-media-import-target~="zone"]') : null
@@ -51,7 +51,7 @@ export default class extends Controller {
     if (path) this.start([path])
   }
 
-  // ── Ablauf ───────────────────────────────────────────────────────────────
+  // ── Flow ─────────────────────────────────────────────────────────────────
 
   async start(paths, { assignmentId } = {}) {
     this.show('scanning')
@@ -71,7 +71,7 @@ export default class extends Controller {
     const blocks = []
     for (const el of form.querySelectorAll('[data-controller~="import-block"]')) {
       const choice = this.application.getControllerForElementAndIdentifier(el, 'import-block')?.choice()
-      if (!choice) return // fehlender Name – Meldung steht am Feld
+      if (!choice) return // missing name – message is shown at the field
       blocks.push(choice)
     }
     const data = new FormData(form)

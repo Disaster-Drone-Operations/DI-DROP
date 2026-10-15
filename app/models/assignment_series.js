@@ -3,8 +3,8 @@ import { db } from '/lib/db.js'
 import { toLocalDateTime } from '/lib/time.js'
 import Assignment from '/app/models/assignment.js'
 
-// Serie wiederkehrender Aufträge – derzeit Kontrollflüge. Erledigt man einen,
-// plant die App auf Wunsch den nächsten ("Kontrollflug 4 um 14:25").
+// Series of recurring assignments – currently control flights. When one is completed,
+// the app optionally schedules the next one ("Kontrollflug 4 um 14:25").
 export default class AssignmentSeries extends Record {
   static tableName = 'assignment_series'
 
@@ -16,35 +16,35 @@ export default class AssignmentSeries extends Record {
   }
 
   static defaults() {
-    return { kind: 'kontrolle', status: 'aktiv' }
+    return { kind: 'control', status: 'active' }
   }
 
   static active(missionId) {
-    return this.findBy('mission_id = ? AND status = ?', [missionId, 'aktiv'], { order: 'id DESC' })
+    return this.findBy('mission_id = ? AND status = ?', [missionId, 'active'], { order: 'id DESC' })
   }
 
   validate() {
     this.validatesPresenceOf('mission_id', 'kind')
   }
 
-  // Nächsten Kontrollflug der Serie anlegen (dueAt: Date oder null = sofort).
-  // Die Nummer zählt über den ganzen Einsatz weiter – auch wenn eine neue Serie beginnt.
+  // Create the next control flight of the series (dueAt: Date or null = immediately).
+  // The number keeps counting across the whole mission – even when a new series starts.
   async plan({ dueAt = null, notes = null } = {}) {
     const [row] = await db.select(
-      "SELECT COALESCE(MAX(sequence), 0) + 1 AS next FROM assignments WHERE mission_id = ? AND kind = 'kontrolle'", [this.mission_id])
+      "SELECT COALESCE(MAX(sequence), 0) + 1 AS next FROM assignments WHERE mission_id = ? AND kind = 'control'", [this.mission_id])
     const sequence = Number(row.next)
     return Assignment.create({
       mission_id: this.mission_id,
       series_id: this.id,
       sequence,
-      kind: 'kontrolle',
+      kind: 'control',
       title: `Kontrollflug ${sequence}`,
       due_at: dueAt ? toLocalDateTime(dueAt) : null,
       notes,
     })
   }
 
-  // Serie starten (oder die laufende nehmen) und den ersten Kontrollflug planen
+  // Start a series (or take the running one) and schedule the first control flight
   static async start(missionId, { intervalMinutes, dueAt } = {}) {
     let series = await this.active(missionId)
     if (!series) series = await this.create({ mission_id: missionId, interval_minutes: intervalMinutes })
@@ -53,6 +53,6 @@ export default class AssignmentSeries extends Record {
   }
 
   async finish() {
-    return this.update({ status: 'beendet' })
+    return this.update({ status: 'ended' })
   }
 }

@@ -4,7 +4,7 @@ import Mission from '/app/models/mission.js'
 import Setting from '/app/models/setting.js'
 
 export default class ApplicationController extends Controller {
-  // Daten für die Seitenleiste
+  // Data for the sidebar
   async layoutLocals() {
     return {
       unitName: Setting.get('general.unit_name'),

@@ -3,8 +3,8 @@ import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
 import platform from '/lib/platform/index.js'
 
-// Nextcloud-Ordner auswählen (Partial nextcloud/_folder_field): Ordner durchblättern, neuen anlegen,
-// übernehmen. Schreibt den Pfad ins Eingabefeld und meldet "nextcloud-folder:chosen".
+// Choose a Nextcloud folder (partial nextcloud/_folder_field): browse folders, create a new one,
+// confirm. Writes the path into the input and dispatches "nextcloud-folder:chosen".
 export default class extends Controller {
   static targets = ['input', 'dialog', 'body', 'newFolder']
   static values = { suggestion: String }
@@ -30,7 +30,7 @@ export default class extends Controller {
     try {
       this.paint({ folders: await platform.nextcloud.list(path) })
     } catch (error) {
-      // Ordner gibt es (noch) nicht → eine Ebene höher
+      // Folder doesn't exist (yet) → one level up
       if (path !== '/' && /nicht gefunden/.test(String(error))) return this.browse({ params: { path: path.split('/').slice(0, -1).join('/') || '/' } })
       this.paint({ error: String(error) })
     }

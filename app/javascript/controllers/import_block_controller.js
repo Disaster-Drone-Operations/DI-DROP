@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 import Assignment from '/app/models/assignment.js'
 
-// Ein Bildblock im Import-Dialog: Auftrag wählen oder direkt einen neuen anlegen
+// One image block in the import dialog: choose an assignment or create a new one directly
 export default class extends Controller {
   static targets = ['select', 'newFields', 'kind', 'title']
   static values = { id: String }
@@ -17,7 +17,7 @@ export default class extends Controller {
     this.titleTarget.setCustomValidity('')
   }
 
-  // Für den Import: Auswahl dieses Blocks; meldet fehlenden Namen direkt am Feld
+  // For the import: this block's choice; reports a missing name directly at the field
   choice() {
     const target = this.selectTarget.value
     const newKind = this.kindTarget.value

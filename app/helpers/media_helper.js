@@ -13,14 +13,14 @@ export function variantLabel(variant) {
   return MediaFile.VARIANTS[variant] ?? variant
 }
 
-// Kurzform für kleine Knöpfe: "Sicht", "Wärme" …
+// Short form for small buttons: "Sicht", "Wärme" …
 export function variantShort(variant) {
   return { V: 'Sicht', W: 'Weitw.', Z: 'Zoom', T: 'Wärme' }[variant] ?? variant ?? 'Datei'
 }
 
 const DIRECTIONS = ['N', 'NNO', 'NO', 'ONO', 'O', 'OSO', 'SO', 'SSO', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
 
-// DJI liefert -180…180 → 0…360° + Himmelsrichtung
+// DJI delivers -180…180 → 0…360° + compass direction
 export function formatHeading(yaw) {
   if (yaw == null) return null
   const deg = ((Number(yaw) % 360) + 360) % 360
@@ -38,7 +38,7 @@ export function shotTooltip(file) {
   ].filter(Boolean).join(' · ')
 }
 
-// Vorschau zeigt standardmäßig das Wärmebild – im Einsatz meist das Wichtigere
+// Preview shows the thermal image by default – usually the more important one in operations
 export const PREFERRED_VARIANTS = ['T', 'V', 'W', 'Z']
 
 export const defaultVariantOf = (variants) => PREFERRED_VARIANTS.find((v) => variants.includes(v)) ?? variants[0]
@@ -48,7 +48,7 @@ export function defaultVariant(files) {
   return PREFERRED_VARIANTS.find((v) => variants.includes(v)) ?? variants[0]
 }
 
-// Daten einer Aufnahme für Vorschau-Karte und Galerie (als JSON im data-Attribut)
+// Data of a shot for preview card and gallery (as JSON in a data attribute)
 export function shotData(shot, { assignmentTitle = '' } = {}) {
   const files = {}
   for (const f of shot.files) {

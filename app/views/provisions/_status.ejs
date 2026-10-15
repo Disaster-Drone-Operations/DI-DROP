@@ -1,9 +1,9 @@
 <%# locals: s, compact, wide, label -%>
-<%# compact: nur Symbol (+ Kürzel wie „W“/„S“), z. B. auf Bildkacheln · wide: Text + langer Balken (Auftragsseite) -%>
+<%# compact: icon only (+ abbreviation like „W“/„S“), e.g. on image tiles · wide: text + long bar (assignment page) -%>
 <% if (s && s.state !== 'none') { -%>
   <% const text = { done: 'bereitgestellt', running: `wird bereitgestellt · ${s.percent} %`, queued: 'wartet auf Upload', paused: 'Upload pausiert', failed: 'Upload fehlgeschlagen' }[s.state] -%>
   <% const symbol = { done: 'check', running: 'upload', queued: 'clock', paused: 'pause', failed: 'alert' }[s.state] -%>
-  <%# --arc: Länge des drehenden Rings beim Hochladen – 30 % des Kreises bei 0 %, ganzer Kreis bei 100 % -%>
+  <%# --arc: length of the spinning ring while uploading – 30 % of the circle at 0 %, full circle at 100 % -%>
   <span class="provision provision--<%= s.state %> <%= compact ? 'provision--compact' : '' %> <%= wide ? 'provision--wide' : '' %>"
         style="--arc: <%= Math.round(30 + s.percent * 0.7) %>"
         title="<%= label ? `${label}: ` : '' %><%= s.state === 'done' ? `${s.done} ${s.done === 1 ? 'Datei' : 'Dateien'} bereitgestellt` : text %>">

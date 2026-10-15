@@ -1,20 +1,20 @@
-// Zeichnet ein Vergleichsbild: Aufnahmen nebeneinander, darüber ein weißer Streifen
-// mit Datum und Uhrzeit (Vorlage aus der Praxis: 3840×1064 aus 3 Wärmebildern).
+// Draws a comparison image: shots side by side, above them a white strip
+// with date and time (template from practice: 3840×1064 from 3 thermal images).
 //
-// Dieselbe Funktion dient für die Live-Vorschau (mit Vorschaubildern) und für den
-// Export (mit Originalbildern) – das Ergebnis sieht deshalb identisch aus.
+// The same function serves the live preview (with thumbnails) and the
+// export (with original images) – so the result looks identical.
 
 import platform from '/lib/platform/index.js'
 import { sanitizeFolderName } from '/lib/folders.js'
 import { parseLocal } from '/lib/time.js'
 
-const MAX_HEIGHT = 1080 // Sichtbilder (3024 px hoch) werden auf diese Höhe verkleinert
-const HEADER_RATIO = 0.039 // 40 px Kopfzeile bei 1024 px Bildhöhe
+const MAX_HEIGHT = 1080 // visible images (3024 px tall) are scaled down to this height
+const HEADER_RATIO = 0.039 // 40 px header at 1024 px image height
 const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
 
 const bitmaps = new Map()
 
-// Vorschaubild laden (zwischengespeichert – die sind klein)
+// Load a thumbnail (cached – they are small)
 export function loadBitmap(path) {
   if (!bitmaps.has(path)) {
     bitmaps.set(path, platform.readImage(path).then((blob) => createImageBitmap(blob)).catch((error) => {
@@ -72,10 +72,10 @@ export function fileNameFor(viewpointName, shots) {
   return `Vergleich_${name}_${times.join('_')}.jpg`
 }
 
-// Erzeugt das Vergleichsbild in voller Auflösung und speichert es.
+// Creates the comparison image in full resolution and saves it.
 // shots: [{ taken_at, files: { T: { path } … } }], variant: 'T' | 'V' …
 export async function exportComparison({ viewpointName, shots, variant, joinPath }) {
-  // Originale nicht zwischenspeichern: ein 12-MP-Sichtbild belegt ~50 MB als Bitmap
+  // Don't cache originals: a 12 MP visible image takes ~50 MB as a bitmap
   const items = []
   for (const shot of shots) {
     const blob = await platform.readImage(shot.files[variant].path)
@@ -87,7 +87,7 @@ export async function exportComparison({ viewpointName, shots, variant, joinPath
   canvas.width = canvas.height = 0
   if (!blob) throw new Error('Bild konnte nicht erzeugt werden')
 
-  // Ablage neben der jüngsten Aufnahme (Ordner des letzten Kontrollflugs)
+  // Saved next to the most recent shot (folder of the last control flight)
   const dir = shots.at(-1).files[variant].path.replace(/[\\/][^\\/]*$/, '')
   return platform.writeImage(await joinPath(dir, fileNameFor(viewpointName, shots)), blob)
 }

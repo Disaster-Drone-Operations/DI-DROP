@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 import platform from '/lib/platform/index.js'
 
-// Öffnet den nativen Ordner-Dialog des Betriebssystems
+// Opens the operating system's native folder dialog
 export default class extends Controller {
   static targets = ['input']
 

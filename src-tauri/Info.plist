@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Wird von Tauri in das Info.plist der macOS-App übernommen: deutsche App, damit System-Texte
-     (Suchfeld im Hilfe-Menü, Dateidialoge …) auf Deutsch erscheinen -->
+<!-- Merged by Tauri into the macOS app's Info.plist: German app, so that system texts
+     (search field in the Help menu, file dialogs …) appear in German -->
 <plist version="1.0">
 <dict>
   <key>CFBundleDevelopmentRegion</key>

@@ -4,12 +4,12 @@ import DeviceName from '/app/models/device_name.js'
 import platform from '/lib/platform/index.js'
 import { flightLogDir, syncLocal, isAvailable } from '/app/services/flightlog_importer.js'
 
-// Modul "Flugprotokolle": alle Flüge aus den Protokollen der Fernsteuerung
+// Module "Flugprotokolle": all flights from the remote controller's logs
 export default class FlightLogsController extends ApplicationController {
   async index() {
-    if (isAvailable()) await syncLocal().catch((e) => console.warn('[Flugprotokolle]', e))
+    if (isAvailable()) await syncLocal().catch((e) => console.warn('[flight logs]', e))
     const logs = await FlightLog.all({ order: 'started_at DESC' })
-    // Nach Drohne gruppiert (Seriennummer), die zuletzt geflogene zuerst
+    // Grouped by drone (serial number), most recently flown first
     const groups = []
     for (const log of logs) {
       const sn = log.aircraft_sn ?? ''

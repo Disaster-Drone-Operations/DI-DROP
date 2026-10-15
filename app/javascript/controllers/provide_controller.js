@@ -2,7 +2,7 @@ import { Controller } from '@hotwired/stimulus'
 import platform from '/lib/platform/index.js'
 import { formatBytes, formatDuration, formatSpeed } from '/app/helpers/index.js'
 
-// Seite "Bereitstellen": Auswahl zählen, Größe und Dauer schätzen, Ziel wählen
+// "Bereitstellen" page: count the selection, estimate size and duration, choose the destination
 export default class extends Controller {
   static targets = ['item', 'selection', 'summary', 'submit', 'base', 'destination']
   static values = { target: String, pending: Number, speed: Number, missionFolder: String, assignmentFolder: String }
@@ -37,7 +37,7 @@ export default class extends Controller {
     this.showDestination()
   }
 
-  // ── Schnellauswahl ───────────────────────────────────────────────────
+  // ── Quick selection ──────────────────────────────────────────────────
 
   toggleKind({ params: { kind } }) {
     const items = this.itemTargets.filter((i) => i.dataset.kind === kind)
@@ -67,7 +67,7 @@ export default class extends Controller {
     this.selectionTarget.value = JSON.stringify({ files, comparisons })
   }
 
-  // ── Ziel ─────────────────────────────────────────────────────────────
+  // ── Destination ──────────────────────────────────────────────────────
 
   baseValue() {
     return this.hasBaseTarget ? this.baseTarget.value.trim() : ''
@@ -86,7 +86,7 @@ export default class extends Controller {
     this.update()
   }
 
-  // Zielordner für den Export (z. B. USB-Stick); der Nextcloud-Ordner hat ein eigenes Feld
+  // Destination folder for the export (e.g. USB stick); the Nextcloud folder has its own field
   async changeBase() {
     const folder = await platform.pickFolder({ title: 'Zielordner wählen (z. B. USB-Stick)', defaultPath: this.baseValue() || undefined })
     if (!folder) return

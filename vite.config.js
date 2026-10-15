@@ -9,7 +9,7 @@ const host = process.env.TAURI_DEV_HOST
 export default defineConfig({
   plugins: [ejsPlugin({ root }), devBridge({ root })],
 
-  // Tauri erwartet einen festen Port und soll Rust-Fehler nicht wegräumen
+  // Tauri expects a fixed port and shouldn't clear away Rust errors
   clearScreen: false,
   server: {
     port: 1420,

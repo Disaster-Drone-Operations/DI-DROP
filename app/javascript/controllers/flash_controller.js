@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 import { runUndo } from '/app/javascript/shortcuts.js'
 
-// Blendet Hinweise nach ein paar Sekunden aus
+// Fades out notices after a few seconds
 export default class extends Controller {
   static values = { delay: { type: Number, default: 3500 } }
 
