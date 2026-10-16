@@ -4,14 +4,11 @@
 <h2 class="dialog__title"><%= live ? 'Live-Standort' : 'Standort vom Smartphone' %></h2>
 
 <% if (['waiting', 'pairing'].includes(s.status) && qrDataUrl) { -%>
-  <div class="location-qr">
-    <img src="<%= qrDataUrl %>" alt="QR-Code zum Verbinden des Smartphones" width="240" height="240">
-    <ol class="location-qr__steps">
-      <li>Mit der <strong>Kamera des Smartphones</strong> den Code scannen.</li>
-      <li>Die Seite im Browser öffnen und <strong><%= live ? '„Live-Übertragung starten“' : '„Meinen Standort senden“' %></strong> tippen.</li>
-      <li>Den Standortzugriff <strong>erlauben</strong>.</li>
-    </ol>
-  </div>
+  <%- include('relay/_qr', { qrDataUrl, alt: 'QR-Code zum Verbinden des Smartphones', steps: [
+    'Mit der <strong>Kamera des Smartphones</strong> den Code scannen.',
+    `Die Seite im Browser öffnen und <strong>${live ? '„Live-Übertragung starten“' : '„Meinen Standort senden“'}</strong> tippen.`,
+    'Den Standortzugriff <strong>erlauben</strong>.',
+  ] }) %>
 <% } else if (s.status === 'error') { -%>
   <div class="callout callout--danger"><%- icon('alert') %><span><%= s.text %></span></div>
 <% } else if (s.status === 'done') { -%>

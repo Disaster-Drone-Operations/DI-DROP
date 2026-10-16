@@ -1,0 +1,34 @@
+<%# locals: session, qrDataUrl -%>
+<% const s = session ?? { status: 'stopped', text: '' } -%>
+<h2 class="dialog__title">An Telefon senden</h2>
+<% if (s.name) { %><p class="subtle mono truncate"><%= s.name %></p><% } %>
+
+<% if (['waiting', 'pairing'].includes(s.status) && qrDataUrl) { -%>
+  <%- include('relay/_qr', { qrDataUrl, alt: 'QR-Code zum Empfangen des Bildes', steps: [
+    'Mit der <strong>Kamera des Telefons</strong> den Code scannen und die Seite öffnen.',
+    'Das Bild wird übertragen und angezeigt.',
+    'Dort <strong>„In Fotos sichern“</strong> tippen.',
+  ] }) %>
+<% } else if (s.status === 'error') { -%>
+  <div class="callout callout--danger"><%- icon('alert') %><span><%= s.text %></span></div>
+<% } else if (s.status === 'done') { -%>
+  <div class="dialog__center"><%- icon('check', { size: 32 }) %><span>Das Bild ist auf dem Telefon angekommen.</span></div>
+<% } -%>
+
+<% if (!['error', 'done'].includes(s.status)) { -%>
+  <p class="location-status">
+    <% if (['connecting', 'pairing', 'paired', 'sending', 'delivering', 'reconnecting'].includes(s.status)) { %><span class="spinner"></span><% } %>
+    <span><%= s.text %></span>
+  </p>
+<% } -%>
+<% if (s.status === 'waiting' || s.status === 'pairing') { -%>
+  <p class="hint">Jedes Telefon kann den Code scannen – keine App nötig. Das Bild wird verschlüsselt übertragen; der Relay kann es nicht sehen und speichert nichts.</p>
+<% } -%>
+
+<div class="dialog__actions">
+  <% if (['done', 'stopped', 'error'].includes(s.status)) { -%>
+    <button type="button" class="button button--primary" data-action="image-send#close" autofocus>Schließen</button>
+  <% } else { -%>
+    <button type="button" class="button" data-action="image-send#close">Abbrechen</button>
+  <% } -%>
+</div>

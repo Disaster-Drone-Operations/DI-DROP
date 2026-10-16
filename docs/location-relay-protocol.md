@@ -3,7 +3,9 @@
 Normative Beschreibung des Protokolls zwischen Desktop (di-drop), Relay und
 Smartphone-Webseite. Grundlage: `location-relay-feature-requirements.md` (Anforderungen).
 Implementierungen: `relay/protocol.js` (Krypto + Nachrichten, von Desktop **und**
-Smartphone genutzt), `relay/worker.js` (Cloudflare-Relay), `lib/location/` (Desktop-Client).
+Smartphone genutzt), `relay/worker.js` (Cloudflare-Relay), `lib/relay/` (gemeinsamer Desktop-Client, Bild-Client),
+`lib/location/` (Standort-Client). Neben Positionen (Smartphone → Desktop) überträgt dasselbe
+Protokoll auch Bilder (Desktop → Smartphone, Abschnitt 6).
 
 Der Relay ist austauschbar: Jeder Server, der dieses Dokument umsetzt, funktioniert mit
 denselben Clients. Einzige Konfiguration auf dem Desktop: `relayBaseUrl` (HTTPS).
@@ -22,7 +24,8 @@ werden Base64url (ohne Padding) kodiert.
 QR-Code / Pairing-URL:
 
 ```
-{relayBaseUrl}/#v1:{sessionId}:{phoneSecret}
+{relayBaseUrl}/#v1:{sessionId}:{phoneSecret}          Standort
+{relayBaseUrl}/#v1:{sessionId}:{phoneSecret}:image    Bild empfangen (Abschnitt 6)
 ```
 
 Das Fragment (`#…`) wird vom Browser nie an den Server geschickt. Die Smartphone-Seite liest
@@ -126,13 +129,49 @@ Fehlercodes: `NO_RECEIVER`, `SESSION_EXPIRED`, `ALREADY_PAIRED`, `UNAUTHORIZED`,
 - Trennt sich der Desktop, erhält das Smartphone `DESKTOP_GONE`; der Desktop kann sich
   innerhalb der Session mit seinem Token neu verbinden.
 - Grenzen: Session höchstens 8 Stunden; höchstens 20 Nachrichten je 10 Sekunden je Verbindung.
+- Fehler, die nur im Client entstehen: `DECRYPT_FAILED` (Manipulation/falscher Schlüssel),
+  `REPLAY` (veraltete `seq`), `IMAGE_INVALID` (Bild unvollständig, Abschnitt 6).
 
 ## 4. Was der Relay sieht
 
 Session-ID, IP-Adressen, Verbindungszeiten, Länge der verschlüsselten Nachrichten und den
-Hash des Desktop-Tokens. Er sieht **keine** Positionen und **keinen** Schlüssel und speichert
-nichts dauerhaft. Personenbezogene Metadaten (IP-Adressen) fallen technisch bedingt trotzdem an.
+Hash des Desktop-Tokens, bei Bildern deren ungefähre Größe. Er sieht **keine** Positionen,
+**keine** Bilder und **keinen** Schlüssel und speichert nichts dauerhaft. Personenbezogene Metadaten (IP-Adressen) fallen technisch bedingt trotzdem an.
 
 ## 5. Health
 
-`GET {relayBaseUrl}/health` → `{"ok":true,"protocol":1,"relay":"<Implementierung>","bundle":"<Version>"}`
+`GET {relayBaseUrl}/health` → `{"ok":true,"protocol":1,"relay":"<Implementierung>","bundle":"<Version>","features":["location","image"]}`
+
+Fehlt `image` in `features` (Relay vor Bundle 1.1.0), bietet der Desktop das Senden von Bildern nicht an,
+sondern verweist auf „Relay aktualisieren“.
+
+## 6. Bilder (Desktop → Smartphone)
+
+Pairing wie in 3.2 (Pairing-URL mit `:image`, die Seite fragt dann nicht nach dem Standort).
+Danach sendet der Desktop **ein** Bild, unverändert (Original mit EXIF):
+
+1. Verschlüsselt (`data`, Schlüssel `kDP`):
+   ```json
+   { "type": "image-offer", "transferId": "<16 Byte b64url>", "name": "…_Wärmebild.JPG",
+     "mime": "image/jpeg", "size": 1568768, "sha256": "<b64url>", "chunks": 7 }
+   ```
+   `chunks = ceil(size / 262144)`, `size` ≤ 60 MB, `mime` nur `image/jpeg` oder `image/png`.
+2. `chunks` **Binär-Frames** (WebSocket binary), Block `i` = Bytes `[i·256 KiB, (i+1)·256 KiB)`:
+   ```
+   [0x01][IV 12 Byte][AES-256-GCM(Block) + Tag 16 Byte]
+   Schlüssel kDP, AAD = UTF-8 "v1|" + sessionId + "|desktop->phone|img|" + transferId + "|" + i
+   ```
+   Die AAD bindet jeden Block an Transfer und Position – vertauschte, fremde oder veränderte
+   Blöcke lassen sich nicht entschlüsseln (`DECRYPT_FAILED`).
+3. Das Smartphone setzt die Blöcke in Reihenfolge zusammen, prüft Größe und SHA-256 und
+   antwortet verschlüsselt `{ "type": "image-received", "transferId" }` bzw.
+   `{ "type": "image-error", "transferId", "code" }`. Danach beendet der Desktop die Session.
+
+Relay-Regeln für Binär-Frames: nur vom Desktop und nur an ein gekoppeltes Smartphone
+(sonst `NO_RECEIVER`), unverändert durchreichen, nie zwischenspeichern. Höchstens 300 KiB je
+Frame, 200 Frames je 10 Sekunden, 64 MiB je Session. Binär-Frames vom Smartphone oder vor dem
+`hello` des Desktops → `INVALID_MESSAGE` und Verbindung schließen.
+
+Bricht die Verbindung während der Übertragung ab, wird nicht fortgesetzt – der Desktop meldet
+den Fehler, und das Bild wird neu gesendet (neuer QR-Code).
+

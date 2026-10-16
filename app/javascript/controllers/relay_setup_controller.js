@@ -5,6 +5,7 @@ import platform from '/lib/platform/index.js'
 import Router from '/lib/router.js'
 import Setting from '/app/models/setting.js'
 import * as deployer from '/app/services/cloudflare_deployer.js'
+import { RELAY_BUNDLE_VERSION } from '/relay/bundle.js'
 
 // Settings → location transfer: wizard for the relay in your own Cloudflare account
 //   account → token → install (choose account, workers.dev name if needed, upload, test)
@@ -38,7 +39,9 @@ export default class extends Controller {
 
   async check() {
     this.set({ health: 'checking' })
-    this.set({ health: (await deployer.health(this.state.url)) ? 'ok' : 'down' })
+    const info = await deployer.health(this.state.url)
+    // Reachable but older code (e.g. without image transfer) → offer "Relay aktualisieren"
+    this.set({ health: !info ? 'down' : info.bundle === RELAY_BUNDLE_VERSION ? 'ok' : 'outdated' })
   }
 
   beginSetup() {

@@ -1,0 +1,8 @@
+<%# locals: qrDataUrl, steps, alt -%>
+<%# QR code for pairing a smartphone with the relay + numbered steps (steps: HTML strings from templates) -%>
+<div class="location-qr">
+  <img src="<%= qrDataUrl %>" alt="<%= alt %>" width="240" height="240">
+  <ol class="location-qr__steps">
+    <% steps.forEach((step) => { %><li><%- step %></li><% }) %>
+  </ol>
+</div>

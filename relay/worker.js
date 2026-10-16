@@ -2,8 +2,9 @@
 // Protocol: docs/location-relay-protocol.md
 //
 // Per session the relay connects exactly one desktop and at most one phone and passes
-// encrypted messages through. It knows no keys, sees no positions and
+// encrypted messages through. It knows no keys, sees no positions or images and
 // stores nothing persistently (only an alarm for the session end).
+// Images (desktop → phone) come as encrypted binary frames that are streamed straight through.
 //
 // relay/bundle.js bundles this file together with the phone web page into a
 // single worker module (replacing the ASSETS and BUNDLE placeholders).
@@ -16,6 +17,11 @@ const SESSION_MAX_MS = 8 * 60 * 60 * 1000
 const MAX_MESSAGE_BYTES = 4096
 const RATE_WINDOW_MS = 10_000
 const RATE_MAX = 20
+// Binary frames (image blocks): only desktop → paired phone
+const MAX_BINARY_BYTES = 300 * 1024 // 256 KB block + header + tag
+const MAX_SESSION_BINARY_BYTES = 64 * 1024 * 1024
+const BINARY_RATE_MAX = 200
+const FEATURES = ['location', 'image']
 
 // Desktop origins (Tauri on macOS/Windows, dev server). Phone = same origin.
 const DESKTOP_ORIGINS = ['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost', 'http://localhost:1420']
@@ -26,7 +32,7 @@ export default {
 
     if (url.pathname === '/health') {
       // May be queried from anywhere (connection test in the desktop app), contains nothing sensitive
-      const response = json({ ok: true, protocol: BUNDLE.protocol, relay: 'cloudflare', bundle: BUNDLE.version })
+      const response = json({ ok: true, protocol: BUNDLE.protocol, relay: 'cloudflare', bundle: BUNDLE.version, features: FEATURES })
       response.headers.set('Access-Control-Allow-Origin', '*')
       return response
     }
@@ -51,7 +57,7 @@ export default {
           'Referrer-Policy': 'no-referrer',
           'X-Content-Type-Options': 'nosniff',
           'Content-Security-Policy':
-            `default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; ` +
+            `default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; ` +
             `connect-src 'self' wss://${url.host}; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
           'Permissions-Policy': 'geolocation=(self)',
         },
@@ -74,12 +80,13 @@ const randomId = () => btoa(String.fromCharCode(...crypto.getRandomValues(new Ui
 
 // One session = one Durable Object. State lives exclusively in the WebSocket attachments –
 // that way it survives hibernation.
-//   Desktop: { role: 'desktop', tokenHash, expiresAt }
+//   Desktop: { role: 'desktop', tokenHash, expiresAt, binaryBytes }
 //   Phone:   { role: 'phone', id, paired, pairUsed, tokenHash, expiresAt }
 export class RelaySession {
   constructor(ctx) {
     this.ctx = ctx
     this.rates = new Map() // WebSocket → timestamps (volatile only, for rate limiting)
+    this.binaryRates = new Map()
   }
 
   async fetch() {
@@ -133,18 +140,19 @@ export class RelaySession {
     }
   }
 
-  limited(ws) {
+  limited(ws, rates = this.rates, max = RATE_MAX) {
     const now = Date.now()
-    const times = (this.rates.get(ws) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
+    const times = (rates.get(ws) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
     times.push(now)
-    this.rates.set(ws, times)
-    return times.length > RATE_MAX
+    rates.set(ws, times)
+    return times.length > max
   }
 
   // ── WebSocket events ───────────────────────────────────────────────────────
 
   async webSocketMessage(ws, raw) {
-    if (typeof raw !== 'string' || raw.length > MAX_MESSAGE_BYTES) return this.fail(ws, 'INVALID_MESSAGE', 'Nachricht zu groß oder kein Text')
+    if (typeof raw !== 'string') return this.binary(ws, raw)
+    if (raw.length > MAX_MESSAGE_BYTES) return this.fail(ws, 'INVALID_MESSAGE', 'Nachricht zu groß oder kein Text')
     if (this.limited(ws)) return this.fail(ws, 'RATE_LIMITED', 'Zu viele Nachrichten')
 
     let msg
@@ -164,6 +172,26 @@ export class RelaySession {
     return this.fromPhone(ws, att, msg)
   }
 
+  // Image block from the desktop → forward unchanged to the paired phone (never stored)
+  binary(ws, raw) {
+    const att = ws.deserializeAttachment() ?? {}
+    if (att.role !== 'desktop') return this.fail(ws, 'INVALID_MESSAGE', 'Binärdaten nur vom Desktop')
+    const size = raw.byteLength ?? 0
+    if (size > MAX_BINARY_BYTES) return this.fail(ws, 'INVALID_MESSAGE', 'Bildblock zu groß')
+    if (this.limited(ws, this.binaryRates, BINARY_RATE_MAX)) return this.fail(ws, 'RATE_LIMITED', 'Zu viele Bildblöcke')
+    if (att.expiresAt < Date.now()) return this.expire()
+    const binaryBytes = (att.binaryBytes ?? 0) + size
+    if (binaryBytes > MAX_SESSION_BINARY_BYTES) return this.fail(ws, 'INVALID_MESSAGE', 'Zu viele Daten in dieser Session')
+    ws.serializeAttachment({ ...att, binaryBytes })
+    const phone = this.pairedPhone()
+    if (!phone) return this.send(ws, { type: 'error', code: 'NO_RECEIVER', message: 'Kein gekoppeltes Smartphone' })
+    try {
+      phone.send(raw)
+    } catch {
+      // phone gone – the desktop learns it via phone-disconnected
+    }
+  }
+
   async hello(ws, msg, claim) {
     if (msg.type !== 'hello') return this.fail(ws, 'INVALID_MESSAGE', 'Zuerst hello senden')
 
@@ -176,7 +204,8 @@ export class RelaySession {
       if (!claim) await this.ctx.storage.setAlarm(expiresAt)
       // Reconnect: replace older desktop connection
       for (const old of this.sockets('desktop')) this.close(old, 4001, 'REPLACED')
-      ws.serializeAttachment({ role: 'desktop', tokenHash, expiresAt })
+      const sent = this.sockets('desktop').reduce((n, old) => Math.max(n, old.deserializeAttachment().binaryBytes ?? 0), 0)
+      ws.serializeAttachment({ role: 'desktop', tokenHash, expiresAt, binaryBytes: sent })
       this.send(ws, { type: 'desktop-ready', expiresAt })
       const phone = this.pairedPhone()
       if (phone) this.send(ws, { type: 'phone-connected', phoneId: phone.deserializeAttachment().id, paired: true })
@@ -241,6 +270,7 @@ export class RelaySession {
 
   async webSocketClose(ws, code) {
     this.rates.delete(ws)
+    this.binaryRates.delete(ws)
     this.close(ws, code === 1005 ? 1000 : code)
     const att = ws.deserializeAttachment() ?? {}
     if (att.role === 'desktop' && !this.sockets('desktop').some((other) => other !== ws)) {

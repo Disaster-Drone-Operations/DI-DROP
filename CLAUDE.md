@@ -65,7 +65,12 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Achtung: Die laufende Desktop-App lädt Codeänderungen sofort nach – eine Migration
   daher erst speichern, wenn sie vollständig ist (sonst läuft eine halbe Version).
 
-## Mein Standort / Relay
+## Mein Standort / Relay (auch „An Telefon senden“)
+
+- Derselbe Relay überträgt Positionen (Smartphone → Desktop) und Bilder (Desktop → Smartphone,
+  `lib/relay/image_client.js`, `app/services/image_share.js`, Dialog `images/_send_dialog` im Layout).
+  Bilder gehen vorerst immer als Original (mit EXIF); Sichtbilder verkleinern kommt später.
+  Gemeinsamer Client: `lib/relay/relay_client.js` (Verbindung, Pairing, Reconnect).
 
 - Protokolländerungen nur zusammen mit `docs/location-relay-protocol.md` und den
   Vertrags-Tests (`test/relay.contract.test.mjs`). Nach Änderungen an `relay/*`

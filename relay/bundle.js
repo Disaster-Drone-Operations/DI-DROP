@@ -2,7 +2,7 @@
 // Used by the Cloudflare deployer in the desktop app (files via Vite "?raw")
 // and by relay/dev.mjs for local testing with wrangler.
 
-export const RELAY_BUNDLE_VERSION = '1.0.0'
+export const RELAY_BUNDLE_VERSION = '1.1.0'
 export const RELAY_PROTOCOL_VERSION = 1
 
 export function buildWorkerScript({ worker, html, app, protocol }) {

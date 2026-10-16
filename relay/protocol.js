@@ -6,6 +6,10 @@
 
 export const VERSION = 1
 export const MAX_MESSAGE_BYTES = 4096
+// Images (desktop → phone): plaintext per binary frame and per image
+export const CHUNK_BYTES = 256 * 1024
+export const MAX_IMAGE_BYTES = 60 * 1024 * 1024
+const CHUNK_FORMAT = 1 // first byte of a binary frame
 
 const enc = new TextEncoder()
 const dec = new TextDecoder()
@@ -38,14 +42,15 @@ export function createSecrets() {
 
 export const isSessionId = (id) => /^[A-Za-z0-9_-]{22}$/.test(id)
 
-export function pairingUrl(relayBaseUrl, { sessionId, phoneSecret }) {
-  return `${relayBaseUrl.replace(/\/+$/, '')}/#v${VERSION}:${sessionId}:${phoneSecret}`
+// mode: null (location) | 'image' (receive an image) – tells the phone page what to show
+export function pairingUrl(relayBaseUrl, { sessionId, phoneSecret }, mode = null) {
+  return `${relayBaseUrl.replace(/\/+$/, '')}/#v${VERSION}:${sessionId}:${phoneSecret}${mode ? `:${mode}` : ''}`
 }
 
-// "#v1:<sessionId>:<phoneSecret>" → { sessionId, phoneSecret } | null
+// "#v1:<sessionId>:<phoneSecret>[:image]" → { sessionId, phoneSecret, mode } | null
 export function parsePairingFragment(hash) {
-  const m = /^#?v1:([A-Za-z0-9_-]{22}):([A-Za-z0-9_-]{43})$/.exec(hash)
-  return m ? { sessionId: m[1], phoneSecret: m[2] } : null
+  const m = /^#?v1:([A-Za-z0-9_-]{22}):([A-Za-z0-9_-]{43})(?::(image))?$/.exec(hash)
+  return m ? { sessionId: m[1], phoneSecret: m[2], mode: m[3] ?? null } : null
 }
 
 export function sessionSocketUrl(relayBaseUrl, sessionId) {
@@ -69,8 +74,8 @@ async function deriveKey(phoneSecret, sessionId, direction) {
   )
 }
 
-export async function sha256B64url(text) {
-  return toB64url(await crypto.subtle.digest('SHA-256', enc.encode(text)))
+export async function sha256B64url(data) {
+  return toB64url(await crypto.subtle.digest('SHA-256', typeof data === 'string' ? enc.encode(data) : data))
 }
 
 // A channel = keys for sending and receiving + sequence counters (replay protection)
@@ -85,6 +90,8 @@ export async function createChannel({ sessionId, phoneSecret, role }) {
   let sendSeq = 0
   let recvSeq = 0
   const aad = (dir) => enc.encode(`v1|${sessionId}|${dir}`)
+  // Image blocks: bound to transfer and position – swapped or foreign blocks don't decrypt
+  const chunkAad = (dir, transferId, index) => enc.encode(`v1|${sessionId}|${dir}|img|${transferId}|${index}`)
 
   return {
     // plaintext object → {"v":1,"type":"data","iv","ct"} (seq is set automatically)
@@ -114,6 +121,30 @@ export async function createChannel({ sessionId, phoneSecret, role }) {
       }
       recvSeq = payload.seq
       return payload
+    },
+
+    // Image block → binary frame [format][12-byte IV][AES-GCM ciphertext + tag]
+    async sealChunk(transferId, index, bytes) {
+      const iv = crypto.getRandomValues(new Uint8Array(12))
+      const ct = new Uint8Array(await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv, additionalData: chunkAad(sendDir, transferId, index) }, sendKey, bytes))
+      const frame = new Uint8Array(1 + iv.length + ct.length)
+      frame[0] = CHUNK_FORMAT
+      frame.set(iv, 1)
+      frame.set(ct, 13)
+      return frame
+    },
+
+    // Binary frame → image block (Uint8Array); throws on tampering, wrong order or foreign transfer
+    async openChunk(transferId, index, frame) {
+      const bytes = new Uint8Array(frame)
+      if (bytes.length < 13 + 16 || bytes[0] !== CHUNK_FORMAT) throw new ProtocolError('INVALID_MESSAGE', 'Ungültiger Bildblock')
+      try {
+        return new Uint8Array(await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: bytes.subarray(1, 13), additionalData: chunkAad(recvDir, transferId, index) }, recvKey, bytes.subarray(13)))
+      } catch {
+        throw new ProtocolError('DECRYPT_FAILED', 'Bildblock konnte nicht entschlüsselt werden')
+      }
     },
   }
 }

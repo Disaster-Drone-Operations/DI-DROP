@@ -6,6 +6,8 @@ import { formatDate, formatTime } from '/app/helpers/application_helper.js'
 import { variantLabel, PREFERRED_VARIANTS } from '/app/helpers/media_helper.js'
 import { viewpointNameTag } from '/app/helpers/mission_helper.js'
 import { escapeHtml } from '/app/helpers/application_helper.js'
+import { sendImageToPhone } from '/app/services/image_share.js'
+import { relayBaseUrl } from '/app/services/location_service.js'
 
 // Gallery (almost full screen):
 //   ← / →  previous / next shot on the page (chronological)
@@ -15,7 +17,7 @@ import { escapeHtml } from '/app/helpers/application_helper.js'
 //   Esc    close
 // The preview image appears immediately, the original is loaded afterwards.
 export default class extends Controller {
-  static targets = ['stage', 'image', 'notice', 'prev', 'next', 'vertical', 'verticalLabel', 'earlier', 'later', 'caption', 'position', 'variants', 'zoomLevel']
+  static targets = ['stage', 'image', 'notice', 'prev', 'next', 'vertical', 'verticalLabel', 'earlier', 'later', 'caption', 'position', 'variants', 'zoomLevel', 'phone']
 
   static MAX_ZOOM = 8
   static DOUBLE_CLICK_ZOOM = 2.5
@@ -93,6 +95,7 @@ export default class extends Controller {
   // (e.g. renaming) keep their arrow keys.
   key(event) {
     if (!this.element.open || event.target.closest?.('input, textarea, select')) return
+    if (document.querySelector('.location-dialog[open]')) return // e.g. "An Telefon senden" on top
     const actions = { ArrowLeft: 'prev', ArrowRight: 'next', ArrowUp: 'earlier', ArrowDown: 'later', '+': 'zoomIn', '=': 'zoomIn', '-': 'zoomOut', 0: 'resetZoom' }
     const action = actions[event.key]
     if (!action) return
@@ -277,6 +280,7 @@ export default class extends Controller {
 
     // Image: preview first, then original
     this.noticeTarget.hidden = !file.video
+    if (this.hasPhoneTarget) this.phoneTarget.hidden = file.video || !relayBaseUrl()
     this.noticeTarget.textContent = file.video ? 'Video – mit „Öffnen“ abspielen' : ''
     if (file.thumb) this.imageTarget.src = file.thumb
     if (file.video) return
@@ -349,5 +353,11 @@ export default class extends Controller {
 
   reveal() {
     platform.revealPath(this.current.files[this.variant].path).catch((e) => console.error(e))
+  }
+
+  // The variant shown (thermal/visible …) as original file
+  sendToPhone() {
+    const file = this.current.files[this.variant]
+    if (file && !file.video) sendImageToPhone(file.path)
   }
 }
