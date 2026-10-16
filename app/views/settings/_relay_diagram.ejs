@@ -1,0 +1,38 @@
+<%# locals: s -%>
+<%# How the phone connection works: laptop ↔ relay ↔ phone, end-to-end encrypted (like Cloudflare's error pages) -%>
+<% const relay = !s.url ? 'none' : s.health ?? 'checking' -%>
+<% const linked = relay === 'ok' || relay === 'outdated' -%>
+<div class="relay-diagram relay-diagram--<%= relay %>">
+  <div class="relay-diagram__nodes">
+    <div class="relay-node is-ok">
+      <span class="relay-node__icon"><%- icon('laptop', { size: 26 }) %></span>
+      <strong>di-drop</strong>
+      <span class="relay-node__sub">dieser Computer</span>
+      <span class="relay-node__state"><span class="dot"></span>Bereit</span>
+    </div>
+    <span class="relay-link <%= linked ? 'is-ok' : '' %>"></span>
+    <div class="relay-node <%= { ok: 'is-ok', outdated: 'is-warn', down: 'is-bad' }[relay] ?? '' %>">
+      <span class="relay-node__icon"><%- icon('server', { size: 26 }) %></span>
+      <strong>Relay</strong>
+      <span class="relay-node__sub"><%= s.url && !s.managed ? 'eigener Server' : 'Cloudflare · dein Konto' %></span>
+      <span class="relay-node__state">
+        <% if (relay === 'checking') { %><span class="spinner"></span>Wird geprüft …
+        <% } else if (relay === 'none') { %><span class="dot"></span>Nicht eingerichtet
+        <% } else if (relay === 'down') { %><span class="dot"></span>Nicht erreichbar
+        <% } else { %><span class="dot"></span>Version <%= s.info?.bundle ?? '?' %><%= relay === 'outdated' ? ' – veraltet' : ' – aktuell' %><% } %>
+      </span>
+    </div>
+    <span class="relay-link <%= linked ? 'is-ok' : '' %>"></span>
+    <div class="relay-node">
+      <span class="relay-node__icon"><%- icon('phone', { size: 26 }) %></span>
+      <strong>Telefon</strong>
+      <span class="relay-node__sub">Browser, keine App</span>
+      <span class="relay-node__state"><span class="dot"></span>per QR-Code</span>
+    </div>
+  </div>
+  <div class="relay-e2e">
+    <span class="relay-e2e__arrow"></span>
+    <span class="relay-e2e__label"><%- icon('lock', { size: 13 }) %> Ende-zu-Ende verschlüsselt</span>
+  </div>
+  <p class="relay-diagram__caption">Standort vom Telefon und Bilder ans Telefon. Der Relay reicht nur verschlüsselte Daten weiter – er kann sie nicht lesen und speichert nichts.</p>
+</div>

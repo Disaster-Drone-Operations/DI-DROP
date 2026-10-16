@@ -7,9 +7,11 @@
 import platform from '/lib/platform/index.js'
 import { ImageRelayClient } from '/lib/relay/image_client.js'
 import { relayBaseUrl } from '/app/services/location_service.js'
-import { health } from '/app/services/cloudflare_deployer.js'
+import { health, updateRelay, isAvailable as canManageRelay, parseRelayUrl, NeedsTokenError } from '/app/services/cloudflare_deployer.js'
 
-let session = null // { id, name, status, text, qrUrl }
+// status: connecting → waiting → … → done | error, or before that:
+//   no-relay (not set up), outdated (relay without image transfer, can be updated right here), updating
+let session = null // { id, path, name, status, text, qrUrl, canUpdate }
 let client = null
 
 const emit = () => window.dispatchEvent(new CustomEvent('image-share:changed', { detail: session && { ...session } }))
@@ -25,15 +27,19 @@ const baseName = (path) => path.split(/[\\/]/).pop()
 export async function sendImageToPhone(path) {
   await closeImageShare()
   const id = Date.now()
-  session = { id, name: baseName(path), status: 'connecting', text: 'Verbinde mit dem Relay …' }
+  session = { id, path, name: baseName(path), status: 'connecting', text: 'Verbinde mit dem Relay …' }
   emit()
   try {
     const base = relayBaseUrl()
-    if (!base) throw new Error('Es ist noch kein Relay eingerichtet (Einstellungen → Standort-Übertragung).')
+    if (!base) return update({ status: 'no-relay', text: 'Die Telefon-Verbindung ist noch nicht eingerichtet.' })
     const info = await health(base)
     if (!info) throw new Error('Der Relay ist nicht erreichbar. Besteht eine Internetverbindung?')
     if (!info.features?.includes('image')) {
-      throw new Error('Der Relay ist veraltet und kann noch keine Bilder übertragen. Bitte unter Einstellungen → Standort-Übertragung „Relay aktualisieren“ wählen.')
+      return update({
+        status: 'outdated',
+        text: 'Der Relay ist veraltet und kann noch keine Bilder übertragen.',
+        canUpdate: canManageRelay() && !!parseRelayUrl(base),
+      })
     }
     const blob = await platform.readImage(path)
     client = new ImageRelayClient({
@@ -46,6 +52,23 @@ export async function sendImageToPhone(path) {
   } catch (error) {
     if (session?.id === id) update({ status: 'error', text: error.message })
   }
+}
+
+// "Jetzt aktualisieren": install the current relay version, then send the image right away
+export async function updateRelayAndSend() {
+  if (session?.status !== 'outdated') return
+  const { id, path } = session
+  update({ status: 'updating', text: 'Relay wird aktualisiert …' })
+  try {
+    await updateRelay(relayBaseUrl(), { onStep: (_key, text) => session?.id === id && update({ text }) })
+  } catch (error) {
+    if (session?.id !== id) return
+    if (error instanceof NeedsTokenError) {
+      return update({ status: 'needs-token', text: 'Zum Aktualisieren wird der Cloudflare-Schlüssel gebraucht. Er wurde aus dem Schlüsselbund entfernt.' })
+    }
+    return update({ status: 'error', text: error.message })
+  }
+  if (session?.id === id) return sendImageToPhone(path)
 }
 
 export async function closeImageShare() {

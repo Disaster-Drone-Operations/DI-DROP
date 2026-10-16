@@ -7,8 +7,9 @@ import Setting from '/app/models/setting.js'
 import * as deployer from '/app/services/cloudflare_deployer.js'
 import { RELAY_BUNDLE_VERSION } from '/relay/bundle.js'
 
-// Settings → location transfer: wizard for the relay in your own Cloudflare account
-//   account → token → install (choose account, workers.dev name if needed, upload, test)
+// Settings → phone connection: status diagram + managing the relay in your own Cloudflare account
+//   install wizard: account → token → install (choose account, workers.dev name if needed, upload, test)
+//   installed: update (when outdated), test connection, uninstall
 export default class extends Controller {
   static targets = ['body', 'token', 'subdomain']
   static values = { url: String }
@@ -20,7 +21,12 @@ export default class extends Controller {
       hasToken: await deployer.hasToken().catch(() => false),
       setup: false,
       step: 'account',
+      latest: RELAY_BUNDLE_VERSION,
+      // installed by di-drop on workers.dev → can be updated/uninstalled here
+      managed: deployer.isAvailable() && !!deployer.parseRelayUrl(this.urlValue),
     }
+    // Key already in the keychain (e.g. after uninstalling) → straight to "Relay installieren"
+    if (!this.state.url && this.state.hasToken) this.state.step = 'install'
     if (this.state.url) this.check()
     else this.paint()
   }
@@ -38,10 +44,42 @@ export default class extends Controller {
   // ── Existing relay ──────────────────────────────────────────────────────
 
   async check() {
-    this.set({ health: 'checking' })
+    this.set({ health: 'checking', error: null })
     const info = await deployer.health(this.state.url)
-    // Reachable but older code (e.g. without image transfer) → offer "Relay aktualisieren"
-    this.set({ health: !info ? 'down' : info.bundle === RELAY_BUNDLE_VERSION ? 'ok' : 'outdated' })
+    // Reachable but older code (e.g. without image transfer) → offer "Jetzt aktualisieren"
+    this.set({ info, health: !info ? 'down' : info.bundle === RELAY_BUNDLE_VERSION ? 'ok' : 'outdated' })
+  }
+
+  // Install the current version over the existing relay (same address)
+  async update() {
+    this.set({ busy: true, error: null, progress: 'Konto prüfen …' })
+    try {
+      await deployer.updateRelay(this.state.url, { onStep: (_key, text) => this.set({ progress: text }) })
+      Router.current.reload({ notice: 'Relay ist aktualisiert.' })
+    } catch (error) {
+      this.set({ busy: false, progress: null })
+      if (error instanceof deployer.NeedsTokenError) return this.beginSetup() // key removed → enter it again, then install
+      this.set({ error: error.message })
+    }
+  }
+
+  async uninstall() {
+    const ok = await platform.confirm(
+      'Den Relay aus deinem Cloudflare-Konto löschen?\n\nDanach funktionieren „Standort vom Telefon“ und „An Telefon senden“ erst wieder, wenn er neu installiert wird.',
+      { title: 'Relay deinstallieren', okLabel: 'Deinstallieren' },
+    )
+    if (!ok) return
+    this.set({ busy: true, error: null, progress: 'Relay wird gelöscht …' })
+    try {
+      await deployer.uninstallRelay(this.state.url)
+      await Setting.set('relay.url', '')
+      Router.current.reload({ notice: 'Relay ist deinstalliert.' })
+    } catch (error) {
+      const text = error instanceof deployer.NeedsTokenError
+        ? 'Zum Deinstallieren wird der Cloudflare-Schlüssel gebraucht. Alternativ den Worker im Cloudflare-Dashboard löschen.'
+        : error.message
+      this.set({ busy: false, progress: null, error: text })
+    }
   }
 
   beginSetup() {
@@ -54,10 +92,10 @@ export default class extends Controller {
   }
 
   async forgetToken() {
-    const ok = await platform.confirm('Den Cloudflare-Schlüssel aus dem Schlüsselbund entfernen? Der Relay läuft weiter. Zum Aktualisieren brauchst du dann einen neuen Schlüssel.', { okLabel: 'Entfernen' })
+    const ok = await platform.confirm('Den Cloudflare-Schlüssel aus dem Schlüsselbund entfernen? Der Relay läuft weiter. Zum Aktualisieren oder Deinstallieren brauchst du dann einen neuen Schlüssel.', { okLabel: 'Entfernen' })
     if (!ok) return
     await deployer.deleteToken()
-    this.set({ hasToken: false })
+    this.set({ hasToken: false, step: this.state.step === 'install' ? 'token' : this.state.step, accounts: null, accountId: null })
   }
 
   // ── Wizard ──────────────────────────────────────────────────────────────
@@ -124,7 +162,7 @@ export default class extends Controller {
         onStep: (_key, text) => this.set({ progress: text }),
       })
       await Setting.set('relay.url', url)
-      Router.current.reload({ notice: 'Standort-Übertragung ist eingerichtet.' })
+      Router.current.reload({ notice: 'Telefon-Verbindung ist eingerichtet.' })
     } catch (error) {
       this.set({ busy: false, progress: null, error: error.message })
     }

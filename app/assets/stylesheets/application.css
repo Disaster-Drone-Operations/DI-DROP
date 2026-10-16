@@ -272,6 +272,8 @@ form.button-to { display: inline; margin: 0; }
 .callout--info .icon { color: var(--info); }
 .callout--danger { background: var(--danger-soft); color: var(--danger); }
 .callout--subtle { color: var(--text-2); }
+.callout--warning { background: var(--warning-soft); }
+.callout--warning .icon { color: var(--warning); }
 
 .toast {
   position: fixed; z-index: 50;
@@ -967,6 +969,36 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .relay-steps .is-done .stepper__num { background: var(--success-soft); color: var(--success); }
 .relay-steps .is-disabled { color: var(--text-3); }
 .relay-actions { justify-content: flex-start; }
+
+/* Phone connection: laptop ↔ relay ↔ phone (settings) */
+.relay-diagram { margin: 12px 0 18px; padding: 18px 16px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
+.relay-diagram__nodes { display: grid; grid-template-columns: 1fr minmax(24px, 64px) 1fr minmax(24px, 64px) 1fr; align-items: start; }
+.relay-node { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; min-width: 0; }
+.relay-node__icon { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 6px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-2); }
+.relay-node__sub { font-size: 12px; color: var(--text-3); }
+.relay-node__state { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; color: var(--text-2); }
+.relay-node__state .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
+.relay-node__state .spinner { width: 12px; height: 12px; border-width: 2px; }
+.relay-node.is-ok .relay-node__state .dot { background: var(--success); }
+.relay-node.is-ok .relay-node__icon { color: var(--success); border-color: var(--success); }
+.relay-node.is-warn .relay-node__state { color: var(--warning); }
+.relay-node.is-warn .relay-node__state .dot { background: var(--warning); }
+.relay-node.is-warn .relay-node__icon { color: var(--warning); border-color: var(--warning); }
+.relay-node.is-bad .relay-node__state { color: var(--danger); }
+.relay-node.is-bad .relay-node__state .dot { background: var(--danger); }
+.relay-node.is-bad .relay-node__icon { color: var(--danger); border-color: var(--danger); }
+.relay-link { height: 0; margin-top: 26px; border-top: 2px dashed var(--border); }
+.relay-link.is-ok { border-top: 2px solid var(--success); }
+/* Arrow from laptop centre to phone centre (outer columns) */
+.relay-e2e { position: relative; margin: 16px calc(100% / 6.6) 0; height: 22px; display: grid; place-items: center; }
+.relay-e2e__arrow { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--accent); }
+.relay-e2e__arrow::before, .relay-e2e__arrow::after { content: ""; position: absolute; top: -5px; border: 6px solid transparent; }
+.relay-e2e__arrow::before { left: -6px; border-right-color: var(--accent); border-left-width: 0; }
+.relay-e2e__arrow::after { right: -6px; border-left-color: var(--accent); border-right-width: 0; }
+.relay-e2e__label { position: relative; display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 99px;
+  background: var(--surface-2); color: var(--accent); font-size: 12px; font-weight: 600; }
+.relay-diagram__caption { margin: 10px 0 0; text-align: center; font-size: 12px; color: var(--text-3); }
 .relay-token { max-width: 460px; }
 .relay-token input { flex: 1; }
 .relay-status { display: flex; flex-direction: column; gap: 4px; margin: 16px 0 12px; }

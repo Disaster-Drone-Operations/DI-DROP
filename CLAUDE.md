@@ -71,6 +71,10 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   `lib/relay/image_client.js`, `app/services/image_share.js`, Dialog `images/_send_dialog` im Layout).
   Bilder gehen vorerst immer als Original (mit EXIF); Sichtbilder verkleinern kommt später.
   Gemeinsamer Client: `lib/relay/relay_client.js` (Verbindung, Pairing, Reconnect).
+- Einstellungen → „Telefon-Verbindung“ (Schlüssel `relay`): Schaubild di-drop ↔ Relay ↔ Telefon mit Version;
+  Aktualisieren/Deinstallieren über `cloudflare_deployer.updateRelay/uninstallRelay` (findet Konto und Worker
+  anhand der workers.dev-Adresse, löscht nur eigene Worker). Veralteter Relay → direkt im Sende-Dialog
+  „Jetzt aktualisieren“, danach wird automatisch gesendet.
 
 - Protokolländerungen nur zusammen mit `docs/location-relay-protocol.md` und den
   Vertrags-Tests (`test/relay.contract.test.mjs`). Nach Änderungen an `relay/*`

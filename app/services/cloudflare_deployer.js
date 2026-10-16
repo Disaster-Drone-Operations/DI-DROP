@@ -116,8 +116,54 @@ export async function health(baseUrl, { timeout = 8000 } = {}) {
   }
 }
 
+// "https://di-drop-relay.name.workers.dev" → { scriptName, subdomain } (null for own relay servers)
+export function parseRelayUrl(url) {
+  const m = /^https:\/\/([a-z0-9-]+)\.([a-z0-9-]+)\.workers\.dev\/?$/.exec(url ?? '')
+  return m ? { scriptName: m[1], subdomain: m[2] } : null
+}
+
+export class NeedsTokenError extends CloudflareError {}
+
+// Account + worker of the installed relay (by its workers.dev address)
+async function locateRelay(url) {
+  const target = parseRelayUrl(url)
+  if (!target) throw new CloudflareError('Dieser Relay wurde nicht von di-drop bei Cloudflare installiert und lässt sich hier nicht verwalten.')
+  if (!(await hasToken())) throw new NeedsTokenError('Dafür wird der Cloudflare-Schlüssel gebraucht.')
+  for (const account of await listAccounts()) {
+    if ((await getSubdomain(account.id)) === target.subdomain) return { accountId: account.id, ...target }
+  }
+  throw new CloudflareError('Der Relay gehört zu keinem Konto, auf das der Cloudflare-Schlüssel Zugriff hat.')
+}
+
+// Install the current version over the existing relay (same address)
+export async function updateRelay(url, { onStep = () => {} } = {}) {
+  onStep('account', 'Konto prüfen …')
+  const { accountId, subdomain, scriptName } = await locateRelay(url)
+  return deployRelay(accountId, subdomain, { onStep, scriptName })
+}
+
+// Delete the relay from the Cloudflare account (only if it is ours)
+export async function uninstallRelay(url) {
+  const { accountId, subdomain, scriptName } = await locateRelay(url)
+  const scripts = (await api('GET', `/accounts/${accountId}/workers/scripts`)) ?? []
+  const existing = scripts.find((s) => s.id === scriptName)
+  if (existing) {
+    const ours = existing.tags?.includes(SCRIPT_NAME) || (await health(relayUrl(scriptName, subdomain)))?.relay === 'cloudflare'
+    if (!ours) throw new CloudflareError(`Der Worker „${scriptName}“ stammt nicht von di-drop – er wird nicht gelöscht.`)
+    await api('DELETE', `/accounts/${accountId}/workers/scripts/${scriptName}?force=true`)
+  }
+}
+
 // Only overwrite an existing worker with the same name if it comes from di-drop
-async function chooseScript(accountId, subdomain) {
+async function chooseScript(accountId, subdomain, scriptName = null) {
+  if (scriptName) {
+    const scripts = (await api('GET', `/accounts/${accountId}/workers/scripts`)) ?? []
+    const existing = scripts.find((s) => s.id === scriptName)
+    if (!existing) return { name: scriptName, migrationTag: null }
+    const ours = existing.tags?.includes(SCRIPT_NAME) || (await health(relayUrl(scriptName, subdomain)))?.relay === 'cloudflare'
+    if (!ours) throw new CloudflareError(`Der Worker „${scriptName}“ stammt nicht von di-drop.`)
+    return { name: scriptName, migrationTag: existing.migration_tag ?? null }
+  }
   const scripts = (await api('GET', `/accounts/${accountId}/workers/scripts`)) ?? []
   for (const name of [SCRIPT_NAME, `${SCRIPT_NAME}-2`, `${SCRIPT_NAME}-3`]) {
     const existing = scripts.find((s) => s.id === name)
@@ -129,9 +175,10 @@ async function chooseScript(accountId, subdomain) {
 }
 
 // onStep(key, text) reports progress: 'script' → 'upload' → 'route' → 'check'
-export async function deployRelay(accountId, subdomain, { onStep = () => {} } = {}) {
+// scriptName: update exactly this worker (otherwise the first free/own "di-drop-relay[-n]")
+export async function deployRelay(accountId, subdomain, { onStep = () => {}, scriptName = null } = {}) {
   onStep('script', 'Worker vorbereiten …')
-  const target = await chooseScript(accountId, subdomain)
+  const target = await chooseScript(accountId, subdomain, scriptName)
   const metadata = {
     main_module: 'worker.js',
     compatibility_date: COMPATIBILITY_DATE,

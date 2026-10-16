@@ -2,7 +2,7 @@ import { Controller } from '@hotwired/stimulus'
 import QRCode from 'qrcode'
 import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
-import { currentImageShare, closeImageShare } from '/app/services/image_share.js'
+import { currentImageShare, closeImageShare, updateRelayAndSend } from '/app/services/image_share.js'
 
 // Dialog "An Telefon senden" (partial images/_send_dialog in the layout).
 // Opens by itself when sendImageToPhone() starts a transfer.
@@ -35,6 +35,17 @@ export default class extends Controller {
 
   close() {
     this.dialogTarget.close()
+  }
+
+  updateRelay() {
+    updateRelayAndSend()
+  }
+
+  // Relay not set up / key missing → settings (closes the dialog and the image view)
+  openSettings() {
+    this.close()
+    document.querySelector('dialog.gallery[open]')?.close()
+    location.hash = '#/settings/relay'
   }
 
   // Closed (also via Esc): end the transfer – the image only goes to a phone while the dialog is open

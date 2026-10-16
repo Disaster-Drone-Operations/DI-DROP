@@ -1,20 +1,29 @@
 <%# locals: s -%>
+<%- include('settings/_relay_diagram', { s }) %>
+
 <% if (s.url && !s.setup) { -%>
-  <div class="relay-status">
-    <div class="relay-status__line">
-      <% if (s.health === 'checking') { %><span class="spinner"></span><span>Verbindung wird geprüft …</span>
-      <% } else if (s.health === 'ok') { %><span class="relay-status__ok"><%- icon('check') %></span><strong>Relay ist eingerichtet und erreichbar.</strong>
-      <% } else if (s.health === 'outdated') { %><span class="relay-status__bad"><%- icon('alert') %></span><strong>Relay ist erreichbar, aber veraltet.</strong>
-      <% } else { %><span class="relay-status__bad"><%- icon('alert') %></span><strong>Relay ist nicht erreichbar.</strong><% } %>
-    </div>
-    <div class="mono subtle selectable"><%= s.url %></div>
-    <% if (s.health === 'outdated') { %><p class="hint">Eine neuere Version ist verfügbar (z. B. für „An Telefon senden“). Mit „Relay aktualisieren“ wird sie in deinem Cloudflare-Konto installiert.</p><% } %>
-    <% if (s.health === 'down') { %><p class="hint">Ohne Internet kann das Smartphone keine Position senden. Ist die Verbindung da, den Relay neu einrichten.</p><% } %>
-  </div>
+  <% if (s.health === 'outdated') { -%>
+    <div class="callout callout--warning"><%- icon('alert') %><span>Eine neuere Version (<%= s.latest %>) ist verfügbar – z. B. für „An Telefon senden“.<%= s.managed ? ' Das Aktualisieren dauert etwa eine Minute.' : ' Bei einem eigenen Relay-Server bitte dort aktualisieren.' %></span></div>
+  <% } else if (s.health === 'down') { -%>
+    <p class="hint">Ohne Internet kann das Telefon nichts senden oder empfangen. Ist die Verbindung da und der Relay trotzdem nicht erreichbar, den Relay neu installieren.</p>
+  <% } -%>
+  <% if (s.progress) { -%>
+    <p class="location-status"><span class="spinner"></span><span><%= s.progress %></span></p>
+  <% } -%>
+  <% if (s.error) { -%>
+    <div class="callout callout--danger"><%- icon('alert') %><span><%= s.error %></span></div>
+  <% } -%>
   <div class="toolbar relay-actions">
-    <button type="button" class="button" data-action="relay-setup#check">Verbindung testen</button>
-    <% if (s.available) { %><button type="button" class="button" data-action="relay-setup#beginSetup"><%= s.hasToken ? 'Relay aktualisieren' : 'Neu einrichten' %></button><% } %>
-    <% if (s.hasToken) { %><button type="button" class="button button--danger-quiet" data-action="relay-setup#forgetToken" title="Der Schlüssel wird nur zum Einrichten gebraucht.">Cloudflare-Schlüssel entfernen</button><% } %>
+    <% if (s.available && s.managed && s.health === 'outdated') { -%>
+      <button type="button" class="button button--primary" data-action="relay-setup#update" <%= s.busy ? 'disabled' : '' %>>Jetzt aktualisieren</button>
+    <% } else if (s.available && s.managed && s.health === 'down') { -%>
+      <button type="button" class="button button--primary" data-action="relay-setup#update" <%= s.busy ? 'disabled' : '' %>>Neu installieren</button>
+    <% } -%>
+    <button type="button" class="button" data-action="relay-setup#check" <%= s.busy ? 'disabled' : '' %>>Verbindung testen</button>
+    <% if (s.available && s.managed) { -%>
+      <button type="button" class="button button--danger-quiet" data-action="relay-setup#uninstall" <%= s.busy ? 'disabled' : '' %>>Deinstallieren …</button>
+    <% } -%>
+    <% if (s.hasToken) { %><button type="button" class="button button--quiet" data-action="relay-setup#forgetToken" title="Der Schlüssel wird nur zum Installieren, Aktualisieren und Deinstallieren gebraucht." <%= s.busy ? 'disabled' : '' %>>Cloudflare-Schlüssel entfernen</button><% } %>
   </div>
 <% } else if (!s.available) { -%>
   <div class="callout callout--subtle"><%- icon('alert') %><span>Die Einrichtung bei Cloudflare geht nur in der Desktop-App. Hier im Browser kannst du unten die Adresse eines vorhandenen Relays eintragen.</span></div>
@@ -69,6 +78,12 @@
           <% } -%>
           <% if (s.progress) { -%>
             <p class="location-status"><span class="spinner"></span><span><%= s.progress %></span></p>
+          <% } else if (!s.busy && !s.needsSubdomain && !(s.accounts?.length > 1 && !s.accountId)) { -%>
+            <p class="subtle">Der Cloudflare-Schlüssel ist im Schlüsselbund gespeichert. Die Installation dauert etwa eine Minute.</p>
+            <div class="toolbar relay-actions">
+              <button type="button" class="button button--primary" data-action="relay-setup#install">Relay installieren</button>
+              <button type="button" class="button button--quiet" data-action="relay-setup#forgetToken">Anderen Schlüssel verwenden …</button>
+            </div>
           <% } -%>
         <% } -%>
       </div>

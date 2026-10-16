@@ -87,7 +87,7 @@ Ende-zu-Ende-verschlüsselt (AES-GCM, Schlüssel nur im QR-Fragment). Protokoll:
   (`phone.html`, `phone.js`), gemeinsames Protokoll (`protocol.js`), Bundle-Bauer.
 - `lib/location/` – Desktop-Client des Protokolls, Koordinaten (Dezimal, GMS, UTM 32) und Kartenlinks.
 - `app/services/location_service.js` – aktuelle Position nur im Arbeitsspeicher, keine Historie.
-- `app/services/cloudflare_deployer.js` – Assistent unter *Einstellungen → Standort-Übertragung*:
+- `app/services/cloudflare_deployer.js` – Assistent unter *Einstellungen → Telefon-Verbindung*:
   installiert den Relay im **eigenen** Cloudflare-Konto des Nutzers (API-Token mit
   „Workers-Skripte bearbeiten“ + „Kontoeinstellungen lesen“). Der Token liegt nur im
   Schlüsselbund (`src-tauri/src/cloudflare.rs`) und wird im Betrieb nicht gebraucht.
@@ -99,7 +99,7 @@ node relay/dev.mjs && npx wrangler dev --config relay/wrangler.dev.toml --port 8
 RELAY_URL=http://127.0.0.1:8787 node --test test/relay.contract.test.mjs
 ```
 
-In der App unter *Standort-Übertragung → Eigenen Relay-Server verwenden* `http://127.0.0.1:8787`
+In der App unter *Telefon-Verbindung → Eigenen Relay-Server verwenden* `http://127.0.0.1:8787`
 eintragen; den QR-Link in einem zweiten Browser-Tab öffnen (Geolocation ggf. per Konsole simulieren).
 
 ### Ortsangabe aus Koordinaten

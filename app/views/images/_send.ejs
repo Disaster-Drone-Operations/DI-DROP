@@ -11,13 +11,15 @@
   ] }) %>
 <% } else if (s.status === 'error') { -%>
   <div class="callout callout--danger"><%- icon('alert') %><span><%= s.text %></span></div>
+<% } else if (['outdated', 'no-relay', 'needs-token'].includes(s.status)) { -%>
+  <div class="callout callout--warning"><%- icon('alert') %><span><%= s.text %><%= s.status === 'outdated' && s.canUpdate ? ' Das Aktualisieren dauert etwa eine Minute; danach wird das Bild gesendet.' : '' %></span></div>
 <% } else if (s.status === 'done') { -%>
   <div class="dialog__center"><%- icon('check', { size: 32 }) %><span>Das Bild ist auf dem Telefon angekommen.</span></div>
 <% } -%>
 
-<% if (!['error', 'done'].includes(s.status)) { -%>
+<% if (!['error', 'done', 'outdated', 'no-relay', 'needs-token'].includes(s.status)) { -%>
   <p class="location-status">
-    <% if (['connecting', 'pairing', 'paired', 'sending', 'delivering', 'reconnecting'].includes(s.status)) { %><span class="spinner"></span><% } %>
+    <% if (['connecting', 'pairing', 'paired', 'sending', 'delivering', 'reconnecting', 'updating'].includes(s.status)) { %><span class="spinner"></span><% } %>
     <span><%= s.text %></span>
   </p>
 <% } -%>
@@ -26,7 +28,13 @@
 <% } -%>
 
 <div class="dialog__actions">
-  <% if (['done', 'stopped', 'error'].includes(s.status)) { -%>
+  <% if (s.status === 'outdated' && s.canUpdate) { -%>
+    <button type="button" class="button" data-action="image-send#close">Abbrechen</button>
+    <button type="button" class="button button--primary" data-action="image-send#updateRelay" autofocus>Jetzt aktualisieren</button>
+  <% } else if (['outdated', 'no-relay', 'needs-token'].includes(s.status)) { -%>
+    <button type="button" class="button" data-action="image-send#close">Abbrechen</button>
+    <button type="button" class="button button--primary" data-action="image-send#openSettings" autofocus><%= s.status === 'no-relay' ? 'Jetzt einrichten …' : 'Telefon-Verbindung öffnen …' %></button>
+  <% } else if (['done', 'stopped', 'error'].includes(s.status)) { -%>
     <button type="button" class="button button--primary" data-action="image-send#close" autofocus>Schließen</button>
   <% } else { -%>
     <button type="button" class="button" data-action="image-send#close">Abbrechen</button>

@@ -66,9 +66,9 @@ export default [
   },
   {
     key: 'relay',
-    title: 'Standort-Übertragung',
-    icon: 'pin',
-    description: 'Damit das Smartphone seinen Standort an di-drop senden kann, braucht es einen kleinen Vermittlungsdienst („Relay“). Er läuft kostenlos in deinem eigenen Cloudflare-Konto und sieht nur verschlüsselte Daten.',
+    title: 'Telefon-Verbindung',
+    icon: 'phone',
+    description: 'Standort vom Telefon empfangen und Bilder ans Telefon senden – per QR-Code, ohne App. Dafür braucht es einen kleinen Vermittlungsdienst („Relay“). Er läuft kostenlos in deinem eigenen Cloudflare-Konto und reicht nur verschlüsselte Daten weiter.',
     partial: 'settings/_relay',
     fields: [
       { key: 'url', label: 'Adresse des Relays', type: 'url', default: '', placeholder: 'https://di-drop-relay.….workers.dev',

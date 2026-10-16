@@ -32,7 +32,7 @@ export default class extends Controller {
     const fresh = freshPosition()
     if (fresh) return this.apply(fresh)
     if (!this.configuredValue) {
-      const ok = await platform.confirm('Damit das Smartphone seinen Standort senden kann, muss die Standort-Übertragung einmalig eingerichtet werden. Jetzt einrichten? (Die Eingaben in diesem Formular gehen dabei verloren.)', { okLabel: 'Einrichten' })
+      const ok = await platform.confirm('Damit das Smartphone seinen Standort senden kann, muss die Telefon-Verbindung einmalig eingerichtet werden. Jetzt einrichten? (Die Eingaben in diesem Formular gehen dabei verloren.)', { okLabel: 'Einrichten' })
       if (ok) location.hash = '#/settings/relay'
       return
     }
