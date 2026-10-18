@@ -1,23 +1,25 @@
 <%# locals: block, review, multiple -%>
 <% const name = (field) => `block[${block.id}][${field}]` -%>
 <div class="import-block" data-controller="import-block" data-import-block-id-value="<%= block.id %>">
+  <% if (multiple || (review.card && block.folder)) { -%>
   <div class="import-block__info">
     <% if (multiple) { -%>
       <strong><%= formatTime(block.start) %><%= formatTime(block.end) !== formatTime(block.start) ? `–${formatTime(block.end)}` : '' %> Uhr<%= block.older ? ` · ${formatDate(block.start)}` : '' %></strong>
       <span class="subtle"><%= pluralize(block.shots.length, 'Aufnahme', 'Aufnahmen') %><%= block.isMapping ? ' · Kartierung (senkrecht nach unten)' : block.hasWaypoint ? ' · Wegpunkt-Flug' : '' %></span>
-    <% } else { -%>
-      <strong>Zuordnen zu</strong>
     <% } -%>
     <% if (review.card && block.folder) { %><span class="import-block__folder mono truncate" title="Ordner auf der Karte"><%= block.folder %></span><% } %>
   </div>
+  <% } -%>
   <% if (block.otherMission) { -%>
     <p class="subtle">Passt zeitlich zu „<%= block.otherMission.title %>“ – dort importieren, falls die Bilder dazugehören.</p>
   <% } -%>
   <% if (review.card) { -%>
     <%- include('media/_import_previews', { block }) %>
   <% } -%>
+  <label class="import-block__question" for="import-target-<%= block.id %>"><%- icon('missions', { size: 15 }) %>
+    <%= block.older ? 'Importieren in Auftrag:' : `Zu welchem Auftrag gehören ${multiple ? 'diese Aufnahmen' : 'die Bilder'}?` %></label>
   <div class="import-block__target">
-    <select name="<%= name('target') %>" data-import-block-target="select" data-action="import-block#update">
+    <select id="import-target-<%= block.id %>" class="import-block__select" name="<%= name('target') %>" data-import-block-target="select" data-action="import-block#update">
       <% if (review.openAssignments.length) { -%>
         <optgroup label="Offene Aufträge">
           <% review.openAssignments.forEach((a) => { -%>

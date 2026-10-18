@@ -2,12 +2,13 @@ import { Controller } from '@hotwired/stimulus'
 import platform from '/lib/platform/index.js'
 import { render } from '/lib/views.js'
 import Comparison from '/app/models/comparison.js'
+import Assignment from '/app/models/assignment.js'
 import { exportComparison, releaseBitmaps } from '/app/services/comparison_renderer.js'
 
 // Comparison image page: select viewpoints (show/hide editors) and create them all
 export default class extends Controller {
   static targets = ['checkbox', 'editors', 'hint', 'exportButton', 'exportLabel']
-  static values = { missionId: Number }
+  static values = { missionId: Number, fromAssignment: Number }
 
   connect() {
     // Remember the selection so it survives e.g. renaming a viewpoint.
@@ -92,7 +93,17 @@ export default class extends Controller {
     const flash = failed.length
       ? { alert: `${created.length} erstellt, ${failed.length} fehlgeschlagen – ${failed.join('; ')}` }
       : { notice: created.length === 1 ? 'Vergleichsbild erstellt.' : `${created.length} Vergleichsbilder erstellt.` }
-    document.dispatchEvent(new CustomEvent('router:visit', { detail: { path: `/missions/${this.missionIdValue}/comparisons`, flash } }))
+    document.dispatchEvent(new CustomEvent('router:visit', { detail: { path: await this.returnPath(created), flash } }))
+  }
+
+  // Back to the assignment the comparison images belong to (stored in its folder) –
+  // or to the one we came from; otherwise stay on this page
+  async returnPath(createdPaths) {
+    const dirOf = (path) => path.replace(/[\\/][^\\/]*$/, '')
+    const assignments = await Assignment.forMission(this.missionIdValue)
+    const owners = new Set(createdPaths.map((p) => assignments.find((a) => a.media_dir && dirOf(p) === a.media_dir.replace(/[\\/]+$/, ''))?.id).filter(Boolean))
+    const id = owners.size === 1 ? [...owners][0] : this.fromAssignmentValue || null
+    return id ? `/missions/${this.missionIdValue}/assignments/${id}` : `/missions/${this.missionIdValue}/comparisons`
   }
 
   // ── Remember selection ─────────────────────────────────────────────────────

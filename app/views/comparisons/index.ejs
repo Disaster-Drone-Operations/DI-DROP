@@ -1,5 +1,5 @@
-<%# locals: mission, repeated, single, comparisons, canExport -%>
-<div data-controller="comparisons" data-comparisons-mission-id-value="<%= mission.id %>">
+<%# locals: mission, repeated, single, comparisons, canExport, fromAssignmentId -%>
+<div data-controller="comparisons" data-comparisons-mission-id-value="<%= mission.id %>" data-comparisons-from-assignment-value="<%= fromAssignmentId ?? 0 %>">
   <header class="page-header">
     <div>
       <a class="backlink" href="#/missions/<%= mission.id %>"><%= mission.title %></a>

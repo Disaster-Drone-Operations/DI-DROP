@@ -64,6 +64,8 @@ export default class ComparisonsController extends ApplicationController {
       single: entries.filter((e) => e.flightCount <= 1),
       comparisons: comparisons.map((c) => ({ comparison: c, viewpointName: names.get(c.viewpoint_id) })),
       canExport: platform.capabilities.media,
+      // Came from an assignment ("Nächster Schritt") → back there after creating
+      fromAssignmentId: assignments.some((a) => a.id === Number(this.params.from)) ? Number(this.params.from) : null,
     }, { title: `Vergleichsbilder – ${mission.title}` })
   }
 }

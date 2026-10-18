@@ -173,10 +173,14 @@ export default class MediaImporter {
         .filter((e) => !e.duplicate && variants.has(variantKey(e)))
       if (entries.length) plan.push({ choice, block, entries })
     }
-    if (!plan.length) return { imported: 0, failed: [], flight: null, copies: [] }
+    if (!plan.length) return { imported: 0, failed: [], flights: [], copies: [] }
 
     await this.ensureMissionFolder()
-    const flight = await this.findOrCreateFlight(plan.flatMap((p) => p.entries))
+    // One flight per block (a memory card can hold several flights); blocks close in time
+    // end up in the same flight (findOrCreateFlight merges overlapping ones)
+    for (const p of [...plan].sort((a, b) => (a.block.start ?? '').localeCompare(b.block.start ?? ''))) {
+      p.flight = await this.findOrCreateFlight(p.entries)
+    }
 
     // Resolve or create assignments; target folder per block
     const items = []
@@ -191,7 +195,7 @@ export default class MediaImporter {
       if (!p.assignment.media_dir) await p.assignment.update({ media_dir: p.dir })
       for (const e of p.entries) {
         items.push({ src: e.path, dest_dir: p.dir, fingerprint: e.fingerprint, kind: e.kind })
-        targets.set(e.fingerprint, { entry: e, assignment: p.assignment, older: p.block.older })
+        targets.set(e.fingerprint, { entry: e, assignment: p.assignment, flight: p.flight, older: p.block.older })
       }
     }
 
@@ -201,7 +205,7 @@ export default class MediaImporter {
     const copies = [] // { src, copy, older } – for deleting from the memory card
     let imported = 0
     for (const result of results) {
-      const { entry, assignment } = targets.get(result.fingerprint)
+      const { entry, assignment, flight } = targets.get(result.fingerprint)
       if (result.error || !result.dest_path) {
         failed.push({ name: entry.name, error: result.error })
         continue
@@ -243,7 +247,8 @@ export default class MediaImporter {
       const current = new Map((await MediaFile.where('mission_id = ?', [this.mission.id])).map((f) => [f.fingerprint, f.path]))
       for (const c of copies) c.copy = current.get(c.fingerprint) ?? c.copy
     }
-    return { imported, failed, flight, copies, assignments: [...new Map(plan.map((p) => [p.assignment.id, p.assignment])).values()] }
+    const flights = [...new Map(plan.map((p) => [p.flight.id, p.flight])).values()].sort((a, b) => a.number - b.number)
+    return { imported, failed, flights, copies, assignments: [...new Map(plan.map((p) => [p.assignment.id, p.assignment])).values()] }
   }
 
   async resolveAssignment(choice) {

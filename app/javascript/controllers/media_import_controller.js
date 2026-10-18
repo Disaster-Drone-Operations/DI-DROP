@@ -129,14 +129,14 @@ export default class extends Controller {
 
     this.show('importing', { progress: { done: 0, total: 0, name: '' } })
     try {
-      const { imported, failed, flight, assignments, copies } = await this.importer.import(selection, (progress) => this.show('importing', { progress }))
+      const { imported, failed, flights, assignments, copies } = await this.importer.import(selection, (progress) => this.show('importing', { progress }))
       const cleanup = this.card && data.get('delete_from_card') ? await this.deleteFromCard(copies, !!data.get('delete_companions')) : null
       this.close()
       const names = (assignments ?? []).map((a) => `„${a.title}“`).join(', ')
       let flash = failed.length
         ? { alert: `${imported} importiert, ${failed.length} fehlgeschlagen: ${failed.slice(0, 3).map((f) => `${f.name} (${f.error})`).join('; ')}` }
         : imported
-          ? { notice: `${imported} ${imported === 1 ? 'Datei' : 'Dateien'} importiert – Flug ${flight.number}${names ? `, ${names}` : ''}.` }
+          ? { notice: `${imported} ${imported === 1 ? 'Datei' : 'Dateien'} importiert – ${flights.length === 1 ? 'Flug' : 'Flüge'} ${flights.map((f) => f.number).join(', ')}${names ? `, ${names}` : ''}.` }
           : { notice: 'Nichts ausgewählt – nichts importiert.' }
       if (cleanup) flash = this.withCleanup(flash, cleanup)
       document.dispatchEvent(new CustomEvent('router:visit', { detail: { path: this.returnPathValue, flash } }))

@@ -1,4 +1,4 @@
-<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions -%>
+<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons -%>
 <% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
      data-media-import-assignment-id-value="<%= assignment.id %>" data-media-import-return-path-value="<%= path %>">
@@ -51,11 +51,18 @@
     </div>
   </header>
 
-  <% if (assignment.processing === 'comparison' && shotCount) { -%>
+  <%# Next step: comparison images (control flights) → provide → (done) -%>
+  <% if (assignment.processing === 'comparison' && shotCount && !comparisons.length) { -%>
     <div class="next-step">
       <%- icon('control', { size: 20 }) %>
       <div class="next-step__text"><strong>Nächster Schritt:</strong> Vergleichsbilder aus diesem und früheren Kontrollflügen erstellen.</div>
-      <a class="button button--primary" href="#/missions/<%= mission.id %>/comparisons">Vergleichsbilder erstellen</a>
+      <a class="button button--primary" href="#/missions/<%= mission.id %>/comparisons?from=<%= assignment.id %>">Vergleichsbilder erstellen</a>
+    </div>
+  <% } else if (shotCount && !provisions.length) { -%>
+    <div class="next-step">
+      <%- icon('upload', { size: 20 }) %>
+      <div class="next-step__text"><strong>Nächster Schritt:</strong> <%= comparisons.length ? 'Bilder und Vergleichsbilder' : 'Bilder' %> bereitstellen – in die Nextcloud laden oder als Dateien exportieren.</div>
+      <a class="button button--primary" href="#<%= path %>/provide">Bereitstellen …</a>
     </div>
   <% } -%>
 
@@ -71,6 +78,24 @@
         <% }) -%>
       </div>
     </nav>
+  <% } -%>
+
+  <% if (comparisons.length) { -%>
+    <section class="section comparison-strip" data-controller="comparison-gallery" data-comparison-gallery-items-value="<%= JSON.stringify(comparisons.map(({ comparison: c, viewpointName }) => ({
+      key: `c${c.id}`, takenAt: c.created_at, viewpointName, assignmentTitle: assignment.title,
+      files: { [c.variant ?? 'other']: { path: c.path, thumb: c.thumb_path ? thumbUrl(c.thumb_path) : null, name: c.fileName } },
+      variant: c.variant ?? 'other',
+    }))) %>">
+      <h2 class="section__title">Vergleichsbilder <span class="count"><%= comparisons.length %></span></h2>
+      <div class="comparison-strip__list">
+        <% comparisons.forEach(({ comparison: c, viewpointName }, i) => { -%>
+          <button type="button" class="comparison-tile" data-action="comparison-gallery#open" data-comparison-gallery-index-param="<%= i %>" title="<%= c.fileName %>">
+            <% if (c.thumb_path) { %><img src="<%= thumbUrl(c.thumb_path) %>" alt="" loading="lazy"><% } else { %><span class="comparison-tile__empty"><%- icon('images', { size: 24 }) %></span><% } %>
+            <span class="comparison-tile__label"><span class="truncate"><%= viewpointName ?? c.fileName %></span><span class="subtle"><%= variantLabel(c.variant) %></span></span>
+          </button>
+        <% }) -%>
+      </div>
+    </section>
   <% } -%>
 
   <% if (!shots.length && assignment.kind !== 'other') { -%>

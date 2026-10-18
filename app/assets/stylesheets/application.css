@@ -819,6 +819,11 @@ input[type=number].input-inline { width: 64px !important; }
 .import-block__info { display: flex; align-items: baseline; gap: 10px; }
 .import-block__target { display: flex; flex-wrap: wrap; gap: 8px; }
 .import-block__target > select { flex: 1; min-width: 220px; }
+/* The assignment question must not be overlooked: own line, larger select with accent frame */
+.import-block__question { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; color: var(--text); }
+.import-block__question .icon { color: var(--accent); }
+.import-block__select { font-size: 14px; font-weight: 500; min-height: 34px; padding: 6px 10px; border: 2px solid var(--accent); border-radius: 8px; }
+.import-blocks .import-blocks .import-block__select { border-width: 1px; border-color: var(--border); } /* older recordings: subtle */
 .import-block__new { display: flex; gap: 8px; flex: 1 1 100%; }
 .import-block__new select { width: 200px; flex: none; }
 .import-block__folder { margin-left: auto; font-size: 11px; color: var(--text-3); max-width: 45%; }
@@ -842,6 +847,15 @@ input[type=number].input-inline { width: 64px !important; }
 .import-preview.is-missing { animation: none; }
 .import-preview--placeholder, .import-preview--more { display: grid; place-items: center; color: var(--text-2); font-size: 12px; animation: none; }
 @keyframes thumb-pulse { 50% { opacity: .55; } }
+
+/* Comparison images on the assignment page */
+.comparison-strip { margin-bottom: 18px; }
+.comparison-strip__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.comparison-tile { display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: none; text-align: left; color: inherit; font: inherit; cursor: default; min-width: 0; }
+.comparison-tile img, .comparison-tile__empty { width: 100%; aspect-ratio: 16 / 7; object-fit: cover; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
+.comparison-tile__empty { display: grid; place-items: center; color: var(--text-3); }
+.comparison-tile:hover img { border-color: var(--accent); }
+.comparison-tile__label { display: flex; gap: 8px; align-items: baseline; font-size: 13px; min-width: 0; }
 
 /* Assignment history ------------------------------------------------------------- */
 

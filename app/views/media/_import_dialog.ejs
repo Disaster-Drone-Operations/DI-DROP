@@ -112,9 +112,9 @@
 
         <% if (review.card) { -%>
           <div class="import-card__delete">
-            <label class="checkbox"><input type="checkbox" name="delete_from_card" value="yes" data-action="media-import#toggleCardDelete"> Importierte Bilder danach von der SD-Karte löschen</label>
+            <label class="checkbox"><input type="checkbox" name="delete_from_card" value="yes" checked data-action="media-import#toggleCardDelete"> Importierte Bilder danach von der SD-Karte löschen</label>
             <p class="subtle">Endgültig – aber nur Bilder, deren Kopie vollständig und geprüft im Einsatz liegt. Ältere Aufnahmen und nicht gewählte Bilder bleiben auf der Karte.</p>
-            <label class="checkbox import-card__sub"><input type="checkbox" name="delete_companions" value="yes" checked disabled> RTK-Rohdaten der Drohne mit löschen</label>
+            <label class="checkbox import-card__sub"><input type="checkbox" name="delete_companions" value="yes" checked> RTK-Rohdaten der Drohne mit löschen</label>
             <p class="subtle">.MRK, .OBS, .NAV, .RTK – nur in Ordnern, in denen danach keine Aufnahme mehr liegt. Werden bisher nicht gebraucht; die genauen Positionen stehen schon in den Bildern.</p>
           </div>
         <% } -%>

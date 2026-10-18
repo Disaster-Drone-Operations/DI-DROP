@@ -140,10 +140,8 @@ export default class ProvisionsController extends ApplicationController {
   }
 
   // Comparison images of this assignment (stored in the assignment's folder)
-  async comparisons() {
-    const dir = this.assignment.media_dir
-    if (!dir) return []
-    return (await Comparison.forMission(this.mission.id)).filter((c) => c.path.startsWith(dir))
+  comparisons() {
+    return Comparison.forAssignment(this.assignment)
   }
 
   // Already provisioned to this target: "m<id>" (image) or "c<id>" (comparison image)
