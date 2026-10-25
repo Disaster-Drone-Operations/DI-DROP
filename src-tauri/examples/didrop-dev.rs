@@ -62,16 +62,18 @@ fn nc(req: Value) -> Result<Value, String> {
 fn training(req: Value) -> Result<Value, String> {
     use di_drop_lib::training as t;
     let root = PathBuf::from(req["root"].as_str().unwrap_or(""));
+    let builtin = req["builtin"].as_str().map(PathBuf::from);
+    let builtin = builtin.as_deref();
     let s = |k: &str| req[k].as_str().unwrap_or_default().to_string();
     match s("action").as_str() {
-        "list" => to_value(Ok(t::list(&root))),
-        "paths" => to_value(t::paths(&root, &s("id"))),
-        "scenario" => t::scenario_json(&root, &s("id")),
+        "list" => to_value(Ok(t::list(&root, builtin))),
+        "paths" => to_value(t::paths(&root, builtin, &s("id"))),
+        "scenario" => t::scenario_json(&root, builtin, &s("id")),
         "reset" => to_value(t::reset(&root, &s("id"))),
-        "card" => to_value(t::card(&root, &s("id"), &s("card"))),
+        "card" => to_value(t::card(&root, builtin, &s("id"), &s("card"))),
         "stage_logs" => {
             let files: Vec<String> = serde_json::from_value(req["files"].clone()).unwrap_or_default();
-            to_value(t::stage_logs(&root, &s("id"), &files))
+            to_value(t::stage_logs(&root, builtin, &s("id"), &files))
         }
         "import" => to_value(t::import(&root, s("path").as_ref())),
         "cloud_list" => to_value(t::cloud_list(&root, &s("id"), &s("path"))),

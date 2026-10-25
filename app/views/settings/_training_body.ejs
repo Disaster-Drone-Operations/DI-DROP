@@ -7,7 +7,7 @@
     <div class="list training-scenarios">
       <% scenarios.forEach((s) => { -%>
         <div class="list__row">
-          <span class="training-badge">Übung</span>
+          <span class="training-badge <%= s.builtin ? 'training-badge--builtin' : '' %>"><%= s.builtin ? 'Mitgeliefert' : 'Eigenes' %></span>
           <div class="mission-row__main">
             <div class="mission-row__title"><span class="truncate"><%= s.title %></span></div>
             <div class="meta"><% if (s.start) { %><span><%= formatDateTime(s.start) %></span><% } %><% if (s.description) { %><span class="truncate"><%= s.description %></span><% } %></div>

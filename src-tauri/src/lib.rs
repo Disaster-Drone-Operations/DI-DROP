@@ -165,19 +165,24 @@ fn training_root(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app.path().app_data_dir().map_err(|e| e.to_string())?.join("Schulung"))
 }
 
+/// Scenarios shipped with di-drop (tauri.conf.json → bundle.resources)
+fn training_builtin(app: &AppHandle) -> Option<PathBuf> {
+    app.path().resource_dir().ok().map(|d| d.join("scenarios")).filter(|d| d.is_dir())
+}
+
 #[tauri::command]
 fn training_list(app: AppHandle) -> Result<Vec<training::ScenarioInfo>, String> {
-    Ok(training::list(&training_root(&app)?))
+    Ok(training::list(&training_root(&app)?, training_builtin(&app).as_deref()))
 }
 
 #[tauri::command]
 fn training_paths(app: AppHandle, id: String) -> Result<training::Paths, String> {
-    training::paths(&training_root(&app)?, &id)
+    training::paths(&training_root(&app)?, training_builtin(&app).as_deref(), &id)
 }
 
 #[tauri::command]
 fn training_scenario(app: AppHandle, id: String) -> Result<serde_json::Value, String> {
-    training::scenario_json(&training_root(&app)?, &id)
+    training::scenario_json(&training_root(&app)?, training_builtin(&app).as_deref(), &id)
 }
 
 #[tauri::command]
@@ -187,14 +192,14 @@ fn training_reset(app: AppHandle, id: String) -> Result<(), String> {
 
 #[tauri::command]
 async fn training_card(app: AppHandle, id: String, card: String) -> Result<String, String> {
-    let root = training_root(&app)?;
-    tauri::async_runtime::spawn_blocking(move || training::card(&root, &id, &card)).await.map_err(|e| e.to_string())?
+    let (root, builtin) = (training_root(&app)?, training_builtin(&app));
+    tauri::async_runtime::spawn_blocking(move || training::card(&root, builtin.as_deref(), &id, &card)).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
 async fn training_stage_logs(app: AppHandle, id: String, files: Vec<String>) -> Result<String, String> {
-    let root = training_root(&app)?;
-    tauri::async_runtime::spawn_blocking(move || training::stage_logs(&root, &id, &files)).await.map_err(|e| e.to_string())?
+    let (root, builtin) = (training_root(&app)?, training_builtin(&app));
+    tauri::async_runtime::spawn_blocking(move || training::stage_logs(&root, builtin.as_deref(), &id, &files)).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

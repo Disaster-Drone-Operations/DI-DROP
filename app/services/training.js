@@ -143,7 +143,8 @@ function remoteLogs() {
     const d = new Date(start)
     const pad = (n) => String(n).padStart(2, '0')
     const name = log.file ?? `DJIFlightRecord_${toDate(d)}_[${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}]_SIM.txt`
-    return { ...log, start, name }
+    // On the remote controller only after landing
+    return { ...log, start, landed: start + (log.duration_s ?? 0) * 1000, name }
   })
 }
 
@@ -154,13 +155,13 @@ const remoteProvider = {
   // On the remote controller: everything flown until now (simulated clock)
   async status() {
     const known = new Set(await FlightLog.knownFileNames())
-    const flown = remoteLogs().filter((l) => l.start <= nowMs())
+    const flown = remoteLogs().filter((l) => l.landed <= nowMs())
     const fresh = flown.filter((l) => !known.has(l.name)).sort((a, b) => b.start - a.start)
     return { device: this.device, folder: 'DJI/com.dji.industry.pilot/FlightRecord', total: flown.length, new: fresh.length, new_files: fresh.map((l) => l.name) }
   },
   async import(dest, known, includeDat, onProgress) {
     const knownSet = new Set(known)
-    const fresh = remoteLogs().filter((l) => l.start <= nowMs() && !knownSet.has(l.name))
+    const fresh = remoteLogs().filter((l) => l.landed <= nowMs() && !knownSet.has(l.name))
     const total = fresh.length
     const report = { copied: 0, extras_copied: 0, summaries: [], failed: [] }
     onProgress({ done: 0, total })
@@ -345,7 +346,7 @@ export function trainingState() {
     clock: { ...snapshot(), sentAt: Date.now() },
     cards: (scenario.cards ?? []).map((c) => ({ id: c.id, label: c.label ?? c.id, inserted: inserted.has(c.id) })),
     remote: scenario.remote ? { name: remoteProvider.device.name, connected: platform.simulation.remoteConnected(),
-      flown: remoteLogs().filter((l) => l.start <= nowMs()).length, total: remoteLogs().length } : null,
+      flown: remoteLogs().filter((l) => l.landed <= nowMs()).length, total: remoteLogs().length } : null,
     steps: steps.map((s) => ({ index: s.index, at: s.at, label: s.label, action: s.action, done: s.index < next })),
     next,
     phone: phoneInfo,
@@ -377,7 +378,10 @@ export async function startTrainingMode() {
   if (platform.name !== 'tauri') (await import('/app/javascript/training_dock.js')).installDock()
   scenario = await platform.training.scenario(trainingId)
   steps = (scenario.script ?? []).map((s, index) => ({ ...s, index, at: timeOf(s.at), label: stepLabel(s) }))
-  if (!Setting.get('training.initialized')) await initialize()
+  if (!Setting.get('training.initialized')) {
+    setClock({ at: timeOf(scenario.start), running: false }) // records get the time of the exercise
+    await initialize()
+  }
   setClock(Setting.get('training.clock') ?? { at: timeOf(scenario.start) })
 
   await platform.training.listen('training:command', (cmd) => command(cmd))

@@ -59,6 +59,12 @@ flugprotokolle/DJIFlightRecord_….txt   echte Flugprotokolle (optional)
   (nur ein Hinweis für den Ausbilder). Die Steuerung zeigt immer den nächsten Schritt;
   „Ausführen“ stellt die Uhr bei Bedarf auf dessen Zeit.
 
+## Mitgelieferte Szenarien
+
+`scenarios/basis` und `scenarios/alle-funktionen` (gezeichnete Bilder, fiktiver Ort) bringt di-drop mit;
+ein eingelesenes Szenario mit derselben `id` hat Vorrang. Erzeugt werden sie mit
+`node script/generate_scenario.mjs scenarios/src/<name>.mjs scenarios/<name>` – siehe `scenarios/README.md`.
+
 ## Szenario aus vorhandenen Bildern bauen
 
 ```

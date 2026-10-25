@@ -146,8 +146,11 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Telefon als Fernbedienung: `lib/relay/control_client.js` (Relay-Modus `control`, Protokoll §7). Das Telefon
   darf nur die Befehle in `PHONE_COMMANDS` (`training.js`) – nie beenden/zurücksetzen. Es verbindet sich nach
   Unterbrechungen selbst neu (Kopplung im sessionStorage des Telefon-Tabs).
-- Szenario-Format: `docs/scenario-format.md`; bauen mit `script/build_scenario.mjs`.
+- Szenario-Format: `docs/scenario-format.md`; aus echten Bildordnern bauen mit `script/build_scenario.mjs`.
   **Szenarien mit echten Einsatzbildern nie ins Repository** (liegen z. B. in `~/di-drop-Szenarien`).
+- Mitgeliefert (öffentlich, gezeichnete Bilder): `scenarios/basis`, `scenarios/alle-funktionen` – erzeugt mit
+  `script/generate_scenario.mjs` aus `scenarios/src/*.mjs`, im App-Paket über `bundle.resources`.
+  **Bei jeder neuen Funktion `scenarios/src/alle-funktionen.mjs` mitwachsen lassen** (siehe `scenarios/README.md`).
 - Testen in der Brücke: `http://localhost:1420/?bridge&training=<id>` (Daten in `tmp/dev-training`).
 
 ## Akkunutzung

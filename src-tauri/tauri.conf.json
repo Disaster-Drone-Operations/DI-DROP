@@ -58,6 +58,10 @@
       "icons/icon.ico"
     ],
     "createUpdaterArtifacts": true,
+    "resources": {
+      "../scenarios/basis/": "scenarios/basis/",
+      "../scenarios/alle-funktionen/": "scenarios/alle-funktionen/"
+    },
     "publisher": "Disaster Drone Operations",
     "homepage": "https://github.com/Disaster-Drone-Operations/DI-DROP",
     "license": "MIT",

@@ -1,0 +1,141 @@
+{
+  "id": "basis",
+  "title": "Basis: Scheunenbrand Musterdorf",
+  "description": "Einstieg: Lageerkundung, Spezialauftrag, zwei Kontrollflüge mit Vergleichsbildern, Bereitstellen.",
+  "start": "2026-05-16T10:00",
+  "settings": {},
+  "mission": {
+    "kind": "exercise",
+    "title": "Scheunenbrand Musterdorf",
+    "location": "Musterdorf, Scheune am Ortsrand",
+    "coordinates": "50.68412, 10.91873",
+    "control_interval_minutes": 30
+  },
+  "assignments": [
+    {
+      "kind": "special",
+      "title": "Zufahrt für die Drehleiter prüfen",
+      "due": "11:15"
+    }
+  ],
+  "cards": [
+    {
+      "id": "flug1",
+      "label": "Flug 1 · Lageerkundung 10:12"
+    },
+    {
+      "id": "flug2",
+      "label": "Flug 2 · Kontrollflug 10:45"
+    },
+    {
+      "id": "flug3",
+      "label": "Flug 3 · Kontrollflug + Zufahrt 11:18"
+    }
+  ],
+  "remote": {
+    "name": "DJI RC Plus 2 (Simulation)",
+    "logs": [
+      {
+        "start": "2026-05-16T10:08:00",
+        "duration_s": 628,
+        "distance_m": 1193,
+        "max_height_m": 100,
+        "max_speed_ms": 10,
+        "aircraft_name": "Matrice 4TD",
+        "aircraft_sn": "SIM-M4TD-0001",
+        "battery_sn": "SIM-AKKU-A",
+        "rc_sn": "SIM-RC-0001",
+        "latitude": 50.68412,
+        "longitude": 10.91873,
+        "photos": 0
+      },
+      {
+        "start": "2026-05-16T10:41:00",
+        "duration_s": 650,
+        "distance_m": 1235,
+        "max_height_m": 100,
+        "max_speed_ms": 10,
+        "aircraft_name": "Matrice 4TD",
+        "aircraft_sn": "SIM-M4TD-0001",
+        "battery_sn": "SIM-AKKU-B",
+        "rc_sn": "SIM-RC-0001",
+        "latitude": 50.68412,
+        "longitude": 10.91873,
+        "photos": 0
+      },
+      {
+        "start": "2026-05-16T11:14:00",
+        "duration_s": 846,
+        "distance_m": 1607,
+        "max_height_m": 100,
+        "max_speed_ms": 10,
+        "aircraft_name": "Matrice 4TD",
+        "aircraft_sn": "SIM-M4TD-0001",
+        "battery_sn": "SIM-AKKU-A",
+        "rc_sn": "SIM-RC-0001",
+        "latitude": 50.68412,
+        "longitude": 10.91873,
+        "photos": 0
+      }
+    ]
+  },
+  "script": [
+    {
+      "at": "10:05",
+      "action": "note",
+      "text": "Alarmierung: Scheunenbrand am Ortsrand. Einsatz ist angelegt – Lageerkundung fliegen."
+    },
+    {
+      "at": "10:18",
+      "action": "card.insert",
+      "card": "flug1",
+      "text": "Flug 1 gelandet – SD-Karte einstecken (Lageerkundung)"
+    },
+    {
+      "at": "10:30",
+      "action": "note",
+      "text": "Lageerkundung als erledigt markieren. Einsatzleitung: Kontrollflüge alle 30 Minuten, Zufahrt für die Drehleiter prüfen."
+    },
+    {
+      "at": "10:32",
+      "action": "card.remove",
+      "card": "flug1"
+    },
+    {
+      "at": "10:52",
+      "action": "card.insert",
+      "card": "flug2",
+      "text": "Kontrollflug 1 gelandet – SD-Karte einstecken"
+    },
+    {
+      "at": "11:05",
+      "action": "card.remove",
+      "card": "flug2"
+    },
+    {
+      "at": "11:15",
+      "action": "note",
+      "text": "Kontrollflug 1 als erledigt markieren – di-drop plant den nächsten."
+    },
+    {
+      "at": "11:27",
+      "action": "card.insert",
+      "card": "flug3",
+      "text": "Kontrollflug 2 + Zufahrt gelandet – SD-Karte einstecken (zwei Blöcke)"
+    },
+    {
+      "at": "11:35",
+      "action": "note",
+      "text": "Vergleichsbilder erstellen und alles in die Nextcloud bereitstellen."
+    },
+    {
+      "at": "11:40",
+      "action": "remote.connect",
+      "text": "Fernsteuerung anschließen – Flugprotokolle übernehmen"
+    },
+    {
+      "at": "11:45",
+      "action": "remote.disconnect"
+    }
+  ]
+}

@@ -63,7 +63,7 @@ export default function devBridge({ root }) {
             if (command === 'sdcard-delete' && !path.resolve(request.root ?? '').startsWith(sdcardsDir + path.sep) && !path.resolve(request.root ?? '').startsWith(trainingCards)) {
               return res.end(JSON.stringify({ error: 'In der Browser-Testumgebung wird nur auf Testkarten (tmp/dev-sdcards) gelöscht.' }))
             }
-            if (command === 'training') request.root = trainingDir
+            if (command === 'training') Object.assign(request, { root: trainingDir, builtin: path.join(root, 'scenarios') })
             return res.end(await run(command, request))
           }
           if (url.pathname === '/thumb') {

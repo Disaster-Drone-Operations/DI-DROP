@@ -1,6 +1,7 @@
 //! Training mode (docs/scenario-format.md): scenarios and the separate training data.
 //!
 //!   <app data>/Schulung/Szenarien/<id>/   installed scenarios (szenario.json, karten/, flugprotokolle/)
+//!   <resources>/scenarios/<id>/            scenarios shipped with di-drop (repo: scenarios/, read only)
 //!   <app data>/Schulung/Daten/<id>/       training data: schulung.db, Bilder/, Karten/, Nextcloud/ …
 //!
 //! Every path is checked to stay inside the "Schulung" folder; scenario and card ids are plain
@@ -21,6 +22,8 @@ pub struct ScenarioInfo {
     pub start: String,
     /// Training data exists (can be continued)
     pub started: bool,
+    /// Shipped with di-drop (not removable)
+    pub builtin: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -49,35 +52,57 @@ fn read_scenario(dir: &Path) -> Result<Value, String> {
     serde_json::from_str(&text).map_err(|e| format!("{SCENARIO_FILE} ist fehlerhaft: {e}"))
 }
 
-pub fn list(root: &Path) -> Vec<ScenarioInfo> {
-    let mut list: Vec<ScenarioInfo> = fs::read_dir(scenarios_dir(root))
-        .into_iter()
-        .flatten()
-        .flatten()
-        .filter_map(|entry| {
-            let json = read_scenario(&entry.path()).ok()?;
-            let id = entry.file_name().to_string_lossy().into_owned();
-            let text = |k: &str| json[k].as_str().unwrap_or_default().to_string();
-            Some(ScenarioInfo {
-                started: data_dir(root, &id).join("schulung.db").exists(),
-                title: if text("title").is_empty() { id.clone() } else { text("title") },
-                description: text("description"),
-                start: text("start"),
-                id,
+/// Folder of a scenario: installed ones take precedence over shipped ones with the same id
+fn scenario_dir(root: &Path, builtin: Option<&Path>, id: &str) -> Result<PathBuf, String> {
+    check_id(id)?;
+    let installed = scenarios_dir(root).join(id);
+    if installed.join(SCENARIO_FILE).exists() {
+        return Ok(installed);
+    }
+    builtin
+        .map(|b| b.join(id))
+        .filter(|d| d.join(SCENARIO_FILE).exists())
+        .ok_or(format!("Szenario „{id}“ ist nicht installiert."))
+}
+
+pub fn list(root: &Path, builtin: Option<&Path>) -> Vec<ScenarioInfo> {
+    let read = |dir: PathBuf, is_builtin: bool| -> Vec<ScenarioInfo> {
+        fs::read_dir(dir)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter_map(|entry| {
+                let json = read_scenario(&entry.path()).ok()?;
+                let id = entry.file_name().to_string_lossy().into_owned();
+                check_id(&id).ok()?;
+                let text = |k: &str| json[k].as_str().unwrap_or_default().to_string();
+                Some(ScenarioInfo {
+                    started: data_dir(root, &id).join("schulung.db").exists(),
+                    title: if text("title").is_empty() { id.clone() } else { text("title") },
+                    description: text("description"),
+                    start: text("start"),
+                    builtin: is_builtin,
+                    id,
+                })
             })
-        })
-        .collect();
-    list.sort_by(|a, b| a.title.cmp(&b.title));
+            .collect()
+    };
+    let mut list = read(scenarios_dir(root), false);
+    if let Some(dir) = builtin {
+        for info in read(dir.to_path_buf(), true) {
+            if !list.iter().any(|s| s.id == info.id) {
+                list.push(info);
+            }
+        }
+    }
+    // Shipped ones first, then alphabetically
+    list.sort_by(|a, b| b.builtin.cmp(&a.builtin).then(a.title.cmp(&b.title)));
     list
 }
 
 /// Paths of a scenario; creates the data folder
-pub fn paths(root: &Path, id: &str) -> Result<Paths, String> {
-    check_id(id)?;
-    let scenario = scenarios_dir(root).join(id);
-    if !scenario.join(SCENARIO_FILE).exists() {
-        return Err(format!("Szenario „{id}“ ist nicht installiert."));
-    }
+pub fn paths(root: &Path, builtin: Option<&Path>, id: &str) -> Result<Paths, String> {
+    let scenario = scenario_dir(root, builtin, id)?;
     let data = data_dir(root, id);
     fs::create_dir_all(&data).map_err(|e| e.to_string())?;
     Ok(Paths {
@@ -87,9 +112,8 @@ pub fn paths(root: &Path, id: &str) -> Result<Paths, String> {
     })
 }
 
-pub fn scenario_json(root: &Path, id: &str) -> Result<Value, String> {
-    check_id(id)?;
-    read_scenario(&scenarios_dir(root).join(id))
+pub fn scenario_json(root: &Path, builtin: Option<&Path>, id: &str) -> Result<Value, String> {
+    read_scenario(&scenario_dir(root, builtin, id)?)
 }
 
 /// "Übung neu starten": delete all training data of the scenario (never the scenario itself).
@@ -120,12 +144,12 @@ fn copy_tree(src: &Path, dest: &Path) -> Result<(), String> {
 
 /// Simulated SD card: copy of karten/<card> in the training data (made once, then it keeps its state).
 /// Returns the card root (contains DCIM).
-pub fn card(root: &Path, id: &str, card: &str) -> Result<String, String> {
-    check_id(id)?;
+pub fn card(root: &Path, builtin: Option<&Path>, id: &str, card: &str) -> Result<String, String> {
     check_id(card)?;
+    let scenario = scenario_dir(root, builtin, id)?;
     let target = data_dir(root, id).join("Karten").join(card);
     if !target.exists() {
-        let source = scenarios_dir(root).join(id).join("karten").join(card);
+        let source = scenario.join("karten").join(card);
         if !source.is_dir() {
             return Err(format!("Karte „{card}“ fehlt im Szenario."));
         }
@@ -136,9 +160,8 @@ pub fn card(root: &Path, id: &str, card: &str) -> Result<String, String> {
 
 /// Simulated remote controller: copies the given log files (from flugprotokolle/) into a staging
 /// folder so the regular folder import can read them. Returns the folder.
-pub fn stage_logs(root: &Path, id: &str, files: &[String]) -> Result<String, String> {
-    check_id(id)?;
-    let source = scenarios_dir(root).join(id).join("flugprotokolle");
+pub fn stage_logs(root: &Path, builtin: Option<&Path>, id: &str, files: &[String]) -> Result<String, String> {
+    let source = scenario_dir(root, builtin, id)?.join("flugprotokolle");
     let staging = data_dir(root, id).join("Fernsteuerung");
     if staging.exists() {
         fs::remove_dir_all(&staging).map_err(|e| e.to_string())?;
@@ -223,7 +246,7 @@ pub fn import(root: &Path, path: &Path) -> Result<ScenarioInfo, String> {
     fs::create_dir_all(scenarios_dir(root)).map_err(|e| e.to_string())?;
     fs::rename(&dir, &target).or_else(|_| copy_tree(&dir, &target))?;
     let _ = fs::remove_dir_all(&incoming);
-    list(root).into_iter().find(|s| s.id == id).ok_or("Szenario nicht lesbar".into())
+    list(root, None).into_iter().find(|s| s.id == id).ok_or("Szenario nicht lesbar".into())
 }
 
 fn extract_zip(path: &Path, dest: &Path) -> Result<(), String> {
@@ -278,20 +301,20 @@ mod tests {
         let info = import(&root, &src).unwrap();
         assert_eq!(info.id, "test");
         assert!(!info.started);
-        let p = paths(&root, "test").unwrap();
+        let p = paths(&root, None, "test").unwrap();
         assert!(p.database.ends_with("schulung.db"));
 
-        let card_root = card(&root, "test", "flug1").unwrap();
+        let card_root = card(&root, None, "test", "flug1").unwrap();
         let photo = Path::new(&card_root).join("DCIM/DJI_001/a.JPG");
         assert!(photo.exists());
         fs::remove_file(&photo).unwrap(); // deleted on the simulated card …
         assert!(src.join("karten/flug1/DCIM/DJI_001/a.JPG").exists()); // … source untouched
-        card(&root, "test", "flug1").unwrap();
+        card(&root, None, "test", "flug1").unwrap();
         assert!(!photo.exists()); // the card keeps its state
 
-        let staged = stage_logs(&root, "test", &["DJIFlightRecord_1.txt".into()]).unwrap();
+        let staged = stage_logs(&root, None, "test", &["DJIFlightRecord_1.txt".into()]).unwrap();
         assert!(Path::new(&staged).join("DJIFlightRecord_1.txt").exists());
-        assert!(stage_logs(&root, "test", &["../szenario.json".into()]).is_err());
+        assert!(stage_logs(&root, None, "test", &["../szenario.json".into()]).is_err());
 
         reset(&root, "test").unwrap();
         assert!(!root.join("Daten/test").exists());
@@ -309,12 +332,26 @@ mod tests {
     }
 
     #[test]
+    fn shipped_scenarios_are_listed_and_used() {
+        let root = tmp("builtin");
+        let shipped = tmp("builtin-shipped");
+        scenario(&shipped.join("basis"), "basis");
+        let list = list(&root, Some(&shipped));
+        assert_eq!(list.len(), 1);
+        assert!(list[0].builtin);
+        assert!(paths(&root, Some(&shipped), "basis").unwrap().scenario.starts_with(shipped.to_str().unwrap()));
+        let card_root = card(&root, Some(&shipped), "basis", "flug1").unwrap();
+        assert!(Path::new(&card_root).starts_with(&root)); // copy in the training data, never in the shipped folder
+        assert!(paths(&root, None, "basis").is_err());
+    }
+
+    #[test]
     fn rejects_paths_as_ids() {
         assert!(check_id("../x").is_err());
         assert!(check_id("a/b").is_err());
         assert!(check_id("unterhain-2026").is_ok());
         let root = tmp("ids");
-        assert!(card(&root, "x", "../../etc").is_err());
+        assert!(card(&root, None, "x", "../../etc").is_err());
     }
 
     #[test]
