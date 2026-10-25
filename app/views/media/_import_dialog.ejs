@@ -65,7 +65,7 @@
 
           <% if (older.length) { -%>
             <details class="disclosure" <%= current.length ? '' : 'open' %>>
-              <summary>Ältere Aufnahmen <span class="disclosure__hint">– vor Beginn dieses Einsatzes, <%= pluralize(older.reduce((n, b) => n + b.shots.length, 0), 'Aufnahme', 'Aufnahmen') %>; werden nicht von der Karte gelöscht</span></summary>
+              <summary>Ältere Aufnahmen <span class="disclosure__hint">– vor Beginn dieses Einsatzes, <%= pluralize(older.reduce((n, b) => n + b.shots.length, 0), 'Aufnahme', 'Aufnahmen') %>; bleiben auf der Karte, solange sie nicht importiert werden</span></summary>
               <div class="disclosure__body import-blocks">
                 <% older.forEach((block) => { -%>
                   <%- include('media/_import_block', { block, review, multiple: true }) %>
@@ -113,7 +113,11 @@
         <% if (review.card) { -%>
           <div class="import-card__delete">
             <label class="checkbox"><input type="checkbox" name="delete_from_card" value="yes" checked data-action="media-import#toggleCardDelete"> Importierte Bilder danach von der SD-Karte löschen</label>
-            <p class="subtle">Endgültig – aber nur Bilder, deren Kopie vollständig und geprüft im Einsatz liegt. Ältere Aufnahmen und nicht gewählte Bilder bleiben auf der Karte.</p>
+            <p class="subtle">Endgültig – aber nur Bilder, deren Kopie vollständig und geprüft im Einsatz liegt. Nicht importierte Bilder bleiben auf der Karte.</p>
+            <% if (review.duplicateCount) { -%>
+              <label class="checkbox import-card__sub"><input type="checkbox" name="clear_card" value="yes" checked> SD-Karte leeren – auch die <%= review.duplicateCount %> schon früher importierten Dateien löschen</label>
+              <p class="subtle">Ebenfalls erst nach Vergleich mit der importierten Kopie.</p>
+            <% } -%>
             <label class="checkbox import-card__sub"><input type="checkbox" name="delete_companions" value="yes" checked> RTK-Rohdaten der Drohne mit löschen</label>
             <p class="subtle">.MRK, .OBS, .NAV, .RTK – nur in Ordnern, in denen danach keine Aufnahme mehr liegt. Werden bisher nicht gebraucht; die genauen Positionen stehen schon in den Bildern.</p>
           </div>

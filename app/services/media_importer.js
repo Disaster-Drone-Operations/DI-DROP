@@ -64,7 +64,8 @@ export default class MediaImporter {
     this.entries = files.map((file) => {
       const existing = known.get(file.fingerprint)
       const duplicate = existing
-        ? { label: existing.mission_id === this.mission.id ? `Flug ${existing.flight_number}` : `Einsatz „${existing.mission_title}“` }
+        // copy: the imported file (for clearing the memory card)
+        ? { label: existing.mission_id === this.mission.id ? `Flug ${existing.flight_number}` : `Einsatz „${existing.mission_title}“`, copy: existing.path }
         : seen.has(file.fingerprint) ? { label: 'mehrfach in dieser Auswahl' } : null
       seen.add(file.fingerprint)
       return { ...file, taken_at: file.meta.taken_at, duplicate }

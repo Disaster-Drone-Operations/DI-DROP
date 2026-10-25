@@ -104,8 +104,8 @@ export default class extends Controller {
 
   // Memory card: the second checkbox (RTK/PPK files) only counts together with the first
   toggleCardDelete(event) {
-    const companions = event.target.form.elements.delete_companions
-    if (companions) companions.disabled = !event.target.checked
+    const { delete_companions: companions, clear_card: clear } = event.target.form.elements
+    for (const box of [companions, clear]) if (box) box.disabled = !event.target.checked
   }
 
   // Memory card: import into another active mission instead
@@ -130,7 +130,7 @@ export default class extends Controller {
     this.show('importing', { progress: { done: 0, total: 0, name: '' } })
     try {
       const { imported, failed, flights, assignments, copies } = await this.importer.import(selection, (progress) => this.show('importing', { progress }))
-      const cleanup = this.card && data.get('delete_from_card') ? await this.deleteFromCard(copies, !!data.get('delete_companions')) : null
+      const cleanup = this.card && data.get('delete_from_card') ? await this.deleteFromCard(copies, { companions: !!data.get('delete_companions'), clear: !!data.get('clear_card') }) : null
       this.close()
       const names = (assignments ?? []).map((a) => `„${a.title}“`).join(', ')
       let flash = failed.length
@@ -148,8 +148,13 @@ export default class extends Controller {
 
   // Delete the imported originals from the card – only current blocks (never "older" images);
   // Rust checks every copy again before deleting
-  async deleteFromCard(copies, companions) {
-    const items = copies.filter((c) => !c.older).map(({ src, copy }) => ({ src, copy }))
+  // clear: also everything on the card that was imported earlier (any mission) and the "older"
+  // recordings imported just now – i.e. everything that is safely imported
+  async deleteFromCard(copies, { companions, clear }) {
+    const items = copies.filter((c) => clear || !c.older).map(({ src, copy }) => ({ src, copy }))
+    if (clear) {
+      for (const e of this.importer.entries) if (e.duplicate?.copy) items.push({ src: e.path, copy: e.duplicate.copy })
+    }
     if (!items.length) return null
     this.show('deleting')
     try {
