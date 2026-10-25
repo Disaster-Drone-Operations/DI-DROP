@@ -1,4 +1,4 @@
-<%# locals: state, docked -%>
+<%# locals: state, docked, qrDataUrl -%>
 <%# Trainer's control (second window, or docked in the browser bridge) – app/javascript/control.js -%>
 <% if (!state) { -%>
   <div class="training-control__waiting"><div class="spinner"></div><p>Warte auf das di-drop-Hauptfenster im Schulungsmodus …</p></div>
@@ -73,6 +73,33 @@
       </div>
     </section>
   <% } -%>
+
+  <section class="training-devices training-phone">
+    <h3>Telefon als Fernbedienung</h3>
+    <% const p = state.phone -%>
+    <% if (!p || ['stopped'].includes(p.status)) { -%>
+      <div class="training-device"><%- icon('phone', { size: 16 }) %><span>Uhr, Drehbuch und Geräte vom Telefon aus steuern – die Teilnehmer sehen davon nichts.</span>
+        <button type="button" class="button button--small button--primary" data-command="phone.connect">Verbinden …</button></div>
+    <% } else if (p.status === 'paired') { -%>
+      <div class="training-device is-on"><%- icon('phone', { size: 16 }) %><span>Telefon verbunden</span>
+        <button type="button" class="button button--small" data-command="phone.disconnect">Trennen</button></div>
+    <% } else if (['waiting', 'pairing'].includes(p.status) && qrDataUrl) { -%>
+      <div class="training-phone__qr">
+        <img src="<%= qrDataUrl %>" alt="QR-Code für das Telefon" width="180" height="180">
+        <p><%= p.text %><br><span class="subtle">Nur am Steuer-Bildschirm zeigen – wer den Code scannt, kann die Übung steuern.</span></p>
+      </div>
+      <div class="training-device"><span></span><span></span><button type="button" class="button button--small button--quiet" data-command="phone.disconnect">Abbrechen</button></div>
+    <% } else if (p.status === 'outdated') { -%>
+      <div class="callout callout--warning"><%- icon('alert') %><span><%= p.text %></span></div>
+      <div class="training-device"><span></span><span></span>
+        <% if (p.canUpdate) { %><button type="button" class="button button--small button--primary" data-command="phone.updateRelay">Jetzt aktualisieren</button><% } %></div>
+    <% } else if (['error', 'no-relay'].includes(p.status)) { -%>
+      <div class="callout callout--danger"><%- icon('alert') %><span><%= p.text %></span></div>
+      <div class="training-device"><span></span><span></span><button type="button" class="button button--small" data-command="phone.connect">Erneut versuchen</button></div>
+    <% } else { -%>
+      <p class="location-status"><span class="spinner"></span><span><%= p.text %></span></p>
+    <% } -%>
+  </section>
 
   <section class="training-devices">
     <h3>Nextcloud</h3>

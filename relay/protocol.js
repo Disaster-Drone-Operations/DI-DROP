@@ -42,14 +42,14 @@ export function createSecrets() {
 
 export const isSessionId = (id) => /^[A-Za-z0-9_-]{22}$/.test(id)
 
-// mode: null (location) | 'image' (receive an image) – tells the phone page what to show
+// mode: null (location) | 'image' (receive an image) | 'control' (training remote control)
 export function pairingUrl(relayBaseUrl, { sessionId, phoneSecret }, mode = null) {
   return `${relayBaseUrl.replace(/\/+$/, '')}/#v${VERSION}:${sessionId}:${phoneSecret}${mode ? `:${mode}` : ''}`
 }
 
-// "#v1:<sessionId>:<phoneSecret>[:image]" → { sessionId, phoneSecret, mode } | null
+// "#v1:<sessionId>:<phoneSecret>[:image|:control]" → { sessionId, phoneSecret, mode } | null
 export function parsePairingFragment(hash) {
-  const m = /^#?v1:([A-Za-z0-9_-]{22}):([A-Za-z0-9_-]{43})(?::(image))?$/.exec(hash)
+  const m = /^#?v1:([A-Za-z0-9_-]{22}):([A-Za-z0-9_-]{43})(?::(image|control))?$/.exec(hash)
   return m ? { sessionId: m[1], phoneSecret: m[2], mode: m[3] ?? null } : null
 }
 

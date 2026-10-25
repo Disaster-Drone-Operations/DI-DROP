@@ -142,7 +142,10 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   (`now()`/`nowMs()`), nie `Date.now()`/`new Date()` – sonst stimmt der Schulungsmodus nicht.
   Technische Zeiten (Zeitlimits, Geschwindigkeit, Relay) bleiben echt.
 - Steuerung: eigenes Fenster `control` (`app/javascript/control.js`, Tauri-Ereignisse
-  `training:command`/`training:state`), in der Browser-Brücke angedockt. Etappe 2: Telefon über den Relay.
+  `training:command`/`training:state`), in der Browser-Brücke angedockt.
+- Telefon als Fernbedienung: `lib/relay/control_client.js` (Relay-Modus `control`, Protokoll §7). Das Telefon
+  darf nur die Befehle in `PHONE_COMMANDS` (`training.js`) – nie beenden/zurücksetzen. Es verbindet sich nach
+  Unterbrechungen selbst neu (Kopplung im sessionStorage des Telefon-Tabs).
 - Szenario-Format: `docs/scenario-format.md`; bauen mit `script/build_scenario.mjs`.
   **Szenarien mit echten Einsatzbildern nie ins Repository** (liegen z. B. in `~/di-drop-Szenarien`).
 - Testen in der Brücke: `http://localhost:1420/?bridge&training=<id>` (Daten in `tmp/dev-training`).

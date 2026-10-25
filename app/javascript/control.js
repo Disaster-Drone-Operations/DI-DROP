@@ -5,12 +5,14 @@
 import platform from '/lib/platform/index.js'
 import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
+import QRCode from 'qrcode'
 
 const pad = (n) => String(n).padStart(2, '0')
 
 export function mountControl(element, { docked = false } = {}) {
   let state = null
-  const paint = () => morph(element, render('training/_control', { state, docked }))
+  let qr = { url: null, dataUrl: null }
+  const paint = () => morph(element, render('training/_control', { state, docked, qrDataUrl: qr.dataUrl }))
 
   // Clock runs locally between two state messages
   const tick = () => {
@@ -32,8 +34,10 @@ export function mountControl(element, { docked = false } = {}) {
     platform.training.emit('training:command', { action: command, ...args })
   })
 
-  const stop = platform.training.listen('training:state', (next) => {
+  const stop = platform.training.listen('training:state', async (next) => {
     state = next
+    const url = state?.phone?.qrUrl ?? null
+    if (url !== qr.url) qr = { url, dataUrl: url ? await QRCode.toDataURL(url, { errorCorrectionLevel: 'M', margin: 2, width: 360 }) : null }
     paint()
     tick()
   })

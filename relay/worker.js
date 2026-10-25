@@ -21,7 +21,7 @@ const RATE_MAX = 20
 const MAX_BINARY_BYTES = 300 * 1024 // 256 KB block + header + tag
 const MAX_SESSION_BINARY_BYTES = 64 * 1024 * 1024
 const BINARY_RATE_MAX = 200
-const FEATURES = ['location', 'image']
+const FEATURES = ['location', 'image', 'control']
 
 // Desktop origins (Tauri on macOS/Windows, dev server). Phone = same origin.
 const DESKTOP_ORIGINS = ['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost', 'http://localhost:1420']

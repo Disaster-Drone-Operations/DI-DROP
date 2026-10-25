@@ -14,6 +14,9 @@ import Mission from '/app/models/mission.js'
 import Assignment from '/app/models/assignment.js'
 import AssignmentSeries from '/app/models/assignment_series.js'
 import FlightLog from '/app/models/flight_log.js'
+import { ControlRelayClient } from '/lib/relay/control_client.js'
+import { relayBaseUrl } from '/app/services/location_service.js'
+import { health, updateRelay, parseRelayUrl, isAvailable as canManageRelay } from '/app/services/cloudflare_deployer.js'
 
 export const isTraining = () => !!trainingId
 
@@ -24,6 +27,8 @@ const CARRY_STORAGE = 'di-drop:training-carry'
 export const RESET_FLAG = 'di-drop:training-reset'
 
 let scenario = null
+let phone = null // ControlRelayClient while the phone remote control is active
+let phoneInfo = null // { status, text, qrUrl } for the control window
 let steps = [] // [{ index, at (ms), action, card, text, label }]
 
 // ── Entering and leaving ───────────────────────────────────────────────────
@@ -59,12 +64,14 @@ export async function startTraining(id) {
 }
 
 export async function endTraining() {
+  phone?.finish('stopped')
   await platform.training?.closeControl().catch(() => {})
   reloadAs(urlFor(null))
 }
 
 // "Übung neu starten": delete the training data and start again from the beginning
 export async function resetTraining() {
+  phone?.finish('stopped')
   await destroyDatabase()
   await platform.training.reset(trainingId)
   reloadAs(urlFor(trainingId))
@@ -184,6 +191,80 @@ const remoteProvider = {
   },
 }
 
+// ── Phone as remote control (relay, mode "control") ──────────────────────
+
+async function connectPhone() {
+  if (phone) return
+  const base = relayBaseUrl()
+  const setPhone = (info) => {
+    phoneInfo = info
+    broadcast()
+  }
+  if (!base) return setPhone({ status: 'no-relay', text: 'Die Telefon-Verbindung ist noch nicht eingerichtet (Einstellungen → Telefon-Verbindung, außerhalb der Schulung).' })
+  setPhone({ status: 'connecting', text: 'Verbinde mit dem Relay …' })
+  const info = await health(base)
+  if (!info) return setPhone({ status: 'error', text: 'Der Relay ist nicht erreichbar. Besteht eine Internetverbindung?' })
+  if (!info.features?.includes('control')) {
+    return setPhone({ status: 'outdated', text: 'Der Relay ist veraltet und kennt die Fernbedienung noch nicht.', canUpdate: canManageRelay() && !!parseRelayUrl(base) })
+  }
+  phone = new ControlRelayClient({
+    relayBaseUrl: base,
+    onCommand: ({ action, type, seq, ...args }) => command({ action, ...args }, { fromPhone: true }),
+    onStatus: ({ status, text }) => {
+      phoneInfo = { ...phoneInfo, status, text }
+      if (status === 'paired') phone?.sendState(phoneState())
+      if (['stopped', 'error'].includes(status)) phone = null
+      broadcast()
+    },
+  })
+  try {
+    const { qrUrl } = await phone.start()
+    phoneInfo = { ...phoneInfo, qrUrl }
+    broadcast()
+  } catch (error) {
+    phone = null
+    setPhone({ status: 'error', text: error.message })
+  }
+}
+
+function disconnectPhone() {
+  phone?.finish('stopped')
+  phone = null
+  phoneInfo = null
+}
+
+// "Jetzt aktualisieren" in the control: newest relay version, then connect
+async function updateRelayForPhone() {
+  phoneInfo = { status: 'updating', text: 'Relay wird aktualisiert …' }
+  broadcast()
+  try {
+    await updateRelay(relayBaseUrl(), { onStep: (_key, text) => {
+      phoneInfo = { status: 'updating', text }
+      broadcast()
+    } })
+    phoneInfo = null
+    await connectPhone()
+  } catch (error) {
+    phoneInfo = { status: 'error', text: error.message }
+  }
+}
+
+// What the phone shows – compact (relay messages are limited to 4 KB)
+function phoneState() {
+  const state = trainingState()
+  if (!state) return null
+  const next = state.steps[state.next]
+  return {
+    title: state.title,
+    clock: { at: state.clock.at, speed: state.clock.speed, running: state.clock.running },
+    next: next ? { label: next.label.slice(0, 120), at: next.at } : null,
+    done: state.next,
+    total: state.steps.length,
+    cards: state.cards.map((c) => ({ id: c.id, label: c.label.slice(0, 40), inserted: c.inserted })),
+    remote: state.remote && { name: state.remote.name.slice(0, 40), connected: state.remote.connected, flown: state.remote.flown, total: state.remote.total },
+  }
+}
+
 // ── Commands ──────────────────────────────────────────────────────────────
 
 async function perform(step) {
@@ -231,11 +312,18 @@ const COMMANDS = {
   },
   'training.reset': () => resetTraining(),
   'training.end': () => endTraining(),
+  'phone.connect': () => connectPhone(),
+  'phone.disconnect': () => disconnectPhone(),
+  'phone.updateRelay': () => updateRelayForPhone(),
 }
 
-export async function command({ action, ...args } = {}) {
+// The phone may only run the exercise – not end/reset it or change the phone connection
+const PHONE_COMMANDS = ['clock.play', 'clock.pause', 'clock.speed', 'clock.add', 'step.run', 'step.forward', 'step.skip',
+  'card.insert', 'card.remove', 'remote.connect', 'remote.disconnect']
+
+export async function command({ action, ...args } = {}, { fromPhone = false } = {}) {
   const fn = COMMANDS[action]
-  if (!fn) return console.warn('[training] unknown command', action)
+  if (!fn || (fromPhone && !PHONE_COMMANDS.includes(action))) return console.warn('[training] unknown command', action)
   try {
     await fn(args)
   } catch (error) {
@@ -260,6 +348,7 @@ export function trainingState() {
       flown: remoteLogs().filter((l) => l.start <= nowMs()).length, total: remoteLogs().length } : null,
     steps: steps.map((s) => ({ index: s.index, at: s.at, label: s.label, action: s.action, done: s.index < next })),
     next,
+    phone: phoneInfo,
   }
 }
 
@@ -267,6 +356,7 @@ function broadcast() {
   const state = trainingState()
   window.dispatchEvent(new CustomEvent('training:state', { detail: state }))
   platform.training.emit('training:state', state).catch(() => {})
+  phone?.sendState(phoneState())
 }
 
 // At app start (application.js), only in training mode

@@ -26,6 +26,7 @@ QR-Code / Pairing-URL:
 ```
 {relayBaseUrl}/#v1:{sessionId}:{phoneSecret}          Standort
 {relayBaseUrl}/#v1:{sessionId}:{phoneSecret}:image    Bild empfangen (Abschnitt 6)
+{relayBaseUrl}/#v1:{sessionId}:{phoneSecret}:control  Fernbedienung im Schulungsmodus (Abschnitt 7)
 ```
 
 Das Fragment (`#…`) wird vom Browser nie an den Server geschickt. Die Smartphone-Seite liest
@@ -140,7 +141,7 @@ Hash des Desktop-Tokens, bei Bildern deren ungefähre Größe. Er sieht **keine*
 
 ## 5. Health
 
-`GET {relayBaseUrl}/health` → `{"ok":true,"protocol":1,"relay":"<Implementierung>","bundle":"<Version>","features":["location","image"]}`
+`GET {relayBaseUrl}/health` → `{"ok":true,"protocol":1,"relay":"<Implementierung>","bundle":"<Version>","features":["location","image","control"]}`
 
 Fehlt `image` in `features` (Relay vor Bundle 1.1.0), bietet der Desktop das Senden von Bildern nicht an,
 sondern verweist auf „Relay aktualisieren“.
@@ -174,4 +175,19 @@ Frame, 200 Frames je 10 Sekunden, 64 MiB je Session. Binär-Frames vom Smartphon
 
 Bricht die Verbindung während der Übertragung ab, wird nicht fortgesetzt – der Desktop meldet
 den Fehler, und das Bild wird neu gesendet (neuer QR-Code).
+
+## 7. Fernbedienung (Schulungsmodus)
+
+Pairing wie in 3.2 mit `:control`. Danach, beide Richtungen verschlüsselt (`data`):
+
+- Desktop → Smartphone: `{ "type": "state", "state": { title, clock: { at, speed, running }, next, done, total, cards, remote } }`
+  – kompakt (Grenze 4 KB), höchstens einmal je Sekunde, außerdem regelmäßig alle 5 s.
+- Smartphone → Desktop: `{ "type": "command", "action": "clock.play" | "clock.pause" | "clock.speed" | "clock.add" |
+  "step.run" | "step.forward" | "step.skip" | "card.insert" | "card.remove" | "remote.connect" | "remote.disconnect", … }`.
+  Der Desktop führt nur diese Befehle aus (Übung beenden/zurücksetzen nur am Rechner).
+
+Die Sitzung läuft die ganze Schulung über. Die Telefonseite merkt sich die Kopplung für den Browser-Tab
+(sessionStorage) und meldet sich nach einer Unterbrechung mit demselben Geheimnis neu (neues `hello` + `pair`).
+Der Desktop setzt bei jedem neuen `phone-connected` (nicht gekoppelt) seinen Kanal zurück (Sequenznummern
+beginnen wieder bei 1) – ein Fremder ohne Geheimnis kann trotzdem keine gültige Kopplungsprobe erzeugen.
 
