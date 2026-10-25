@@ -64,7 +64,7 @@ export default class MediaFile extends Record {
       const chunk = fingerprints.slice(i, i + 400)
       if (!chunk.length) continue
       const rows = await db.select(
-        `SELECT media_files.fingerprint, media_files.flight_id, media_files.mission_id,
+        `SELECT media_files.fingerprint, media_files.flight_id, media_files.mission_id, media_files.path,
                 flights.number AS flight_number, missions.title AS mission_title
            FROM media_files
            JOIN flights ON flights.id = media_files.flight_id
