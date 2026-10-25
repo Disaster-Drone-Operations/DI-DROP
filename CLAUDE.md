@@ -151,6 +151,8 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Mitgeliefert (öffentlich, gezeichnete Bilder): `scenarios/basis`, `scenarios/alle-funktionen` – erzeugt mit
   `script/generate_scenario.mjs` aus `scenarios/src/*.mjs`, im App-Paket über `bundle.resources`.
   **Bei jeder neuen Funktion `scenarios/src/alle-funktionen.mjs` mitwachsen lassen** (siehe `scenarios/README.md`).
+  `basis` hat fotorealistische KI-Bilder (`script/ai_scenario_images.mjs`, OpenAI, Schlüssel im Schlüsselbund) –
+  `generate_scenario.mjs` für `basis` überschreibt sie. Wärmebild = Mittelausschnitt des Sichtbilds (52 vs. 24 mm).
 - Testen in der Brücke: `http://localhost:1420/?bridge&training=<id>` (Daten in `tmp/dev-training`).
 
 ## Akkunutzung

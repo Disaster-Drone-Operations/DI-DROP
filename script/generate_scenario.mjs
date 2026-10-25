@@ -32,6 +32,8 @@ const W = 2400
 const H = 1800
 const M_PER_PX = 0.1
 const BARN = { x: 1200, y: 900, w: 180, h: 100 }
+// M4TD: wide camera 24 mm, thermal 52 mm (35 mm equivalent) → thermal width as share of the visible width
+const THERMAL_SHARE = (5 * 24 / 52 * 5 / Math.sqrt(41)) / 4
 
 // Deterministic randomness (same images on every run)
 function rng(seed) {
@@ -240,7 +242,8 @@ for (const card of spec.cards) {
       cut(world.visible, `${base}_V.JPG`, shot, 1600, 1200, 62)
       tag(`${base}_V.JPG`, shot, at)
       if (folder.shots !== 'mapping') {
-        cut(world.thermal, `${base}_T.JPG`, shot, 640, 512, 80)
+        // Thermal camera: narrower field of view → only the middle of the visible image (52 vs 24 mm)
+        cut(world.thermal, `${base}_T.JPG`, { ...shot, crop: shot.crop * THERMAL_SHARE }, 640, 512, 80)
         tag(`${base}_T.JPG`, shot, at)
       }
     })
