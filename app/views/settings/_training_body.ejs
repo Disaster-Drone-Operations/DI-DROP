@@ -1,0 +1,30 @@
+<%# locals: scenarios, available, error -%>
+<% if (!available) { -%>
+  <div class="callout callout--subtle"><%- icon('alert') %><span>Der Schulungsmodus geht nur in der Desktop-App.</span></div>
+<% } else { -%>
+  <% if (error) { %><div class="callout callout--danger"><%- icon('alert') %><span class="selectable"><%= error %></span></div><% } %>
+  <% if (scenarios.length) { -%>
+    <div class="list training-scenarios">
+      <% scenarios.forEach((s) => { -%>
+        <div class="list__row">
+          <span class="training-badge">Übung</span>
+          <div class="mission-row__main">
+            <div class="mission-row__title"><span class="truncate"><%= s.title %></span></div>
+            <div class="meta"><% if (s.start) { %><span><%= formatDateTime(s.start) %></span><% } %><% if (s.description) { %><span class="truncate"><%= s.description %></span><% } %></div>
+          </div>
+          <% if (s.started) { -%>
+            <button type="button" class="button button--quiet" data-action="training-settings#restart" data-training-settings-id-param="<%= s.id %>" data-training-settings-title-param="<%= s.title %>">Neu starten …</button>
+          <% } -%>
+          <button type="button" class="button button--primary" data-action="training-settings#start" data-training-settings-id-param="<%= s.id %>"><%= s.started ? 'Fortsetzen' : 'Starten' %></button>
+        </div>
+      <% }) -%>
+    </div>
+  <% } else { -%>
+    <p class="subtle">Noch kein Szenario installiert.</p>
+  <% } -%>
+  <div class="toolbar relay-actions">
+    <button type="button" class="button" data-action="training-settings#importFolder"><%- icon('folder') %><span>Szenario-Ordner hinzufügen …</span></button>
+    <button type="button" class="button" data-action="training-settings#importZip">ZIP-Datei hinzufügen …</button>
+  </div>
+  <p class="hint">Ein Szenario enthält Bilder je Flug (als simulierte SD-Karten), Flugprotokolle, Einsatz, Aufträge und ein Drehbuch. Aufbau: <span class="mono">docs/scenario-format.md</span>. Szenarien mit echten Einsatzbildern nur im Team weitergeben, nie veröffentlichen.</p>
+<% } -%>

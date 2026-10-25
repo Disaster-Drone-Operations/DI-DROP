@@ -1,7 +1,7 @@
 // App entry point (corresponds to config/application.rb + app/javascript/application.js)
 
 import { Application } from '@hotwired/stimulus'
-import platform from '/lib/platform/index.js'
+import platform, { controlId, trainingError } from '/lib/platform/index.js'
 import { connect } from '/lib/db.js'
 import Router from '/lib/router.js'
 import routes from '/config/routes.js'
@@ -11,6 +11,7 @@ import { start as startUploads } from '/app/services/upload_queue.js'
 import { checkOnStartup as checkForAppUpdate } from '/app/services/app_updater.js'
 import { watchDevices as watchFlightLogDevices } from '/app/services/flightlog_importer.js'
 import { watchCards as watchSdCards } from '/app/services/sdcard_watcher.js'
+import { startTrainingMode } from '/app/services/training.js'
 
 document.documentElement.classList.add(`platform-${platform.os}`, `runtime-${platform.name}`)
 
@@ -31,9 +32,18 @@ const controllers = Object.fromEntries(
 
 const element = document.getElementById('app')
 
-try {
+if (controlId) {
+  // Trainer's control window (training mode): no database, only buttons → main window
+  await (await import('/app/javascript/control.js')).start(element, controlId)
+} else if (trainingError) {
+  // Never fall back to the real data while the window is in training mode
+  element.innerHTML = `<div class="boot boot--error"><strong>Die Schulung konnte nicht gestartet werden.</strong><pre></pre>
+    <a class="button" href="${location.pathname}${location.search.includes('bridge') ? '?bridge' : ''}#/">Zurück zu di-drop</a></div>`
+  element.querySelector('pre').textContent = trainingError
+} else try {
   await connect()
   await Setting.load()
+  await startTrainingMode() // only with ?training=<scenario>
   await new Router({ routes, controllers, element }).start()
   installShortcuts()
   startUploads().catch((error) => console.error('Upload queue:', error))

@@ -1,4 +1,5 @@
 import { db } from '/lib/db.js'
+import { now as clockNow } from '/lib/clock.js'
 
 // Custom names for serial numbers of drones and batteries ("Akku A" instead of "87UPN2LCA00061")
 export default class DeviceName {
@@ -18,7 +19,7 @@ export default class DeviceName {
       await db.execute('DELETE FROM device_names WHERE kind = ? AND serial = ?', [kind, serial])
       return null
     }
-    const now = new Date().toISOString()
+    const now = clockNow().toISOString()
     await db.execute(
       `INSERT INTO device_names (kind, serial, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(kind, serial) DO UPDATE SET name = excluded.name, updated_at = excluded.updated_at`,

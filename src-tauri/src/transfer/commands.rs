@@ -25,11 +25,29 @@ fn throttled(channel: Channel<Progress>) -> Arc<dyn Fn(u64, u64) + Send + Sync> 
     })
 }
 
+/// throttle_bytes_per_s: slow copy (simulated Nextcloud in training mode – visible progress/ETA)
 #[tauri::command]
-pub async fn transfer_copy(id: String, src: PathBuf, dest: PathBuf, on_progress: Channel<Progress>) -> Result<Outcome, String> {
+pub async fn transfer_copy(
+    id: String,
+    src: PathBuf,
+    dest: PathBuf,
+    throttle_bytes_per_s: Option<u64>,
+    on_progress: Channel<Progress>,
+) -> Result<Outcome, String> {
     let cancel = register(&id);
     let report = throttled(on_progress);
-    let result = tauri::async_runtime::spawn_blocking(move || folder::copy(&src, &dest, &cancel, |d, t| report(d, t)))
+    let started = Instant::now();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        folder::copy(&src, &dest, &cancel, |d, t| {
+            if let Some(rate) = throttle_bytes_per_s.filter(|r| *r > 0) {
+                let due = Duration::from_secs_f64(d as f64 / rate as f64);
+                if let Some(wait) = due.checked_sub(started.elapsed()) {
+                    std::thread::sleep(wait);
+                }
+            }
+            report(d, t)
+        })
+    })
         .await
         .map_err(|e| e.to_string())?;
     unregister(&id);

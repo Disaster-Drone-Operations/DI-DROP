@@ -7,3 +7,7 @@ tmp/
 .wrangler/
 # Persönliche Einstellungen von Claude Code
 .claude/settings.local.json
+
+# Training scenarios with real mission images never go into the repository
+scenarios-private/
+*.didrop-szenario.zip

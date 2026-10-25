@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus'
+import { nowMs, isSimulated } from '/lib/clock.js'
 
 // Shows "in 12 Min." or "seit 3 Min. fällig" and updates itself
 export default class extends Controller {
@@ -7,15 +8,19 @@ export default class extends Controller {
 
   connect() {
     this.update()
-    this.timer = setInterval(() => this.update(), 15_000)
+    // Faster when the training clock runs in fast motion
+    this.timer = setInterval(() => this.update(), isSimulated() ? 2_000 : 15_000)
+    this.onClock = () => this.update()
+    window.addEventListener('clock:changed', this.onClock)
   }
 
   disconnect() {
     clearInterval(this.timer)
+    window.removeEventListener('clock:changed', this.onClock)
   }
 
   update() {
-    const minutes = Math.round((new Date(this.atValue) - Date.now()) / 60_000)
+    const minutes = Math.round((new Date(this.atValue) - nowMs()) / 60_000)
     const overdue = minutes < 0
     const abs = Math.abs(minutes)
     const span = abs >= 60 ? `${Math.floor(abs / 60)} Std. ${abs % 60} Min.` : `${abs} Min.`

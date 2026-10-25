@@ -76,6 +76,14 @@ export default [
     ],
   },
   {
+    key: 'training',
+    title: 'Schulung',
+    icon: 'missions',
+    description: 'Übungsszenarien zum Vorführen und Üben: eigene Daten, simulierte Uhr, SD-Karten, Fernsteuerung und Nextcloud. Echte Einsätze bleiben dabei unberührt und unsichtbar.',
+    partial: 'settings/_training',
+    fields: [],
+  },
+  {
     key: 'updates',
     title: 'Aktualisierungen',
     icon: 'import',

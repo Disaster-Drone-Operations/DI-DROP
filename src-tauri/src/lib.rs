@@ -9,6 +9,7 @@ mod places;
 pub mod transfer;
 pub mod flightlogs;
 pub mod sdcard;
+pub mod training;
 mod app_update;
 mod menu;
 
@@ -158,6 +159,91 @@ fn watch_sdcards(app: AppHandle) {
     });
 }
 
+// ── Training mode (src/training.rs) ─────────────────────────────────
+
+fn training_root(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(app.path().app_data_dir().map_err(|e| e.to_string())?.join("Schulung"))
+}
+
+#[tauri::command]
+fn training_list(app: AppHandle) -> Result<Vec<training::ScenarioInfo>, String> {
+    Ok(training::list(&training_root(&app)?))
+}
+
+#[tauri::command]
+fn training_paths(app: AppHandle, id: String) -> Result<training::Paths, String> {
+    training::paths(&training_root(&app)?, &id)
+}
+
+#[tauri::command]
+fn training_scenario(app: AppHandle, id: String) -> Result<serde_json::Value, String> {
+    training::scenario_json(&training_root(&app)?, &id)
+}
+
+#[tauri::command]
+fn training_reset(app: AppHandle, id: String) -> Result<(), String> {
+    training::reset(&training_root(&app)?, &id)
+}
+
+#[tauri::command]
+async fn training_card(app: AppHandle, id: String, card: String) -> Result<String, String> {
+    let root = training_root(&app)?;
+    tauri::async_runtime::spawn_blocking(move || training::card(&root, &id, &card)).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn training_stage_logs(app: AppHandle, id: String, files: Vec<String>) -> Result<String, String> {
+    let root = training_root(&app)?;
+    tauri::async_runtime::spawn_blocking(move || training::stage_logs(&root, &id, &files)).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn training_import(app: AppHandle, path: String) -> Result<training::ScenarioInfo, String> {
+    let root = training_root(&app)?;
+    tauri::async_runtime::spawn_blocking(move || training::import(&root, Path::new(&path))).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn training_cloud_list(app: AppHandle, id: String, path: String) -> Result<Vec<training::Folder>, String> {
+    training::cloud_list(&training_root(&app)?, &id, &path)
+}
+
+#[tauri::command]
+fn training_cloud_mkdir(app: AppHandle, id: String, path: String) -> Result<(), String> {
+    training::cloud_mkdir(&training_root(&app)?, &id, &path)
+}
+
+/// Destination file of an upload into the simulated Nextcloud
+#[tauri::command]
+fn training_cloud_path(app: AppHandle, id: String, dir: String, file_name: String) -> Result<String, String> {
+    transfer::check_file_name(&file_name)?;
+    Ok(training::cloud_dir(&training_root(&app)?, &id, &dir)?.join(file_name).display().to_string())
+}
+
+/// Second window for the trainer (can be moved to another screen)
+#[tauri::command]
+async fn training_open_control(app: AppHandle, id: String) -> Result<(), String> {
+    training::check_id(&id)?;
+    if let Some(window) = app.get_webview_window("control") {
+        let _ = window.unminimize();
+        return window.set_focus().map_err(|e| e.to_string());
+    }
+    tauri::WebviewWindowBuilder::new(&app, "control", tauri::WebviewUrl::App(format!("index.html?control={id}").into()))
+        .title("di-drop – Schulungssteuerung")
+        .inner_size(400.0, 760.0)
+        .min_inner_size(340.0, 480.0)
+        .build()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn training_close_control(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("control") {
+        let _ = window.close();
+    }
+}
+
 /// Opens a file or folder with the default app (Preview, Photos, Finder, Explorer)
 #[tauri::command]
 fn open_path(app: AppHandle, path: String) -> Result<(), String> {
@@ -304,6 +390,9 @@ pub fn run() {
             flightlogs_import_folder, flightlogs_scan_local, flightlogs_devices,
             flightlogs_device_status, flightlogs_device_import,
             sdcard_list, sdcard_delete,
+            training_list, training_paths, training_scenario, training_reset, training_card, training_stage_logs,
+            training_import, training_open_control, training_close_control,
+            training_cloud_list, training_cloud_mkdir, training_cloud_path,
             places::places_info, places::places_read, places::places_update,
             transfer::commands::transfer_copy, transfer::commands::transfer_nextcloud, transfer::commands::transfer_cancel,
             transfer::commands::nc_account, transfer::commands::nc_login_start, transfer::commands::nc_login_poll,

@@ -1,0 +1,87 @@
+<%# locals: state, docked -%>
+<%# Trainer's control (second window, or docked in the browser bridge) – app/javascript/control.js -%>
+<% if (!state) { -%>
+  <div class="training-control__waiting"><div class="spinner"></div><p>Warte auf das di-drop-Hauptfenster im Schulungsmodus …</p></div>
+<% } else { -%>
+  <% const next = state.steps[state.next] -%>
+  <% const hhmm = (ms) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` } -%>
+  <header class="training-control__head">
+    <span class="training-badge">Schulung</span>
+    <strong class="truncate"><%= state.title %></strong>
+    <% if (docked) { %><button type="button" class="button button--small button--quiet" data-command="ui.undock" title="Steuerung ausblenden"><%- icon('x', { size: 14 }) %></button><% } %>
+  </header>
+
+  <section class="training-clock">
+    <div class="training-clock__time" data-clock></div>
+    <div class="training-clock__date subtle" data-clock-date></div>
+    <div class="training-clock__buttons">
+      <button type="button" class="button <%= state.clock.running ? '' : 'button--primary' %>" data-command="<%= state.clock.running ? 'clock.pause' : 'clock.play' %>">
+        <%- icon(state.clock.running ? 'pause' : 'play', { size: 14 }) %><span><%= state.clock.running ? 'Anhalten' : 'Uhr starten' %></span>
+      </button>
+      <div class="segmented">
+        <% [1, 10, 60].forEach((speed) => { %><button type="button" class="<%= state.clock.speed === speed ? 'is-active' : '' %>" data-command="clock.speed" data-speed="<%= speed %>"><%= speed %>×</button><% }) %>
+      </div>
+      <button type="button" class="button" data-command="clock.add" data-minutes="5">+5 min</button>
+      <button type="button" class="button" data-command="clock.add" data-minutes="15">+15 min</button>
+    </div>
+  </section>
+
+  <section class="training-next">
+    <% if (next) { -%>
+      <div class="training-next__label">Als Nächstes<%= next.at ? ` · ${hhmm(next.at)} Uhr` : '' %></div>
+      <strong><%= next.label %></strong>
+      <div class="training-next__buttons">
+        <button type="button" class="button button--primary" data-command="step.run">Ausführen</button>
+        <% if (next.at && next.at > state.clock.at) { %><button type="button" class="button" data-command="step.forward">Bis dahin vorspulen</button><% } %>
+        <button type="button" class="button button--quiet" data-command="step.skip">Überspringen</button>
+      </div>
+    <% } else { -%>
+      <div class="training-next__label">Drehbuch</div>
+      <strong><%= state.steps.length ? 'Alle Schritte erledigt.' : 'Dieses Szenario hat kein Drehbuch.' %></strong>
+    <% } -%>
+    <% if (state.steps.length) { -%>
+      <details class="disclosure">
+        <summary>Ganzes Drehbuch <span class="disclosure__hint">– <%= state.steps.filter((s) => s.done).length %> von <%= state.steps.length %></span></summary>
+        <ol class="training-script">
+          <% state.steps.forEach((s) => { -%>
+            <li class="<%= s.done ? 'is-done' : s.index === state.next ? 'is-next' : '' %>"><span class="mono"><%= s.at ? hhmm(s.at) : '–' %></span><span><%= s.label %></span></li>
+          <% }) -%>
+        </ol>
+      </details>
+    <% } -%>
+  </section>
+
+  <% if (state.cards.length) { -%>
+    <section class="training-devices">
+      <h3>SD-Karten</h3>
+      <% state.cards.forEach((c) => { -%>
+        <div class="training-device <%= c.inserted ? 'is-on' : '' %>">
+          <%- icon('sdcard', { size: 16 }) %><span class="truncate"><%= c.label %></span>
+          <button type="button" class="button button--small <%= c.inserted ? '' : 'button--primary' %>" data-command="<%= c.inserted ? 'card.remove' : 'card.insert' %>" data-card="<%= c.id %>"><%= c.inserted ? 'Entnehmen' : 'Einstecken' %></button>
+        </div>
+      <% }) -%>
+    </section>
+  <% } -%>
+
+  <% if (state.remote) { -%>
+    <section class="training-devices">
+      <h3>Fernsteuerung</h3>
+      <div class="training-device <%= state.remote.connected ? 'is-on' : '' %>">
+        <%- icon('drone', { size: 16 }) %>
+        <span class="truncate"><%= state.remote.name %><br><span class="subtle"><%= state.remote.flown %> von <%= state.remote.total %> Flügen bisher geflogen</span></span>
+        <button type="button" class="button button--small <%= state.remote.connected ? '' : 'button--primary' %>" data-command="<%= state.remote.connected ? 'remote.disconnect' : 'remote.connect' %>"><%= state.remote.connected ? 'Trennen' : 'Anschließen' %></button>
+      </div>
+    </section>
+  <% } -%>
+
+  <section class="training-devices">
+    <h3>Nextcloud</h3>
+    <div class="training-device"><%- icon('cloud', { size: 16 }) %><span>Uploads landen in einem Ordner der Schulung.</span>
+      <button type="button" class="button button--small" data-command="cloud.reveal">Zeigen</button></div>
+  </section>
+
+  <footer class="training-control__foot">
+    <button type="button" class="button button--danger-quiet" data-command="training.reset" data-confirm="Übung neu starten? Alle Eingaben und importierten Bilder dieser Schulung werden gelöscht.">Übung neu starten …</button>
+    <button type="button" class="button" data-command="training.end">Schulung beenden</button>
+  </footer>
+<% } -%>

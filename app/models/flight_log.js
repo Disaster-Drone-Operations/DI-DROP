@@ -1,5 +1,6 @@
 import Record from '/lib/record.js'
 import { db } from '/lib/db.js'
+import { now as clockNow } from '/lib/clock.js'
 
 // A flight from the DJI remote controller's log (key data; original file at `path`)
 export default class FlightLog extends Record {
@@ -47,7 +48,7 @@ export default class FlightLog extends Record {
         [s.file_name, s.path, s.size, s.log_version, new Date(s.start_time).toISOString(), landed, s.duration_s, s.distance_m,
           s.max_height_m, s.max_speed_ms, s.battery_sn || null, s.aircraft_name || null, s.aircraft_sn || null, s.rc_sn || null,
           s.camera_sn || null, s.latitude, s.longitude, s.photos, s.video_s, s.app_version || null,
-          new Date().toISOString(), new Date().toISOString()],
+          clockNow().toISOString(), clockNow().toISOString()],
       )
       added += result?.rowsAffected ?? 1
     }

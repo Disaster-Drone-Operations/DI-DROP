@@ -1,4 +1,5 @@
 import { db } from '/lib/db.js'
+import { now as clockNow } from '/lib/clock.js'
 
 // Whether a battery is still in service (retired batteries don't count for recommendations)
 export default class BatteryState {
@@ -9,7 +10,7 @@ export default class BatteryState {
   }
 
   static async setRetired(serial, retired) {
-    const now = new Date().toISOString()
+    const now = clockNow().toISOString()
     await db.execute(
       `INSERT INTO battery_states (serial, retired_at, created_at, updated_at) VALUES (?, ?, ?, ?)
        ON CONFLICT(serial) DO UPDATE SET retired_at = excluded.retired_at, updated_at = excluded.updated_at`,

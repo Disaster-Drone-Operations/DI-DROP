@@ -19,6 +19,7 @@ import Viewpoint from '/app/models/viewpoint.js'
 import Comparison from '/app/models/comparison.js'
 import Assignment from '/app/models/assignment.js'
 import Mission from '/app/models/mission.js'
+import { now as clockNow } from '/lib/clock.js'
 
 const VARIANT_WORDS = { T: 'Wärmebild', V: 'Sichtbild', W: 'Weitwinkel', Z: 'Zoom' }
 
@@ -82,7 +83,7 @@ async function syncFolderNames(missionId, changes) {
       console.warn('[folder names]', dir, '→', wanted, error)
       continue
     }
-    const now = new Date().toISOString()
+    const now = clockNow().toISOString()
     const move = (path) => target + path.slice(dir.length)
     for (const f of group) {
       await db.execute('UPDATE media_files SET path = ?, updated_at = ? WHERE id = ?', [move(f.path), now, f.id])
@@ -113,7 +114,7 @@ async function syncMissionFolder(mission, changes) {
     console.warn('[mission folder]', dir, '→', wanted, error)
     return
   }
-  const now = new Date().toISOString()
+  const now = clockNow().toISOString()
   const inside = (path) => path === dir || path?.startsWith(dir + sep)
   const move = (path) => target + path.slice(dir.length)
   for (const f of await MediaFile.where('mission_id = ?', [mission.id])) {
@@ -158,7 +159,7 @@ export async function syncFileNames(missionId) {
     if (!wanted || fits(name, wanted)) continue
     const to = await rename(file.path, `${dir}${sep}${wanted}`)
     if (!to) continue
-    await db.execute('UPDATE media_files SET path = ?, updated_at = ? WHERE id = ?', [to, new Date().toISOString(), file.id])
+    await db.execute('UPDATE media_files SET path = ?, updated_at = ? WHERE id = ?', [to, clockNow().toISOString(), file.id])
     changes.push({ from: file.path, to })
   }
 

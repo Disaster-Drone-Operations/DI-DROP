@@ -17,6 +17,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&MenuItemBuilder::with_id("check_updates", "Nach Updates suchen …").build(app)?)
         .separator()
         .item(&item("settings", "Einstellungen …", "CmdOrCtrl+,")?)
+        .item(&MenuItemBuilder::with_id("training", "Schulungsmodus …").build(app)?)
         .separator()
         .services_with_text("Dienste")
         .separator()

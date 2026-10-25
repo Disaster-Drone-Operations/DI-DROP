@@ -54,6 +54,7 @@ export async function runRedo() {
 
 export const commands = {
   settings: () => router().redirectTo('/settings'),
+  training: () => router().redirectTo('/settings/training'),
   about: () => router().redirectTo('/about'),
   uploads: () => router().redirectTo('/uploads'),
   module_flightlogs: () => router().redirectTo('/flightlogs'),

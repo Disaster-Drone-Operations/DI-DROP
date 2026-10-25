@@ -12,6 +12,7 @@ import Setting from '/app/models/setting.js'
 import UploadBatch from '/app/models/upload_batch.js'
 import UploadItem from '/app/models/upload_item.js'
 import { TARGETS } from '/app/services/upload_targets.js'
+import { now as clockNow, nowMs } from '/lib/clock.js'
 
 const CONCURRENCY = 2
 const RETRY_DELAYS = [10_000, 30_000, 60_000] // network errors: retry automatically
@@ -29,7 +30,7 @@ let started = false
 let emitTimer = null
 let retryTimer = null
 
-const now = () => new Date().toISOString()
+const now = () => clockNow().toISOString() // data timestamps: app clock (training mode)
 const isActive = (item) => UploadItem.ACTIVE.includes(item.status)
 
 function emit({ immediate = false } = {}) {
@@ -62,8 +63,8 @@ export async function start() {
   await db.execute(`UPDATE upload_items SET status = 'queued' WHERE status = 'running'`)
   const cleared = Setting.get('uploads.cleared_at') ?? ''
   const rows = await UploadItem.where(
-    `status IN ('queued', 'paused', 'failed') OR (finished_at > ? AND finished_at > datetime('now', '-12 hours'))`,
-    [cleared],
+    `status IN ('queued', 'paused', 'failed') OR (finished_at > ? AND finished_at > ?)`,
+    [cleared, new Date(nowMs() - 12 * 3600_000).toISOString()],
     { order: 'position ASC' },
   )
   for (const item of rows) items.set(item.id, item)

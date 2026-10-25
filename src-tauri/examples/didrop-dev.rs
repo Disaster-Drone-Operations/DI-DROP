@@ -58,6 +58,32 @@ fn nc(req: Value) -> Result<Value, String> {
     }
 }
 
+/// Training mode in the browser bridge: same functions as the app, root folder from the request
+fn training(req: Value) -> Result<Value, String> {
+    use di_drop_lib::training as t;
+    let root = PathBuf::from(req["root"].as_str().unwrap_or(""));
+    let s = |k: &str| req[k].as_str().unwrap_or_default().to_string();
+    match s("action").as_str() {
+        "list" => to_value(Ok(t::list(&root))),
+        "paths" => to_value(t::paths(&root, &s("id"))),
+        "scenario" => t::scenario_json(&root, &s("id")),
+        "reset" => to_value(t::reset(&root, &s("id"))),
+        "card" => to_value(t::card(&root, &s("id"), &s("card"))),
+        "stage_logs" => {
+            let files: Vec<String> = serde_json::from_value(req["files"].clone()).unwrap_or_default();
+            to_value(t::stage_logs(&root, &s("id"), &files))
+        }
+        "import" => to_value(t::import(&root, s("path").as_ref())),
+        "cloud_list" => to_value(t::cloud_list(&root, &s("id"), &s("path"))),
+        "cloud_mkdir" => to_value(t::cloud_mkdir(&root, &s("id"), &s("path"))),
+        "cloud_path" => {
+            di_drop_lib::transfer::check_file_name(&s("file_name"))?;
+            to_value(t::cloud_dir(&root, &s("id"), &s("dir")).map(|d| d.join(s("file_name")).display().to_string()))
+        }
+        other => Err(format!("Unknown action: {other}")),
+    }
+}
+
 #[derive(serde::Deserialize)]
 struct ImportRequest {
     items: Vec<media::ImportItem>,
@@ -81,7 +107,18 @@ fn main() {
         Some("copy") => {
             let req: Value = serde_json::from_str(&input).expect("JSON");
             let flag = AtomicBool::new(false);
-            result(folder::copy(req["src"].as_str().unwrap_or("").as_ref(), req["dest"].as_str().unwrap_or("").as_ref(), &flag, report))
+            // optional throttle (simulated Nextcloud in training mode)
+            let rate = req["throttle_bytes_per_s"].as_u64().filter(|r| *r > 0);
+            let started = std::time::Instant::now();
+            result(folder::copy(req["src"].as_str().unwrap_or("").as_ref(), req["dest"].as_str().unwrap_or("").as_ref(), &flag, |d, t| {
+                if let Some(rate) = rate {
+                    let due = std::time::Duration::from_secs_f64(d as f64 / rate as f64);
+                    if let Some(wait) = due.checked_sub(started.elapsed()) {
+                        std::thread::sleep(wait);
+                    }
+                }
+                report(d, t)
+            }))
         }
         Some("nc-upload") => {
             let req: Value = serde_json::from_str(&input).expect("JSON");
@@ -110,9 +147,10 @@ fn main() {
             let items: Vec<di_drop_lib::sdcard::DeleteItem> = serde_json::from_value(req["items"].clone()).expect("items");
             result(di_drop_lib::sdcard::delete_imported(req["root"].as_str().unwrap_or("").as_ref(), &items, req["companions"].as_bool().unwrap_or(false)))
         }
+        Some("training") => result(training(serde_json::from_str(&input).expect("JSON"))),
         Some("nc") => result(nc(serde_json::from_str(&input).expect("JSON"))),
         _ => {
-            eprintln!("Usage: didrop-dev scan|import|copy|nc-upload|thumb|flightlogs-import|flightlogs-scan|sdcard-list|sdcard-delete|nc < request.json");
+            eprintln!("Usage: didrop-dev scan|import|copy|nc-upload|thumb|flightlogs-import|flightlogs-scan|sdcard-list|sdcard-delete|training|nc < request.json");
             std::process::exit(2);
         }
     };

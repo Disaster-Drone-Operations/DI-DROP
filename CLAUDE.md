@@ -132,6 +132,21 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Testen nie mit echter Karte: in der Browser-Brücke gilt jeder Ordner in `tmp/dev-sdcards/` als Karte
   (dort Kopien von Testbildern ablegen; gelöscht wird in der Brücke nur dort).
 
+## Schulungsmodus
+
+- Start über Einstellungen → Schulung (oder Menü „Schulungsmodus …“): Das Hauptfenster lädt sich mit
+  `?training=<szenario>` neu. `lib/platform/simulation.js` tauscht dann Datenbank, Bildordner, SD-Karten,
+  Fernsteuerung und Nextcloud gegen die Schulungsfassung (`<App-Daten>/Schulung/Daten/<id>/`); echte
+  Einsätze sind unsichtbar und unberührt. Logik, Drehbuch, Befehle: `app/services/training.js`.
+- **Uhr:** fachliche Zeiten (Fälligkeit, Countdown, created_at, „heute“ …) nur über `lib/clock.js`
+  (`now()`/`nowMs()`), nie `Date.now()`/`new Date()` – sonst stimmt der Schulungsmodus nicht.
+  Technische Zeiten (Zeitlimits, Geschwindigkeit, Relay) bleiben echt.
+- Steuerung: eigenes Fenster `control` (`app/javascript/control.js`, Tauri-Ereignisse
+  `training:command`/`training:state`), in der Browser-Brücke angedockt. Etappe 2: Telefon über den Relay.
+- Szenario-Format: `docs/scenario-format.md`; bauen mit `script/build_scenario.mjs`.
+  **Szenarien mit echten Einsatzbildern nie ins Repository** (liegen z. B. in `~/di-drop-Szenarien`).
+- Testen in der Brücke: `http://localhost:1420/?bridge&training=<id>` (Daten in `tmp/dev-training`).
+
 ## Akkunutzung
 
 - `app/services/battery_usage.js`: Flugstunden je Akku aus `flight_logs`, verglichen als

@@ -3,6 +3,7 @@
 
 import { parseLocal } from '/lib/time.js'
 import platform from '/lib/platform/index.js'
+import { now as clockNow } from '/lib/clock.js'
 
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 export function escapeHtml(value) {
@@ -48,7 +49,7 @@ export function formatDateTime(value) {
 
 export function isToday(value) {
   const d = asDate(value)
-  return !!d && d.toDateString() === new Date().toDateString()
+  return !!d && d.toDateString() === clockNow().toDateString()
 }
 
 // "13:57–14:03 Uhr" – with date if not from today

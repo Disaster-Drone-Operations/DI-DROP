@@ -21,6 +21,7 @@ export default function devBridge({ root }) {
   const mediaDir = path.join(root, 'tmp/dev-media')
 
   const sdcardsDir = path.join(root, 'tmp/dev-sdcards')
+  const trainingDir = path.join(root, 'tmp/dev-training') // like <app data>/Schulung
   const env = { ...process.env, DIDROP_NC_ACCOUNT_FILE: path.join(root, 'tmp/dev-nextcloud.json') }
   // Test memory cards: every folder in tmp/dev-sdcards counts as a mounted card
   const testCards = () => (fs.existsSync(sdcardsDir) ? fs.readdirSync(sdcardsDir).map((name) => path.join(sdcardsDir, name)) : [])
@@ -53,14 +54,16 @@ export default function devBridge({ root }) {
             res.setHeader('Content-Type', 'application/json')
             return res.end(JSON.stringify({ mediaDir }))
           }
-          if (url.pathname === '/cli' && ['flightlogs-import', 'flightlogs-scan', 'sdcard-list', 'sdcard-delete'].includes(url.searchParams.get('command'))) {
+          if (url.pathname === '/cli' && ['flightlogs-import', 'flightlogs-scan', 'sdcard-list', 'sdcard-delete', 'training'].includes(url.searchParams.get('command'))) {
             const command = url.searchParams.get('command')
             const request = await body(req)
             res.setHeader('Content-Type', 'application/json')
             // Never delete from a real card while testing in the browser
-            if (command === 'sdcard-delete' && !path.resolve(request.root ?? '').startsWith(sdcardsDir + path.sep)) {
+            const trainingCards = path.join(trainingDir, 'Daten') + path.sep
+            if (command === 'sdcard-delete' && !path.resolve(request.root ?? '').startsWith(sdcardsDir + path.sep) && !path.resolve(request.root ?? '').startsWith(trainingCards)) {
               return res.end(JSON.stringify({ error: 'In der Browser-Testumgebung wird nur auf Testkarten (tmp/dev-sdcards) gelöscht.' }))
             }
+            if (command === 'training') request.root = trainingDir
             return res.end(await run(command, request))
           }
           if (url.pathname === '/thumb') {

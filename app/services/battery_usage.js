@@ -9,6 +9,7 @@
 import { db } from '/lib/db.js'
 import DeviceName from '/app/models/device_name.js'
 import BatteryState from '/app/models/battery_state.js'
+import { nowMs } from '/lib/clock.js'
 
 const DAY = 86_400_000
 export const STORAGE_WARNING_DAYS = 60 // DJI: don't leave batteries unused for months
@@ -16,7 +17,7 @@ export const RECOMMEND_COUNT = 2 // operations always use several batteries
 const MIN_SERVICE_DAYS = 30 // very new batteries: avoid inflated per-year rates
 const RECENT_DAYS = 90
 
-export async function batteryUsage(now = Date.now()) {
+export async function batteryUsage(now = nowMs()) {
   const rows = await db.select(
     `SELECT battery_sn AS serial, COUNT(*) AS starts, SUM(duration_s) AS seconds,
             MIN(started_at) AS first, MAX(started_at) AS last,

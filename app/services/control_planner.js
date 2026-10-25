@@ -7,9 +7,10 @@ import AssignmentSeries from '/app/models/assignment_series.js'
 import Assignment from '/app/models/assignment.js'
 import MediaFile from '/app/models/media_file.js'
 import { addMinutes, toDate, parseLocal } from '/lib/time.js'
+import { now as clockNow } from '/lib/clock.js'
 
 export async function baseTime(assignment) {
-  return (await assignment.startedAt()) ?? assignment.dueAt ?? new Date()
+  return (await assignment.startedAt()) ?? assignment.dueAt ?? clockNow()
 }
 
 // next: { mode: '30' | '60' | 'custom' | 'at' | 'none', minutes, time }
@@ -25,7 +26,7 @@ export async function completionOptions(assignment) {
   const series = await AssignmentSeries.findBy('id = ? AND status = ?', [assignment.series_id, 'active'])
   if (!series) return null
   const started = await assignment.startedAt()
-  return { base: started ?? assignment.dueAt ?? new Date(), fromImages: !!started, interval: series.interval_minutes || 30 }
+  return { base: started ?? assignment.dueAt ?? clockNow(), fromImages: !!started, interval: series.interval_minutes || 30 }
 }
 
 // Complete an assignment; for control flights schedule the next one or end the series.

@@ -3,6 +3,7 @@
 
 import { db } from '/lib/db.js'
 import schema from '/config/settings.js'
+import { now as clockNow } from '/lib/clock.js'
 
 const cache = new Map()
 
@@ -40,7 +41,7 @@ export default class Setting {
     await db.execute(
       `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-      [fullKey, json, new Date().toISOString()],
+      [fullKey, json, clockNow().toISOString()],
     )
     cache.set(fullKey, value)
   }

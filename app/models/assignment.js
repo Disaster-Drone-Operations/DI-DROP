@@ -1,6 +1,7 @@
 import Record from '/lib/record.js'
 import { db } from '/lib/db.js'
 import { parseLocal } from '/lib/time.js'
+import { now as clockNow } from '/lib/clock.js'
 
 // A task for the drone unit, e.g. "Lageerkundung", "Kontrollflug 3",
 // "Bagger-Zufahrt prüfen". Belongs to a mission; its images come from one
@@ -139,7 +140,7 @@ export default class Assignment extends Record {
 
   // For sorting: scheduled time, otherwise time of creation ("sofort")
   get effectiveDue() {
-    return this.dueAt ?? (this.created_at ? new Date(this.created_at) : new Date())
+    return this.dueAt ?? (this.created_at ? new Date(this.created_at) : clockNow())
   }
 
   get isControl() {
@@ -158,7 +159,7 @@ export default class Assignment extends Record {
   }
 
   async complete() {
-    return this.update({ status: 'done', completed_at: new Date().toISOString() })
+    return this.update({ status: 'done', completed_at: clockNow().toISOString() })
   }
 
   async reopen() {

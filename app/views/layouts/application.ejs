@@ -11,6 +11,9 @@
       </div>
     </div>
 
+    <%# Training mode: scenario, simulated time, control (app/javascript/controllers/training_banner_controller.js) -%>
+    <div class="training-banner" data-controller="training-banner" hidden></div>
+
     <nav class="nav">
       <div class="nav__heading">Module</div>
       <a href="#/" class="nav__item <%= isCurrent(currentPath, '/', { exact: true }) || currentPath === '/missions/new' ? 'is-active' : '' %>">
