@@ -221,6 +221,8 @@ pub struct DeviceStatus {
     pub folder: Option<String>,
     pub total: usize,
     pub new: usize,
+    /// File names of the new logs ("DJIFlightRecord_2026-10-15_[11-04-07].txt"), newest first
+    pub new_files: Vec<String>,
 }
 
 pub fn is_dji(info: &mtp_rs::mtp::MtpDeviceInfo) -> bool {
@@ -343,13 +345,16 @@ async fn device_logs(key: &str) -> Result<(DeviceInfo, Option<Found>), String> {
 pub async fn device_status(key: &str, dest_dir: &Path) -> Result<DeviceStatus, String> {
     let (device, found) = device_logs(key).await?;
     Ok(match found {
-        None => DeviceStatus { device, folder: None, total: 0, new: 0 },
-        Some((_, path, files, _)) => DeviceStatus {
-            device,
-            folder: Some(path),
-            total: files.len(),
-            new: files.iter().filter(|f| !already_there(dest_dir, &f.filename, f.size)).count(),
-        },
+        None => DeviceStatus { device, folder: None, total: 0, new: 0, new_files: vec![] },
+        Some((_, path, files, _)) => {
+            let mut new_files: Vec<String> = files
+                .iter()
+                .filter(|f| !already_there(dest_dir, &f.filename, f.size))
+                .map(|f| f.filename.clone())
+                .collect();
+            new_files.sort_by(|a, b| b.cmp(a)); // names contain date + time
+            DeviceStatus { device, folder: Some(path), total: files.len(), new: new_files.len(), new_files }
+        }
     })
 }
 

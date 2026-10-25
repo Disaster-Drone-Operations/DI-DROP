@@ -836,6 +836,10 @@ input[type=number].input-inline { width: 64px !important; }
 .import-card > .icon { color: var(--accent); flex: none; margin-top: 2px; }
 .import-card .subtle { margin-top: 2px; }
 .import-card__mission { font: inherit; max-width: 280px; }
+.flightlog-offer { list-style: none; margin: 0; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px;
+  border-radius: var(--radius); background: var(--surface-2); font-variant-numeric: tabular-nums; }
+.flightlog-offer li { display: flex; align-items: center; gap: 8px; }
+.flightlog-offer .icon { color: var(--text-3); }
 .import-card__delete { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); }
 .import-card__delete .subtle { font-size: 12px; padding-left: 22px; }
 .import-card__sub { margin: 6px 0 0 22px; }
