@@ -159,7 +159,12 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   (`now()`/`nowMs()`), nie `Date.now()`/`new Date()` – sonst stimmt der Schulungsmodus nicht.
   Technische Zeiten (Zeitlimits, Geschwindigkeit, Relay) bleiben echt.
 - Steuerung: eigenes Fenster `control` (`app/javascript/control.js`, Tauri-Ereignisse
-  `training:command`/`training:state`), in der Browser-Brücke angedockt.
+  `training:command`/`training:state`), in der Browser-Brücke angedockt (dort hinter modalen Dialogen nicht
+  klickbar – Befehl dann per `platform.training.emit('training:command', …)`).
+- Teilnehmer legen den Einsatz selbst an (Szenario `missionSuggestion` → Hinweis mit „Übernehmen“ im Formular)
+  und schließen ihn am Ende ab; das Drehbuch führt mit `note`-Schritten dorthin.
+- Standort vom Telefon ist simuliert (`lib/location/simulated_client.js`, `location_service.simulateLocation`):
+  QR-Code wie echt, „QR-Code scannen“/„Verweigern“/„Am Telefon beenden“ in der Steuerung (Befehle `location.*`).
 - Telefon als Fernbedienung: `lib/relay/control_client.js` (Relay-Modus `control`, Protokoll §7). Das Telefon
   darf nur die Befehle in `PHONE_COMMANDS` (`training.js`) – nie beenden/zurücksetzen. Es verbindet sich nach
   Unterbrechungen selbst neu (Kopplung im sessionStorage des Telefon-Tabs).
@@ -170,7 +175,7 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   **Bei jeder neuen Funktion `scenarios/src/alle-funktionen.mjs` mitwachsen lassen** (siehe `scenarios/README.md`).
   `basis` hat fotorealistische Schrägaufnahmen aus einem Referenzbild (`script/ai_scenario_photos.mjs`, Plan
   `scenarios/src/basis-photos.mjs`, OpenAI, Schlüssel im Schlüsselbund) – `generate_scenario.mjs` für `basis`
-  überschreibt sie. Wärmebild = Mittelausschnitt des Sichtbilds (Wärmekamera 52 mm vs. 24 mm).
+  überschreibt sie (nur Drehbuch geändert: `--json-only`). Wärmebild = Mittelausschnitt des Sichtbilds (Wärmekamera 52 mm vs. 24 mm).
 - Testen in der Brücke: `http://localhost:1420/?bridge&training=<id>` (Daten in `tmp/dev-training`).
 
 ## Akkunutzung

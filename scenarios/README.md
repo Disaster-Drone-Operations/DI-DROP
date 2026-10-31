@@ -5,7 +5,7 @@ di-drop bringt sie mit (Einstellungen → Schulung, „Mitgeliefert“).
 
 | Ordner | Inhalt |
 |---|---|
-| `basis/` | Einstieg: Lageerkundung, Spezialauftrag, zwei Kontrollflüge mit Vergleichsbildern, Bereitstellen |
+| `basis/` | Einstieg: Einsatz anlegen, Lageerkundung, Spezialauftrag, zwei Kontrollflüge mit Vergleichsbildern, Bereitstellen, Einsatz abschließen |
 | `alle-funktionen/` | möglichst jede Funktion: ältere Bilder auf der Karte, Karte mit zwei Ordnern (Kontrollflug + Kartierung mit RTK-Dateien), drei Kontrollflüge, Spezialauftrag, Fernsteuerung mit mehreren Akkus (einer lange im Lager), Karte erneut einstecken, Nextcloud, An Telefon |
 
 Erzeugt aus den Beschreibungen in `src/`:
@@ -35,6 +35,7 @@ node script/ai_scenario_photos.mjs scenarios/src/basis.mjs scenarios/src/basis-p
   Modell `gpt-image-2` (`--model=…`).
 - `script/ai_scenario_images.mjs` ist die einfachere Variante (KI behält die Draufsicht der Zeichnung).
 - Achtung: `generate_scenario.mjs` für `basis` überschreibt die Fotos (danach Foto-Skript erneut, aus dem Cache).
+  Nur Drehbuch oder Einsatz-Vorschlag geändert: `node script/generate_scenario.mjs scenarios/src/basis.mjs scenarios/basis --json-only`.
 
 **Neue Funktion in di-drop?** Dann `src/alle-funktionen.mjs` so erweitern, dass man sie dort ausprobieren
 kann (und `basis` nur, wenn es eine Grundfunktion ist). Szenarien mit echten Bildern gehören nie hierher.

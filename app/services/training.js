@@ -15,8 +15,9 @@ import Assignment from '/app/models/assignment.js'
 import AssignmentSeries from '/app/models/assignment_series.js'
 import FlightLog from '/app/models/flight_log.js'
 import { ControlRelayClient } from '/lib/relay/control_client.js'
-import { relayBaseUrl } from '/app/services/location_service.js'
+import { relayBaseUrl, simulateLocation, simulatedPhone, currentLocation } from '/app/services/location_service.js'
 import { health, updateRelay, parseRelayUrl, isAvailable as canManageRelay } from '/app/services/cloudflare_deployer.js'
+import { RELAY_BUNDLE_VERSION } from '/relay/bundle.js'
 
 export const isTraining = () => !!trainingId
 
@@ -134,6 +135,26 @@ async function initialize() {
   await Setting.set('training.initialized', true)
 }
 
+// Suggested mission for the form „Neuer Einsatz“ (participants create the mission themselves)
+export const missionSuggestion = () => (isTraining() ? scenario?.missionSuggestion ?? null : null)
+
+// ── Simulated phone of the participants (location) ───────────────────────
+
+// Where the drone team stands: scenario "phone", otherwise the coordinates of the (suggested) mission
+function phonePosition() {
+  if (scenario.phone?.lat != null) return scenario.phone
+  const coordinates = scenario.mission?.coordinates ?? scenario.missionSuggestion?.coordinates
+  const [lat, lon] = (coordinates ?? '').split(',').map(Number)
+  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null
+}
+
+// Running location transfer for the control: { mode, status }
+function locationState() {
+  const { session } = currentLocation()
+  if (!simulatedPhone() || !session) return null
+  return { mode: session.mode, status: session.status }
+}
+
 // ── Simulated remote controller ───────────────────────────────────────────
 
 // Logs of the scenario with their start time; summary logs get a DJI-like file name
@@ -194,7 +215,8 @@ const remoteProvider = {
 
 // ── Phone as remote control (relay, mode "control") ──────────────────────
 
-async function connectPhone() {
+// force: connect even though the relay is older (its phone page lacks newer buttons, e.g. the location)
+async function connectPhone({ force = false } = {}) {
   if (phone) return
   const base = relayBaseUrl()
   const setPhone = (info) => {
@@ -205,8 +227,13 @@ async function connectPhone() {
   setPhone({ status: 'connecting', text: 'Verbinde mit dem Relay …' })
   const info = await health(base)
   if (!info) return setPhone({ status: 'error', text: 'Der Relay ist nicht erreichbar. Besteht eine Internetverbindung?' })
+  const canUpdate = canManageRelay() && !!parseRelayUrl(base)
   if (!info.features?.includes('control')) {
-    return setPhone({ status: 'outdated', text: 'Der Relay ist veraltet und kennt die Fernbedienung noch nicht.', canUpdate: canManageRelay() && !!parseRelayUrl(base) })
+    return setPhone({ status: 'outdated', text: 'Der Relay ist veraltet und kennt die Fernbedienung noch nicht.', canUpdate })
+  }
+  if (info.bundle !== RELAY_BUNDLE_VERSION && !force) {
+    return setPhone({ status: 'outdated', canUpdate, canForce: true,
+      text: `Der Relay ist veraltet (Version ${info.bundle ?? '?'}, aktuell ${RELAY_BUNDLE_VERSION}) – auf dem Telefon fehlen neuere Knöpfe, z. B. „Telefon der Teilnehmer“ (Standort).` })
   }
   phone = new ControlRelayClient({
     relayBaseUrl: base,
@@ -258,11 +285,12 @@ function phoneState() {
   return {
     title: state.title,
     clock: { at: state.clock.at, speed: state.clock.speed, running: state.clock.running },
-    next: next ? { label: next.label.slice(0, 120), at: next.at } : null,
+    next: next ? { label: next.label.slice(0, 600), at: next.at } : null, // whole script text (message limit 4 KB)
     done: state.next,
     total: state.steps.length,
     cards: state.cards.map((c) => ({ id: c.id, label: c.label.slice(0, 40), inserted: c.inserted })),
     remote: state.remote && { name: state.remote.name.slice(0, 40), connected: state.remote.connected, flown: state.remote.flown, total: state.remote.total },
+    location: state.location,
   }
 }
 
@@ -313,14 +341,17 @@ const COMMANDS = {
   },
   'training.reset': () => resetTraining(),
   'training.end': () => endTraining(),
-  'phone.connect': () => connectPhone(),
+  'phone.connect': ({ force }) => connectPhone({ force: force === 'true' }),
   'phone.disconnect': () => disconnectPhone(),
   'phone.updateRelay': () => updateRelayForPhone(),
+  'location.scan': () => simulatedPhone()?.scan(),
+  'location.deny': () => simulatedPhone()?.deny(),
+  'location.stop': () => simulatedPhone()?.phoneStop(),
 }
 
 // The phone may only run the exercise – not end/reset it or change the phone connection
 const PHONE_COMMANDS = ['clock.play', 'clock.pause', 'clock.speed', 'clock.add', 'step.run', 'step.forward', 'step.skip',
-  'card.insert', 'card.remove', 'remote.connect', 'remote.disconnect']
+  'card.insert', 'card.remove', 'remote.connect', 'remote.disconnect', 'location.scan', 'location.deny', 'location.stop']
 
 export async function command({ action, ...args } = {}, { fromPhone = false } = {}) {
   const fn = COMMANDS[action]
@@ -350,6 +381,7 @@ export function trainingState() {
     steps: steps.map((s) => ({ index: s.index, at: s.at, label: s.label, action: s.action, done: s.index < next })),
     next,
     phone: phoneInfo,
+    location: locationState(),
   }
 }
 
@@ -377,6 +409,7 @@ export async function startTrainingMode() {
   }
   if (platform.name !== 'tauri') (await import('/app/javascript/training_dock.js')).installDock()
   scenario = await platform.training.scenario(trainingId)
+  simulateLocation(() => phonePosition()) // „Hier“ / „Mein Standort“: simulated phone instead of the relay
   steps = (scenario.script ?? []).map((s, index) => ({ ...s, index, at: timeOf(s.at), label: stepLabel(s) }))
   if (!Setting.get('training.initialized')) {
     setClock({ at: timeOf(scenario.start), running: false }) // records get the time of the exercise
@@ -387,6 +420,7 @@ export async function startTrainingMode() {
   await platform.training.listen('training:command', (cmd) => command(cmd))
   await platform.training.listen('training:hello', () => broadcast()) // control window (re)opened
   window.addEventListener('clock:changed', () => broadcast())
+  window.addEventListener('location:changed', () => broadcast()) // QR code shown → „QR-Code scannen“ in the control
   // Keep the clock saved while it runs (continue after a restart), state for the control window
   setInterval(() => {
     if (snapshot()?.running) saveClock()

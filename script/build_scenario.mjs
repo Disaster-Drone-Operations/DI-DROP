@@ -5,7 +5,10 @@
 //
 // config.json (keep scenarios with real mission images OUTSIDE the repository):
 //   { "id", "title", "description", "start": "2026-09-11T11:30",
-//     "settings": {…}, "mission": {…}, "assignments": […],
+//     "settings": {…},
+//     "missionSuggestion": { "kind", "title", "location", "coordinates" }   (participants create the mission;
+//                                              "mission" + "assignments" instead: already created at the start)
+//     "phone": { "lat", "lon", "accuracy" }   (optional – simulated phone, default: the suggested coordinates)
 //     "cards": [{ "id": "flug1", "label": "Flug 1 · Lageerkundung", "sources": ["/path/to/folder", …] }],
 //     "flightlogs": "/path/to/FlightRecord"   (optional: real DJIFlightRecord_*.txt of that day)
 //     "remote": { "name": "DJI RC Plus 2 (Simulation)" },
@@ -98,6 +101,14 @@ if (!script) {
       script.push({ at: hhmm(new Date(landed.getTime() + 18 * 60_000)), action: 'remote.disconnect' })
     }
   })
+  // Begins with creating the mission and ends with closing it (unless it is created at the start)
+  const suggestion = config.missionSuggestion
+  if (suggestion) {
+    const begin = new Date(new Date(config.start).getTime() + 60_000)
+    script.push({ at: hhmm(begin), action: 'note', text: `Alarmierung. Neuen Einsatz anlegen (Vorschlag: „${suggestion.title}“) – Einsatzort mit „Hier“ vom Telefon übernehmen (in der Steuerung „QR-Code scannen“).` })
+    const end = new Date(Math.max(...flights.map((f) => f.last.getTime())) + 25 * 60_000)
+    script.push({ at: hhmm(end), action: 'note', text: 'Alles bereitstellen, Aufträge erledigen („Keine weiteren Kontrollflüge“) und den Einsatz abschließen.' })
+  }
   script.sort((a, b) => a.at.localeCompare(b.at))
 }
 
@@ -107,8 +118,9 @@ const scenario = {
   description: config.description ?? '',
   start: config.start,
   settings: config.settings ?? {},
-  mission: config.mission ?? null,
-  assignments: config.assignments ?? [],
+  ...(config.missionSuggestion ? { missionSuggestion: config.missionSuggestion } : {}),
+  ...(config.mission ? { mission: config.mission, assignments: config.assignments ?? [] } : {}),
+  ...(config.phone ? { phone: config.phone } : {}),
   cards: config.cards.map(({ id, label }) => ({ id, label })),
   remote,
   script,

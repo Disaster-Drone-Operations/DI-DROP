@@ -74,6 +74,25 @@
     </section>
   <% } -%>
 
+  <section class="training-devices">
+    <h3>Telefon der Teilnehmer</h3>
+    <% const loc = state.location -%>
+    <% if (loc && ['waiting', 'pairing'].includes(loc.status)) { -%>
+      <div class="training-device is-on"><%- icon('phone', { size: 16 }) %>
+        <span>di-drop zeigt den QR-Code für <%= loc.mode === 'stream' ? 'den Live-Standort' : 'den Standort' %>.</span>
+        <button type="button" class="button button--small button--primary" data-command="location.scan" <%= loc.status === 'pairing' ? 'disabled' : '' %>>QR-Code scannen</button></div>
+      <div class="training-device"><span></span><span class="subtle">Oder: Am Telefon wird der Standortzugriff verweigert.</span>
+        <button type="button" class="button button--small button--quiet" data-command="location.deny">Verweigern</button></div>
+    <% } else if (loc && ['paired', 'streaming'].includes(loc.status)) { -%>
+      <div class="training-device is-on"><%- icon('phone', { size: 16 }) %>
+        <span><%= loc.status === 'paired' ? 'Telefon verbunden – sendet gleich seinen Standort …' : 'Telefon sendet seinen Live-Standort.' %></span>
+        <% if (loc.mode === 'stream') { %><button type="button" class="button button--small" data-command="location.stop">Am Telefon beenden</button><% } %></div>
+    <% } else { -%>
+      <div class="training-device"><%- icon('phone', { size: 16 }) %>
+        <span class="subtle">Sobald di-drop einen QR-Code für den Standort zeigt („Hier“ im Einsatz, „Mein Standort“), lässt sich hier das Scannen simulieren.</span></div>
+    <% } -%>
+  </section>
+
   <section class="training-devices training-phone">
     <h3>Telefon als Fernbedienung</h3>
     <% const p = state.phone -%>
@@ -92,7 +111,10 @@
     <% } else if (p.status === 'outdated') { -%>
       <div class="callout callout--warning"><%- icon('alert') %><span><%= p.text %></span></div>
       <div class="training-device"><span></span><span></span>
-        <% if (p.canUpdate) { %><button type="button" class="button button--small button--primary" data-command="phone.updateRelay">Jetzt aktualisieren</button><% } %></div>
+        <span class="training-device__buttons">
+          <% if (p.canForce) { %><button type="button" class="button button--small button--quiet" data-command="phone.connect" data-force="true">Trotzdem verbinden</button><% } %>
+          <% if (p.canUpdate) { %><button type="button" class="button button--small button--primary" data-command="phone.updateRelay">Jetzt aktualisieren</button><% } %>
+        </span></div>
     <% } else if (['error', 'no-relay'].includes(p.status)) { -%>
       <div class="callout callout--danger"><%- icon('alert') %><span><%= p.text %></span></div>
       <div class="training-device"><span></span><span></span><button type="button" class="button button--small" data-command="phone.connect">Erneut versuchen</button></div>

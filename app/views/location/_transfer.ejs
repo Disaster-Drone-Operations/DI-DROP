@@ -22,7 +22,9 @@
     <span><%= s.text %></span>
   </p>
 <% } -%>
-<% if (s.status === 'waiting' || s.status === 'pairing') { -%>
+<% if ((s.status === 'waiting' || s.status === 'pairing') && s.simulated) { -%>
+  <p class="hint"><span class="training-badge">Schulung</span> Das Telefon ist simuliert – der Ausbilder „scannt“ den Code in der Schulungssteuerung.</p>
+<% } else if (s.status === 'waiting' || s.status === 'pairing') { -%>
   <p class="hint">Der Code gilt nur für diese eine Übertragung. Positionen werden verschlüsselt übertragen – der Relay kann sie nicht lesen.</p>
 <% } -%>
 

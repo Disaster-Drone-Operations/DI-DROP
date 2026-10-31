@@ -8,6 +8,7 @@ import { syncFileNames } from '/app/services/file_namer.js'
 import { completionOptions } from '/app/services/control_planner.js'
 import { hasDraft } from '/lib/drafts.js'
 import { assignmentStates, cardSteps, missionProgress } from '/app/services/next_step.js'
+import { missionSuggestion } from '/app/services/training.js'
 
 export default class MissionsController extends ApplicationController {
   async beforeAction() {
@@ -84,7 +85,7 @@ export default class MissionsController extends ApplicationController {
   }
 
   async new() {
-    await this.render('missions/new', { mission: new Mission() }, { title: 'Neuer Einsatz' })
+    await this.render('missions/new', { mission: new Mission(), suggestion: missionSuggestion() }, { title: 'Neuer Einsatz' })
   }
 
   // Every mission starts with the "Lageerkundung" assignment

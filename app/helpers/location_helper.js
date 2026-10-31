@@ -1,4 +1,4 @@
-import { relayBaseUrl } from '/app/services/location_service.js'
+import { canTransfer } from '/app/services/location_service.js'
 
-// Is location transfer from the smartphone set up?
-export const relayConfigured = () => !!relayBaseUrl()
+// Can the location come from the phone? (relay set up – or simulated in the training mode)
+export const relayConfigured = () => canTransfer()

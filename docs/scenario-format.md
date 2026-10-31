@@ -25,14 +25,12 @@ flugprotokolle/DJIFlightRecord_….txt   echte Flugprotokolle (optional)
   "description": "Kurzbeschreibung für die Liste",
   "start": "2026-09-11T11:30",             // Startzeit der simulierten Uhr
   "settings": { "general.operator_name": "Max Mustermann" },   // optional, beliebige Einstellungen
-  "mission": {                             // optional – fehlt es, legen die Teilnehmer den Einsatz selbst an
-    "kind": "exercise", "title": "Unterhain", "location": "Unterhain",
-    "coordinates": "50.63522, 11.12861", "control_interval_minutes": 30
+  "missionSuggestion": {                   // Vorschlag für „Neuer Einsatz“ – die Teilnehmer legen den Einsatz
+    "kind": "exercise", "title": "Unterhain",  // selbst an („Übernehmen“ oder eigenes Stichwort)
+    "location": "Unterhain", "coordinates": "50.63522, 11.12861"
   },
-  "assignments": [                         // zusätzlich zur automatisch angelegten Lageerkundung
-    { "kind": "special", "title": "Zufahrt prüfen", "due": "12:30" },
-    { "kind": "control", "interval": 30, "due": "12:45" }
-  ],
+  "phone": { "lat": 50.6351, "lon": 11.1284, "accuracy": 6 },   // simuliertes Telefon der Teilnehmer
+                                           // (optional, sonst die Koordinaten des Vorschlags)
   "cards": [{ "id": "flug1", "label": "Flug 1 · 11:48" }],
   "remote": {
     "name": "DJI RC Plus 2 (Simulation)",
@@ -57,13 +55,24 @@ flugprotokolle/DJIFlightRecord_….txt   echte Flugprotokolle (optional)
   Die simulierte Fernsteuerung liefert nur, was laut simulierter Uhr schon geflogen ist.
 - **Drehbuch:** `card.insert`, `card.remove`, `remote.connect`, `remote.disconnect`, `note`
   (nur ein Hinweis für den Ausbilder). Die Steuerung zeigt immer den nächsten Schritt;
-  „Ausführen“ stellt die Uhr bei Bedarf auf dessen Zeit.
+  „Ausführen“ stellt die Uhr bei Bedarf auf dessen Zeit. Ein Drehbuch beginnt mit „Neuen Einsatz anlegen“
+  und endet mit „Einsatz abschließen“ – Aufträge der Einsatzleitung (Kontrollflüge, Spezialaufträge) als `note`,
+  die Teilnehmer legen sie selbst an.
+- **Standort vom Telefon:** Im Schulungsmodus braucht „Hier“ bzw. „Mein Standort“ keinen Relay. di-drop zeigt
+  den QR-Code wie gewohnt; in der Steuerung (oder auf dem Telefon als Fernbedienung) unter „Telefon der
+  Teilnehmer“ „QR-Code scannen“ bzw. „Verweigern“, beim Live-Standort später „Am Telefon beenden“. Gesendet
+  wird `phone` (mit ein paar Metern GPS-Rauschen).
+- **Fertig angelegter Einsatz (Ausnahme):** Statt `missionSuggestion` legt `"mission": {…}` (dazu optional
+  `"assignments": [{ "kind": "special", "title": "…", "due": "12:30" }, { "kind": "control", "interval": 30, "due": "12:45" }]`)
+  den Einsatz schon beim Start an – z. B. für Übungen, die mitten im Einsatz beginnen.
 
 ## Mitgelieferte Szenarien
 
 `scenarios/basis` und `scenarios/alle-funktionen` (gezeichnete Bilder, fiktiver Ort) bringt di-drop mit;
 ein eingelesenes Szenario mit derselben `id` hat Vorrang. Erzeugt werden sie mit
 `node script/generate_scenario.mjs scenarios/src/<name>.mjs scenarios/<name>` – siehe `scenarios/README.md`.
+Nur Drehbuch/Vorschlag geändert: `--json-only` schreibt nur `szenario.json` (Bilder bleiben, wichtig für die
+KI-Fotos von `basis`).
 
 ## Szenario aus vorhandenen Bildern bauen
 

@@ -194,8 +194,24 @@ function renderControl(notice = '') {
         ${button(c.inserted ? 'card.remove' : 'card.insert', c.inserted ? 'Entnehmen' : 'Einstecken', { primary: !c.inserted, data: { card: c.id } })}</div>`).join('')}` : ''}
     ${s.remote ? `<h2>Fernsteuerung</h2>
       <div class="remote-device ${s.remote.connected ? 'on' : ''}"><span>${esc(s.remote.name)}<br><small class="muted">${s.remote.flown} von ${s.remote.total} Flügen geflogen</small></span>
-        ${button(s.remote.connected ? 'remote.disconnect' : 'remote.connect', s.remote.connected ? 'Trennen' : 'Anschließen', { primary: !s.remote.connected })}</div>` : ''}`
+        ${button(s.remote.connected ? 'remote.disconnect' : 'remote.connect', s.remote.connected ? 'Trennen' : 'Anschließen', { primary: !s.remote.connected })}</div>` : ''}
+    ${renderLocation(s.location)}`
   tickClock()
+}
+
+// Simulated phone of the participants: di-drop shows a QR code for the location → "scan" it here
+function renderLocation(loc) {
+  const button = (cmd, label, primary = false) => `<button class="btn ${primary ? 'primary' : ''}" data-cmd="${cmd}">${label}</button>`
+  if (loc && loc.status === 'waiting') {
+    return `<h2>Telefon der Teilnehmer</h2>
+      <div class="remote-device on"><span>QR-Code für ${loc.mode === 'stream' ? 'den Live-Standort' : 'den Standort'} wird gezeigt</span>${button('location.scan', 'Scannen', true)}</div>
+      <div class="remote-device"><span class="muted">Standortzugriff verweigern</span>${button('location.deny', 'Verweigern')}</div>`
+  }
+  if (loc && ['pairing', 'paired', 'streaming'].includes(loc.status)) {
+    return `<h2>Telefon der Teilnehmer</h2>
+      <div class="remote-device on"><span>${loc.status === 'streaming' ? 'Sendet Live-Standort' : 'Verbindet …'}</span>${loc.mode === 'stream' ? button('location.stop', 'Beenden') : ''}</div>`
+  }
+  return `<h2>Telefon der Teilnehmer</h2><div class="remote-device"><span class="muted">Zeigt di-drop einen QR-Code für den Standort, lässt er sich hier scannen.</span></div>`
 }
 
 function tickClock() {

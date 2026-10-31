@@ -1323,6 +1323,8 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 html.mode-training body::after { content: ""; position: fixed; inset: 0; border: 4px solid var(--training); pointer-events: none; z-index: 10000; }
 .training-badge { display: inline-block; padding: 1px 7px; border-radius: 99px; background: var(--training); color: #fff;
   font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.callout--training { align-items: center; background: var(--training-soft); }
+.callout--training > span:nth-child(2) { flex: 1; }
 .training-badge--builtin { background: var(--surface-2); color: var(--training); border: 1px solid var(--training); }
 .training-banner { margin: 0 10px 10px; padding: 8px 10px; border-radius: var(--radius); background: var(--training-soft); display: flex; flex-direction: column; gap: 4px; }
 .training-banner__line { display: flex; align-items: center; justify-content: space-between; }
@@ -1350,6 +1352,7 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .training-devices h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
 .training-device { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-sm); }
 .training-device + .training-device { margin-top: 2px; }
+.training-device__buttons { display: flex; gap: 6px; }
 .training-device.is-on { background: var(--training-soft); }
 .training-phone__qr { display: flex; gap: 12px; align-items: center; padding: 6px 8px; }
 .training-phone__qr img { width: 150px; height: 150px; border-radius: var(--radius-sm); background: #fff; image-rendering: pixelated; flex: none; }

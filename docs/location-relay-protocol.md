@@ -180,10 +180,13 @@ den Fehler, und das Bild wird neu gesendet (neuer QR-Code).
 
 Pairing wie in 3.2 mit `:control`. Danach, beide Richtungen verschlüsselt (`data`):
 
-- Desktop → Smartphone: `{ "type": "state", "state": { title, clock: { at, speed, running }, next, done, total, cards, remote } }`
+- Desktop → Smartphone: `{ "type": "state", "state": { title, clock: { at, speed, running }, next, done, total, cards, remote, location } }`
+  (`location`: `{ mode, status }` einer laufenden, simulierten Standort-Abfrage oder `null`)
   – kompakt (Grenze 4 KB), höchstens einmal je Sekunde, außerdem regelmäßig alle 5 s.
 - Smartphone → Desktop: `{ "type": "command", "action": "clock.play" | "clock.pause" | "clock.speed" | "clock.add" |
-  "step.run" | "step.forward" | "step.skip" | "card.insert" | "card.remove" | "remote.connect" | "remote.disconnect", … }`.
+  "step.run" | "step.forward" | "step.skip" | "card.insert" | "card.remove" | "remote.connect" | "remote.disconnect" |
+  "location.scan" | "location.deny" | "location.stop", … }` (`location.*`: das simulierte Telefon der Teilnehmer
+  scannt den Standort-QR-Code, verweigert den Zugriff bzw. beendet den Live-Standort; ab Relay 1.3.0).
   Der Desktop führt nur diese Befehle aus (Übung beenden/zurücksetzen nur am Rechner).
 
 Die Sitzung läuft die ganze Schulung über. Die Telefonseite merkt sich die Kopplung für den Browser-Tab

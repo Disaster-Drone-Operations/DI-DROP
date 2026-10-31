@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // Generates a public training scenario with drawn (artificial) aerial images:
 //
-//   node script/generate_scenario.mjs scenarios/src/basis.mjs scenarios/basis
+//   node script/generate_scenario.mjs scenarios/src/basis.mjs scenarios/basis [--json-only]
+//
+// --json-only: only rewrite szenario.json (mission suggestion, script …) and keep the images – e.g. for
+// "basis", whose images were replaced by AI photos (script/ai_scenario_photos.mjs).
 //
 // The scenario description (scenarios/src/*.mjs) defines mission, cards, flights and script; this
 // script draws the "world" (village with a burning barn, seen from above) once per flight – the fire
@@ -16,9 +19,10 @@ import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
-const [specPath, target] = process.argv.slice(2)
+const [specPath, target] = process.argv.slice(2).filter((a) => !a.startsWith('--'))
+const jsonOnly = process.argv.includes('--json-only')
 if (!specPath || !target) {
-  console.error('Usage: node script/generate_scenario.mjs <scenarios/src/x.mjs> <target folder>')
+  console.error('Usage: node script/generate_scenario.mjs <scenarios/src/x.mjs> <target folder> [--json-only]')
   process.exit(2)
 }
 const spec = (await import(pathToFileURL(path.resolve(specPath)).href)).default
@@ -221,7 +225,7 @@ const timeOf = (t) => new Date(/^\d{2}:\d{2}$/.test(t) ? `${day}T${t}` : t)
 
 // ── Build ─────────────────────────────────────────────────────────────────────
 
-fs.rmSync(target, { recursive: true, force: true })
+if (!jsonOnly) fs.rmSync(target, { recursive: true, force: true })
 fs.mkdirSync(target, { recursive: true })
 const worlds = new Map()
 const flights = [] // for flight logs: { start, end, battery }
@@ -229,11 +233,14 @@ const flights = [] // for flight logs: { start, end, battery }
 for (const card of spec.cards) {
   card.folders.forEach((folder, fi) => {
     const begin = timeOf(folder.time)
+    const rand = rng(spec.seed + begin.getMinutes() * 31 + fi)
+    const shots = shotsFor(folder.shots, rand)
+    const end = new Date(begin.getTime() + shots.length * 22_000)
+    flights.push({ start: begin, end, card: card.id, ...(folder.shots === 'older' ? { older: true } : {}) })
+    if (jsonOnly) return
     const key = `${folder.fire}|${folder.trucks}`
     if (!worlds.has(key)) worlds.set(key, drawWorld(`w${worlds.size}`, folder, spec.seed))
     const world = worlds.get(key)
-    const rand = rng(spec.seed + begin.getMinutes() * 31 + fi)
-    const shots = shotsFor(folder.shots, rand)
     const dir = path.join(target, 'karten', card.id, 'DCIM', `DJI_${djiStamp(begin).slice(0, 12)}_${pad(fi + 1, 3)}${folder.name ? `_${folder.name}` : ''}`)
     fs.mkdirSync(dir, { recursive: true })
     shots.forEach((shot, i) => {
@@ -253,9 +260,6 @@ for (const card of spec.cards) {
       for (const ext of ['MRK', 'NAV', 'OBS', 'RTK']) fs.writeFileSync(path.join(dir, `${stem}.${ext}`), `Simulierte RTK-Rohdaten (${ext}) – Schulungsszenario ${spec.id}\n`)
       fs.writeFileSync(path.join(dir, 'ppk_file_name.pbk'), `${stem}.RTK`)
     }
-    const end = new Date(begin.getTime() + shots.length * 22_000)
-    if (folder.shots !== 'older') flights.push({ start: begin, end, card: card.id })
-    else flights.push({ start: begin, end, card: card.id, older: true })
     console.log(`${card.id}/${path.basename(dir)}: ${shots.length} shots`)
   })
 }
@@ -285,8 +289,11 @@ const scenario = {
   description: spec.description,
   start: spec.start,
   settings: spec.settings ?? {},
-  mission: spec.mission,
-  assignments: spec.assignments ?? [],
+  // Participants create the mission themselves – the script only suggests one ("mission" = created at the start)
+  ...(spec.missionSuggestion ? { missionSuggestion: spec.missionSuggestion } : {}),
+  ...(spec.mission ? { mission: spec.mission, assignments: spec.assignments ?? [] } : {}),
+  // Simulated phone of the participants („Hier“, „Mein Standort“)
+  phone: spec.phone ?? { lat: spec.center.lat, lon: spec.center.lon, alt: spec.groundAltitude },
   cards: spec.cards.map(({ id, label }) => ({ id, label })),
   remote: { name: spec.remote?.name ?? 'DJI RC Plus 2 (Simulation)', logs },
   script: spec.script,

@@ -1,4 +1,4 @@
-<%# locals: mission -%>
+<%# locals: mission, suggestion -%>
 <%# Started input is kept as a draft, even when another module is opened in between -%>
 <div data-controller="form-draft" data-form-draft-key-value="mission-new"
      data-action="input->form-draft#save change->form-draft#save submit->form-draft#submitted">
@@ -8,5 +8,14 @@
       <h1>Neuer Einsatz</h1>
     </div>
   </header>
+  <% if (suggestion) { -%>
+    <%# Training mode: the script suggests a mission – any other input is fine too -%>
+    <div class="callout callout--training" data-controller="fill"
+         data-fill-values-value="<%= JSON.stringify({ 'mission[title]': suggestion.title ?? '', 'mission[location]': suggestion.location ?? '', 'mission[kind]': suggestion.kind ?? '' }) %>">
+      <span class="training-badge">Schulung</span>
+      <span>Vorschlag aus dem Drehbuch: <strong><%= suggestion.title %></strong><% if (suggestion.location) { %> · <%= suggestion.location %><% } %>. Ein eigenes Stichwort geht genauso.</span>
+      <button type="button" class="button button--small" data-action="fill#apply">Übernehmen</button>
+    </div>
+  <% } -%>
   <%- include('missions/_form', { mission }) %>
 </div>
