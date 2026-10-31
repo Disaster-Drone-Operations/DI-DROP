@@ -49,6 +49,23 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Native Bedienelemente und Systemschrift; Mauszeiger und Markierverhalten wie in
   nativen Apps.
 
+## Nutzerführung und Begriffe
+
+- **Roter Faden:** Einsatz → Auftrag → Bilder → Vergleichsbilder → Bereitstellen → Erledigt. Bilder gehören immer
+  zu einem Einsatz (kein eigenes „Bilddaten“-Modul mehr; `/media` leitet um).
+- **Nächster Schritt:** `app/services/next_step.js` bestimmt ihn für Einsatz (Leiste oben auf der Einsatzseite,
+  einziger roter Knopf) und Auftragskarten (Stand: Bilder · Vergleich · Bereitgestellt · Erledigt).
+  Neue Arbeitsschritte dort einordnen. „Alles bereitstellen“: `/missions/:id/provide`.
+  „Fehlt noch“: Ist von einem Auftrag schon etwas bereitgestellt, gilt die Auswahl als getroffen (z. B. nur
+  Wärmebilder) – danach fehlen nur noch neue Vergleichsbilder (`provisioning.missingFor`, `assignmentStates`).
+  Vergleichsbilder erst vorschlagen, wenn ein Wegpunkt mehrfach angeflogen wurde. Die Leiste aktualisiert sich
+  live (`next_step_controller.js`: Bereitstellungen, Uhr).
+- **Eine Hauptaktion pro Seite** (roter Knopf) – weitere Knöpfe grau.
+- **Begriffe:** *Bilder* (Dateien aus der Drohne), *Aufnahme* (ein Auslösen: Sicht- + Wärmebild), *Bereitstellen*
+  (Oberbegriff für Nextcloud/USB-Stick; Seite „Bereitstellungen“ – nicht „Upload“), *Telefon* (nicht Smartphone),
+  *Flug* nur für echte Flüge aus Flugprotokollen, Bildarten ausgeschrieben (*Sichtbild, Wärmebild, Weitwinkel, Zoom*).
+- Ist genau ein Einsatz aktiv, öffnet di-drop beim Start direkt diesen Einsatz.
+
 ## Tastenkürzel, Menü, Widerrufen
 
 - Neue App-Befehle: in `app/javascript/shortcuts.js` (Befehl + Taste für Windows/Browser)

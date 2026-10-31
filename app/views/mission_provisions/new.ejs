@@ -1,0 +1,79 @@
+<%# locals: mission, path, targets, target, status, base, rows, kinds, canPickFolder -%>
+<% const totals = Object.fromEntries(Object.keys(kinds).map((k) => [k, rows.reduce((n, r) => n + r.counts[k], 0)])) -%>
+<header class="page-header">
+  <div>
+    <a class="backlink" href="#<%= path %>"><%= mission.title %></a>
+    <h1>Alles bereitstellen</h1>
+    <p class="subtle">Alle Bilder dieses Einsatzes, die am Ziel noch fehlen – je Auftrag in einen eigenen Ordner. Einzelne Bilder auswählen geht auf der Seite des Auftrags.</p>
+  </div>
+</header>
+
+<% if (!target) { -%>
+  <div class="callout callout--subtle"><%- icon('alert') %><span>Bereitstellen geht nur in der Desktop-App.</span></div>
+<% } else { -%>
+<form class="provide" action="#<%= path %>/provide" method="post">
+  <input type="hidden" name="target" value="<%= target.key %>">
+
+  <section class="card provide__target">
+    <div class="provide__row">
+      <span class="provide__label">Wohin?</span>
+      <div class="segmented segmented--links">
+        <% targets.forEach((t) => { -%>
+          <a href="#<%= path %>/provide?target=<%= t.key %>" class="<%= t.key === target.key ? 'is-active' : '' %>"><%- icon(t.icon, { size: 14 }) %> <%= t.label %></a>
+        <% }) -%>
+      </div>
+    </div>
+    <% if (!status.ready) { -%>
+      <div class="callout callout--info"><%- icon('cloud') %><span><%= status.text %> <a href="#<%= status.setupPath %>">Jetzt einrichten</a></span></div>
+    <% } else if (target.key === 'nextcloud') { -%>
+      <div class="provide__row">
+        <span class="provide__label">Ordner</span>
+        <div class="provide__dest">
+          <% if (!base) { %><p class="provide__missing"><%- icon('alert', { size: 14 }) %> Für diesen Einsatz ist noch kein Nextcloud-Ordner festgelegt.</p><% } %>
+          <%- include('nextcloud/_folder_field', { name: 'base', value: base, suggestion: mission.folderName, inputTarget: '', inputAction: '' }) %>
+          <span class="hint">Ordner des Einsatzes – darin bekommt jeder Auftrag einen eigenen Ordner. <%= status.text %></span>
+        </div>
+      </div>
+    <% } else { -%>
+      <div class="provide__row">
+        <span class="provide__label">Ordner</span>
+        <div class="provide__dest input-with-button" data-controller="folder-picker">
+          <input type="text" name="base" value="<%= base %>" placeholder="Zielordner, z. B. USB-Stick" data-folder-picker-target="input" <%= canPickFolder ? 'readonly' : '' %>>
+          <% if (canPickFolder) { %><button type="button" class="button" data-action="folder-picker#pick"><%- icon('folder') %><span>Ordner wählen …</span></button><% } %>
+        </div>
+      </div>
+    <% } -%>
+  </section>
+
+  <% if (!rows.length) { -%>
+    <div class="empty"><%- icon('check', { size: 32, class: 'empty__icon' }) %><p><strong>Alles da.</strong></p><p class="subtle">Alle Bilder dieses Einsatzes sind hier schon bereitgestellt oder unterwegs.</p></div>
+  <% } else { -%>
+    <div class="toolbar provide__quick">
+      <span class="subtle">Bildarten:</span>
+      <% Object.entries(kinds).forEach(([key, label]) => { if (!totals[key]) return -%>
+        <label class="checkbox"><input type="checkbox" name="kinds[<%= key %>]" value="1" checked> <%= label %> (<%= totals[key] %>)</label>
+      <% }) -%>
+    </div>
+
+    <h2 class="section__title">Aufträge <span class="count"><%= rows.length %></span></h2>
+    <div class="list provide-missions">
+      <% rows.forEach((r) => { -%>
+        <label class="list__row checkbox provide-mission-row">
+          <input type="checkbox" name="assignments[<%= r.assignment.id %>]" value="1" checked>
+          <%- assignmentBadge(r.assignment) %>
+          <span class="mission-row__main">
+            <span class="mission-row__title"><span class="truncate"><%= r.assignment.title %></span><% if (!r.assignment.isOpen) { %><span class="badge badge--muted">erledigt</span><% } %></span>
+            <span class="meta"><%= Object.entries(kinds).filter(([k]) => r.counts[k]).map(([k, label]) => `${r.counts[k]} ${label}`).join(' · ') %> · <%= formatBytes(r.size) %></span>
+          </span>
+        </label>
+      <% }) -%>
+    </div>
+
+    <footer class="provide__footer">
+      <div class="provide__summary"><%= rows.reduce((n, r) => n + r.files.length + r.comparisons.length, 0) %> Bilder fehlen am Ziel · Reihenfolge: Wärmebilder → Vergleichsbilder → Sichtbilder</div>
+      <a class="button" href="#<%= path %>">Abbrechen</a>
+      <button type="submit" class="button button--primary" <%= status.ready ? '' : 'disabled' %>><%- icon(target.icon) %><span><%= target.action %></span></button>
+    </footer>
+  <% } -%>
+</form>
+<% } -%>

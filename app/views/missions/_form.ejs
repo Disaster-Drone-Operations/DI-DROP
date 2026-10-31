@@ -13,7 +13,7 @@
       <%- f.field('title', { label: 'Stichwort', required: true, autofocus: mission.isNewRecord, wide: true,
             placeholder: 'z. B. Waldbrand Hohe Warte, Vermisstensuche Schneekopf' }) %>
       <%- f.field('location', { label: 'Einsatzort', required: true, wide: true, placeholder: 'Ort, Gebiet oder Sammelpunkt',
-            button: `<button type="button" class="button" data-action="mission-location#here" title="Standort vom Smartphone übernehmen">${icon('pin')}<span>Hier</span></button>` }) %>
+            button: `<button type="button" class="button" data-action="mission-location#here" title="Standort vom Telefon übernehmen">${icon('pin')}<span>Hier</span></button>` }) %>
       <p class="hint field--wide mission-location-hint" data-mission-location-target="hint" hidden></p>
       <%- f.field('date', { label: 'Datum', type: 'date', required: true }) %>
     </div>

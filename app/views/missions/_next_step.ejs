@@ -1,0 +1,23 @@
+<%# locals: mission, step, canImport -%>
+<%# The one next step of the mission (app/services/next_step.js) – the only red button on the page -%>
+<div class="next-step next-step--mission <%= step.kind === 'wait' ? 'next-step--idle' : '' %>" <% if (step.dueAt) { %>data-controller="countdown" data-countdown-at-value="<%= step.dueAt.toISOString() %>"<% } %>>
+  <%- icon(step.icon, { size: 20 }) %>
+  <div class="next-step__text">
+    <strong><%= step.kind === 'wait' ? 'Gerade nichts zu tun.' : 'Nächster Schritt:' %></strong> <%= step.text %><% if (step.dueAt) { %> – <%= formatTime(step.dueAt) %> Uhr, <span data-countdown-target="label"></span><% } %>
+  </div>
+  <% if (step.kind === 'import' || step.kind === 'wait') { -%>
+    <% if (canImport) { %><button type="button" class="button <%= step.kind === 'import' ? 'button--primary' : '' %>" data-action="media-import#pickFolder"><%- icon('folder') %><span><%= step.label %></span></button><% } %>
+  <% } else if (step.kind === 'close') { -%>
+    <%- buttonTo(step.label, `/missions/${mission.id}`, { method: 'patch', icon: 'archive', class: 'button button--primary', params: { 'mission[status]': 'closed' },
+          confirm: `„${mission.title}“ abschließen? Er erscheint dann unter „Abgeschlossen“ und kann jederzeit wieder geöffnet werden.`, confirmButton: 'Abschließen' }) %>
+  <% } else if (step.kind === 'complete') { -%>
+    <% const a = step.assignment, path = `/missions/${mission.id}` -%>
+    <% if (a.completion) { -%>
+      <%- include('assignments/_complete_dialog', { assignment: a, completion: a.completion, returnTo: path, buttonClass: 'button button--primary' }) %>
+    <% } else { -%>
+      <%- buttonTo('Erledigt', `${path}/assignments/${a.id}/complete`, { method: 'patch', icon: 'check', class: 'button button--primary', params: { return_to: path } }) %>
+    <% } -%>
+  <% } else { -%>
+    <a class="button button--primary" href="#<%= step.href %>"><%- icon(step.icon) %><span><%= step.label %></span></a>
+  <% } -%>
+</div>

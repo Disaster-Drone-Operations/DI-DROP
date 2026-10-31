@@ -17,7 +17,7 @@
       <div>
         <div class="eyebrow">
           <% if (live) { %><span class="badge badge--live">Live</span><% } %>
-          Vom Smartphone · <span title="<%= formatDateTime(new Date(position.timestamp)) %>"><%= coords.age %></span>
+          Vom Telefon · <span title="<%= formatDateTime(new Date(position.timestamp)) %>"><%= coords.age %></span>
         </div>
         <div class="location-card__coords mono selectable" data-location-target="coords"><%= coords.decimal %></div>
       </div>
@@ -48,7 +48,7 @@
   <div class="empty">
     <%- icon('pin', { size: 40, class: 'empty__icon' }) %>
     <p><strong>Noch kein Standort.</strong></p>
-    <p class="subtle">Hol die Position von deinem Smartphone: QR-Code scannen, im Browser freigeben, fertig.</p>
+    <p class="subtle">Hol die Position von deinem Telefon: QR-Code scannen, im Browser freigeben, fertig.</p>
   </div>
 <% } -%>
 
@@ -57,11 +57,11 @@
     <button type="button" class="button" data-action="location#showTransfer"><%- icon('qr') %><span>QR-Code zeigen</span></button>
     <button type="button" class="button button--primary" data-action="location#stop"><span>Live-Standort beenden</span></button>
   <% } else { -%>
-    <button type="button" class="button button--primary" data-action="location#start" data-location-mode-param="single" <%= configured ? '' : 'disabled' %>>
-      <%- icon('phone') %><span><%= position ? 'Standort erneut holen' : 'Standort vom Smartphone holen' %></span>
+    <button type="button" class="button <%= configured ? 'button--primary' : '' %>" data-action="location#start" data-location-mode-param="single" <%= configured ? '' : 'disabled' %>>
+      <%- icon('phone') %><span><%= position ? 'Standort erneut holen' : 'Standort vom Telefon holen' %></span>
     </button>
     <button type="button" class="button" data-action="location#start" data-location-mode-param="stream" <%= configured ? '' : 'disabled' %>
-            title="Das Smartphone sendet laufend seine Position, bis du die Übertragung beendest.">
+            title="Das Telefon sendet laufend seine Position, bis du die Übertragung beendest.">
       <%- icon('radar') %><span>Live-Standort</span>
     </button>
   <% } -%>

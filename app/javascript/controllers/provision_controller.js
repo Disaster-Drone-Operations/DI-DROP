@@ -8,7 +8,7 @@ import { load, summarize } from '/app/services/provision_status.js'
 //   <span data-provision-files="5" data-compact data-label="W"></span>  status of a file (icon)
 //   data-wide: text + long bar (header of the assignment page)
 //   <div data-provision-complete="12" data-provision-title="…">  „Erledigt“: asks for confirmation
-//        as long as nothing has been provided; highlighted afterwards
+//        as long as nothing has been provided; highlighted afterwards (not with data-provision-plain)
 export default class extends Controller {
   connect() {
     this.onChange = () => this.schedule()
@@ -57,7 +57,7 @@ export default class extends Controller {
     const message = `Für „${el.dataset.provisionTitle}“ wurde noch nichts bereitgestellt (Nextcloud oder USB-Stick). Trotzdem als erledigt markieren?`
     const form = el.querySelector('form.button-to')
     const button = el.querySelector('button')
-    button?.classList.toggle('button--primary', provided)
+    if (!('provisionPlain' in el.dataset)) button?.classList.toggle('button--primary', provided)
     if (form) {
       if (provided) {
         delete form.dataset.confirm

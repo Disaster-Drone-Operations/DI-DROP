@@ -1,7 +1,7 @@
 <%# locals: s, compact, wide, label -%>
 <%# compact: icon only (+ abbreviation like „W“/„S“), e.g. on image tiles · wide: text + long bar (assignment page) -%>
 <% if (s && s.state !== 'none') { -%>
-  <% const text = { done: 'bereitgestellt', running: `wird bereitgestellt · ${s.percent} %`, queued: 'wartet auf Upload', paused: 'Upload pausiert', failed: 'Upload fehlgeschlagen' }[s.state] -%>
+  <% const text = { done: 'bereitgestellt', running: `wird bereitgestellt · ${s.percent} %`, queued: 'wartet', paused: 'pausiert', failed: 'fehlgeschlagen – wird wiederholt' }[s.state] -%>
   <% const symbol = { done: 'check', running: 'upload', queued: 'clock', paused: 'pause', failed: 'alert' }[s.state] -%>
   <%# --arc: length of the spinning ring while uploading – 30 % of the circle at 0 %, full circle at 100 % -%>
   <span class="provision provision--<%= s.state %> <%= compact ? 'provision--compact' : '' %> <%= wide ? 'provision--wide' : '' %>"

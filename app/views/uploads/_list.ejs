@@ -4,15 +4,15 @@
 <% if (!active.length && !finished.length) { -%>
   <div class="empty">
     <%- icon('upload', { size: 40, class: 'empty__icon' }) %>
-    <p><strong>Keine Uploads.</strong></p>
-    <p class="subtle">Auf der Seite eines Auftrags „Bereitstellen …“ wählen, um Bilder in die Nextcloud zu laden oder zu exportieren.</p>
+    <p><strong>Gerade wird nichts bereitgestellt.</strong></p>
+    <p class="subtle">Auf der Seite eines Einsatzes „Alles bereitstellen …“ wählen (oder „Bereitstellen …“ bei einem Auftrag), um Bilder in die Nextcloud zu laden oder auf einen USB-Stick zu kopieren.</p>
   </div>
 <% } -%>
 
 <% if (active.length || s.finished) { -%>
   <section class="card uploads-summary">
     <div class="uploads-summary__text">
-      <strong><%= s.finished ? 'Alle Uploads fertig' : `${percent(s.done, s.total)} % – ${formatBytes(s.done)} von ${formatBytes(s.total)}` %></strong>
+      <strong><%= s.finished ? 'Alles bereitgestellt' : `${percent(s.done, s.total)} % – ${formatBytes(s.done)} von ${formatBytes(s.total)}` %></strong>
       <span class="subtle"><%= s.filesDone %> von <%= s.files %> Dateien<% if (s.running && s.speed) { %> · <%= formatSpeed(s.speed) %><% } %><% if (!s.finished && s.eta != null) { %> · noch <%= formatDuration(s.eta) %><% } %></span>
     </div>
     <div class="progress-bar progress-bar--large <%= s.finished ? 'is-done' : '' %>"><span style="width: <%= percent(s.done, s.total) %>%"></span></div>
@@ -30,7 +30,7 @@
     <% active.forEach((item, index) => { -%>
       <% const done = progressOf(item) ?? 0; const retry = retries.get(item.id) -%>
       <li class="upload-row upload-row--<%= item.status %>">
-        <span class="upload-row__kind upload-row__kind--<%= item.category %>" title="<%= categoryLabel(item.category) %>"><%= categoryLabel(item.category).slice(0, 1) %></span>
+        <span class="upload-row__kind upload-row__kind--<%= item.category %>" ><%= categoryLabel(item.category) %></span>
         <div class="upload-row__main">
           <div class="upload-row__head">
             <span class="truncate upload-row__name selectable" title="<%= item.dest_path %>"><%= item.fileName %></span>

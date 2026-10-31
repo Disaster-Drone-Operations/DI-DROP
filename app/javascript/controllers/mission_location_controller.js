@@ -32,7 +32,7 @@ export default class extends Controller {
     const fresh = freshPosition()
     if (fresh) return this.apply(fresh)
     if (!this.configuredValue) {
-      const ok = await platform.confirm('Damit das Smartphone seinen Standort senden kann, muss die Telefon-Verbindung einmalig eingerichtet werden. Jetzt einrichten? (Die Eingaben in diesem Formular gehen dabei verloren.)', { okLabel: 'Einrichten' })
+      const ok = await platform.confirm('Damit das Telefon seinen Standort senden kann, muss die Telefon-Verbindung einmalig eingerichtet werden. Jetzt einrichten? (Die Eingaben in diesem Formular gehen dabei verloren.)', { okLabel: 'Einrichten' })
       if (ok) location.hash = '#/settings/relay'
       return
     }
@@ -57,7 +57,7 @@ export default class extends Controller {
     const input = this.locationInput
     const ours = !input.value.trim() || input.value === this.filled
     const accuracy = position.accuracy != null ? ` (± ${Math.round(position.accuracy)} m)` : ''
-    this.showHint(`Standort vom Smartphone${accuracy} · Ort wird ermittelt …`)
+    this.showHint(`Standort vom Telefon${accuracy} · Ort wird ermittelt …`)
 
     this.lookup = describeLocation(lat, lon, (result) => {
       if (this.lookup !== current) return
@@ -70,7 +70,7 @@ export default class extends Controller {
     current.then((result) => {
       if (this.lookup !== current) return
       const where = result.source === 'online' ? '' : ' · ohne Internet nur der nächste Ort'
-      let html = `${icon('check')}<span>Standort vom Smartphone${escapeHtml(accuracy)} übernommen – Koordinaten stehen unter „Weitere Angaben“${where}.</span>`
+      let html = `${icon('check')}<span>Standort vom Telefon${escapeHtml(accuracy)} übernommen – Koordinaten stehen unter „Weitere Angaben“${where}.</span>`
       if (!ours && result.text && result.text !== input.value) {
         html += `<button type="button" class="button" data-action="mission-location#takeSuggestion">„${escapeHtml(result.text)}“ übernehmen</button>`
         this.suggestion = result.text

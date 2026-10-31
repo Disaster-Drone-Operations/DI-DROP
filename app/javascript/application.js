@@ -6,6 +6,7 @@ import { connect } from '/lib/db.js'
 import Router from '/lib/router.js'
 import routes from '/config/routes.js'
 import Setting from '/app/models/setting.js'
+import Mission from '/app/models/mission.js'
 import { install as installShortcuts } from '/app/javascript/shortcuts.js'
 import { start as startUploads } from '/app/services/upload_queue.js'
 import { checkOnStartup as checkForAppUpdate } from '/app/services/app_updater.js'
@@ -44,6 +45,11 @@ if (controlId) {
   await connect()
   await Setting.load()
   await startTrainingMode() // only with ?training=<scenario>
+  // Exactly one active mission → open it right away (the overview is one click away)
+  if (['', '#', '#/'].includes(location.hash)) {
+    const active = await Mission.active()
+    if (active.length === 1) history.replaceState(null, '', `#/missions/${active[0].id}`)
+  }
   await new Router({ routes, controllers, element }).start()
   installShortcuts()
   startUploads().catch((error) => console.error('Upload queue:', error))

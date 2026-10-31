@@ -6,10 +6,10 @@ import MediaFile, { groupShots } from '/app/models/media_file.js'
 import Comparison from '/app/models/comparison.js'
 import Viewpoint from '/app/models/viewpoint.js'
 import Setting from '/app/models/setting.js'
-import UploadItem from '/app/models/upload_item.js'
 import platform from '/lib/platform/index.js'
 import { TARGETS, availableTargets, assignmentFolderName } from '/app/services/upload_targets.js'
 import { enqueue, pendingBytes, rememberedSpeed } from '/app/services/upload_queue.js'
+import { chooseTarget, baseFor, resolveBase, entriesFor, providedKeys } from '/app/services/provisioning.js'
 
 // Provisioning an assignment: select files and hand them to a target (Nextcloud, folder …).
 // One target per run; for a second target simply provision again.
@@ -22,9 +22,7 @@ export default class ProvisionsController extends ApplicationController {
   }
 
   get targetKey() {
-    const keys = availableTargets().map((t) => t.key)
-    const wanted = this.params.target ?? Setting.get('uploads.last_target')
-    return keys.includes(wanted) ? wanted : keys[0] ?? null
+    return chooseTarget(this.params.target)
   }
 
   async new() {
@@ -39,7 +37,7 @@ export default class ProvisionsController extends ApplicationController {
     }))
     const comparisons = await this.comparisons()
     for (const c of comparisons) await c.ensureThumbnail()
-    const provided = target ? await this.providedKeys(targetKey) : new Set()
+    const provided = target ? await providedKeys([this.assignment.id], targetKey) : new Set()
     const previous = await this.previousProvision()
 
     // Preselection: like the last control flight, otherwise everything – excluding already uploaded files
@@ -58,7 +56,7 @@ export default class ProvisionsController extends ApplicationController {
       targets: availableTargets(),
       target,
       status: target ? await target.status() : null,
-      base: target ? this.baseFor(targetKey) : null,
+      base: target ? baseFor(targetKey, this.mission) : null,
       folderRoot: Setting.get('uploads.folder_path') ?? '',
       assignmentFolder: assignmentFolderName(this.assignment),
       shots,
@@ -78,17 +76,8 @@ export default class ProvisionsController extends ApplicationController {
     const target = TARGETS[targetKey]
     if (!target) return this.redirectTo(this.path, { alert: 'Bereitstellen ist hier nicht möglich.' })
     const selection = JSON.parse(this.params.selection || '{}')
-    let base = (this.params.base ?? '').trim()
-
-    if (targetKey === 'folder') {
-      if (!base) return this.redirectTo(`${this.path}/provide?target=folder`, { alert: 'Bitte einen Zielordner wählen.' })
-      await Setting.set('uploads.folder_path', base)
-      base = target.join(base, this.mission.folderName)
-    } else if (targetKey === 'nextcloud') {
-      base = `/${base.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')}`
-      if (base === '/') return this.redirectTo(`${this.path}/provide?target=nextcloud`, { alert: 'Bitte einen Nextcloud-Ordner für den Einsatz wählen.' })
-      if (base !== this.mission.nextcloud_path) await this.mission.update({ nextcloud_path: base })
-    }
+    const { base, error } = await resolveBase(targetKey, this.mission, this.params.base)
+    if (error) return this.redirectTo(`${this.path}/provide?target=${targetKey}`, { alert: error })
     const destination = target.join(base, assignmentFolderName(this.assignment))
 
     const fileIds = (selection.files ?? []).map(Number)
@@ -98,26 +87,7 @@ export default class ProvisionsController extends ApplicationController {
     const comparisonIds = new Set((selection.comparisons ?? []).map(Number))
     const comparisons = (await this.comparisons()).filter((c) => comparisonIds.has(c.id))
 
-    const entries = [
-      ...files.map((f) => ({
-        media_file_id: f.id,
-        category: UploadItem.categoryOf(f.variant),
-        variant: f.variant,
-        viewpoint_id: f.viewpoint_id,
-        source_path: f.path,
-        file_name: f.path.split(/[\\/]/).pop(),
-        size: f.size ?? 0,
-      })),
-      ...(await Promise.all(comparisons.map(async (c) => ({
-        comparison_id: c.id,
-        category: 'comparison',
-        variant: c.variant,
-        viewpoint_id: c.viewpoint_id,
-        source_path: c.path,
-        file_name: c.fileName,
-        size: await platform.readImage(c.path).then((b) => b.size).catch(() => 0),
-      })))),
-    ]
+    const entries = await entriesFor(files, comparisons)
     if (!entries.length) return this.redirectTo(`${this.path}/provide?target=${targetKey}`, { alert: 'Keine Dateien ausgewählt.' })
 
     await enqueue({
@@ -129,28 +99,14 @@ export default class ProvisionsController extends ApplicationController {
       entries,
     })
     await Setting.set('uploads.last_target', targetKey)
-    this.redirectTo(this.path, { notice: `${entries.length} ${entries.length === 1 ? 'Datei wird' : 'Dateien werden'} bereitgestellt (${target.label}). Fortschritt links unten.` })
+    this.redirectTo(this.path, { notice: `${entries.length} ${entries.length === 1 ? 'Bild wird' : 'Bilder werden'} bereitgestellt (${target.label}). Fortschritt links unten.` })
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────
 
-  baseFor(targetKey) {
-    if (targetKey === 'folder') return Setting.get('uploads.folder_path') ?? ''
-    return TARGETS[targetKey].missionBase(this.mission)
-  }
-
   // Comparison images of this assignment (stored in the assignment's folder)
   comparisons() {
     return Comparison.forAssignment(this.assignment)
-  }
-
-  // Already provisioned to this target: "m<id>" (image) or "c<id>" (comparison image)
-  async providedKeys(targetKey) {
-    const rows = await db.select(
-      `SELECT media_file_id, comparison_id FROM upload_items WHERE assignment_id = ? AND target = ? AND status = 'done'`,
-      [this.assignment.id, targetKey],
-    )
-    return new Set(rows.map((r) => (r.media_file_id ? `m${r.media_file_id}` : `c${r.comparison_id}`)))
   }
 
   // What was provisioned for the previous control flight (viewpoint + camera) – as a suggestion

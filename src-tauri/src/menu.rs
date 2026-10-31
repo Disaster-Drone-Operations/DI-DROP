@@ -52,11 +52,11 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
 
     let view = SubmenuBuilder::new(app, "Darstellung")
         .item(&item("module_missions", "Einsätze", "CmdOrCtrl+1")?)
-        .item(&item("module_media", "Bilddaten", "CmdOrCtrl+2")?)
+        .item(&item("module_location", "Mein Standort", "CmdOrCtrl+2")?)
         .item(&item("module_flightlogs", "Flugprotokolle", "CmdOrCtrl+3")?)
         .item(&item("module_batteries", "Akkunutzung", "CmdOrCtrl+4")?)
         .separator()
-        .item(&item("uploads", "Uploads", "CmdOrCtrl+Alt+U")?)
+        .item(&item("uploads", "Bereitstellungen", "CmdOrCtrl+Alt+U")?)
         .separator()
         .item(&item("back", "Zurück", "CmdOrCtrl+[")?)
         .item(&item("forward", "Vorwärts", "CmdOrCtrl+]")?)

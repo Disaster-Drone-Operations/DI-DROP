@@ -53,9 +53,13 @@ export default class ComparisonsController extends ApplicationController {
     const lastRound = new Set(comparisons
       .filter((c) => c.viewpoint_id && newest - Date.parse(c.created_at) <= 15 * 60_000)
       .map((c) => c.viewpoint_id))
+    // Came from an assignment: its viewpoints (preselected when there is no earlier round)
+    const fromId = Number(this.params.from)
+    const fromViewpoints = new Set(files.filter((f) => f.assignment_id === fromId).map((f) => f.viewpoint_id))
     for (const e of entries) {
       e.lastCreated = lastCreated.get(e.viewpoint.id) ?? null
       e.inLastRound = lastRound.has(e.viewpoint.id)
+      e.inFrom = fromViewpoints.has(e.viewpoint.id)
     }
 
     await this.render('comparisons/index', {

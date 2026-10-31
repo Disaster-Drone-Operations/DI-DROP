@@ -25,7 +25,7 @@ const running = new Map() // id → { done, intent, transferId }
 const retries = new Map() // id → { count, notBefore }
 const samples = [] // { t, bytes } – cumulative bytes for the speed
 let transferred = 0
-let sessionStart = null // start of the current "round" (for the overall display)
+let sessionStart = null // start of the current "round" (for the overall display) – app clock like finished_at
 let started = false
 let emitTimer = null
 let retryTimer = null
@@ -69,7 +69,7 @@ export async function start() {
   )
   for (const item of rows) items.set(item.id, item)
   await loadBatches([...new Set(rows.map((i) => i.batch_id))])
-  if (rows.some(isActive)) sessionStart = Math.min(...rows.filter(isActive).map((i) => Date.parse(i.created_at) || Date.now()))
+  if (rows.some(isActive)) sessionStart = Math.min(...rows.filter(isActive).map((i) => Date.parse(i.created_at) || nowMs()))
   emit()
   kick()
 }
@@ -106,7 +106,7 @@ export async function enqueue({ mission, assignment, target, destination, label,
       values,
     )
   }
-  if (![...items.values()].some(isActive)) sessionStart = Date.now()
+  if (![...items.values()].some(isActive)) sessionStart = nowMs()
   for (const item of await UploadItem.where('batch_id = ?', [batch.id], { order: 'position ASC' })) items.set(item.id, item)
   emit({ immediate: true })
   kick()
@@ -242,7 +242,7 @@ export async function resume(id) {
   if (!item || !['paused', 'failed'].includes(item.status)) return
   retries.delete(item.id)
   await persist(item, { status: 'queued', error: null })
-  if (!sessionStart) sessionStart = Date.now()
+  if (!sessionStart) sessionStart = nowMs()
   emit({ immediate: true })
   kick()
 }

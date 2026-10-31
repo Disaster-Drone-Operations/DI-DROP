@@ -14,35 +14,35 @@
     <%# Training mode: scenario, simulated time, control (app/javascript/controllers/training_banner_controller.js) -%>
     <div class="training-banner" data-controller="training-banner" hidden></div>
 
+    <% const missionId = Number(currentPath.match(/^\/missions\/(\d+)/)?.[1]) || null -%>
+    <% const inActiveMission = activeMissions.some((m) => m.id === missionId) -%>
     <nav class="nav">
-      <div class="nav__heading">Module</div>
-      <a href="#/" class="nav__item <%= isCurrent(currentPath, '/', { exact: true }) || currentPath === '/missions/new' ? 'is-active' : '' %>">
+      <a href="#/" class="nav__item <%= isCurrent(currentPath, '/', { exact: true }) || currentPath === '/missions/new' || (missionId && !inActiveMission) ? 'is-active' : '' %>">
         <%- icon('missions') %><span>Einsätze</span>
       </a>
-      <a href="#/media" class="nav__item <%= isCurrent(currentPath, '/media') || /^\/missions\/\d+\/(flights|comparisons)/.test(currentPath) ? 'is-active' : '' %>">
-        <%- icon('images') %><span>Bilddaten</span>
-      </a>
+      <% activeMissions.forEach((m) => { -%>
+        <%# The mission stays highlighted on all of its pages (assignment, comparisons, provide …) -%>
+        <a href="#/missions/<%= m.id %>" class="nav__item nav__item--sub <%= missionId === m.id ? 'is-active' : '' %>" title="<%= m.title %>">
+          <span class="dot dot--<%= m.kind %>"></span><span class="truncate"><%= m.title %></span>
+        </a>
+      <% }) -%>
+
+      <div class="nav__heading">Werkzeuge</div>
       <a href="#/location" class="nav__item <%= isCurrent(currentPath, '/location') ? 'is-active' : '' %>" data-controller="location-nav">
         <%- icon('pin') %><span>Mein Standort</span><span class="badge badge--live badge--tiny" data-location-nav-target="live" hidden>Live</span>
       </a>
-      <span class="nav__item is-disabled" title="Kommt später">
-        <%- icon('radar') %><span>Luftraum</span><span class="badge badge--muted badge--tiny">bald</span>
-      </span>
       <a href="#/flightlogs" class="nav__item <%= isCurrent(currentPath, '/flightlogs') ? 'is-active' : '' %>">
         <%- icon('protocol') %><span>Flugprotokolle</span>
       </a>
       <a href="#/batteries" class="nav__item <%= isCurrent(currentPath, '/batteries') ? 'is-active' : '' %>">
         <%- icon('battery') %><span>Akkunutzung</span>
       </a>
-
-      <% if (activeMissions.length) { -%>
-        <div class="nav__heading">Aktive Einsätze</div>
-        <% activeMissions.forEach((m) => { -%>
-          <a href="#/missions/<%= m.id %>" class="nav__item nav__item--sub <%= currentPath === `/missions/${m.id}` || currentPath === `/missions/${m.id}/edit` ? 'is-active' : '' %>" title="<%= m.title %>">
-            <span class="dot dot--<%= m.kind %>"></span><span class="truncate"><%= m.title %></span>
-          </a>
-        <% }) -%>
-      <% } -%>
+      <a href="#/uploads" class="nav__item <%= isCurrent(currentPath, '/uploads') ? 'is-active' : '' %>">
+        <%- icon('upload') %><span>Bereitstellungen</span>
+      </a>
+      <span class="nav__item is-disabled" title="Kommt später">
+        <%- icon('radar') %><span>Luftraum</span><span class="badge badge--muted badge--tiny">bald</span>
+      </span>
     </nav>
 
     <% if (!hasNativeMenu()) { -%>

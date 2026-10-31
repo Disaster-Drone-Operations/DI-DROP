@@ -1,15 +1,18 @@
-<%# locals: assignment, counts, returnTo, showMission -%>
+<%# locals: assignment, counts, steps, returnTo, showMission -%>
 <% const c = counts?.get(assignment.id) -%>
 <% const path = `/missions/${assignment.mission_id}/assignments/${assignment.id}` -%>
 <% const dropTarget = assignment.isOpen && returnTo && assignment.kind !== 'other' -%>
 <article class="task-card task-card--<%= assignment.kind %> <%= assignment.isOpen ? '' : 'is-done' %>"
   <% if (dropTarget) { %>data-media-import-target="zone" data-assignment-id="<%= assignment.id %>"<% } %>
-  <% if (assignment.isOpen && assignment.dueAt) { %>data-controller="countdown" data-countdown-at-value="<%= assignment.dueAt.toISOString() %>"<% } %>>
+  <% if (assignment.isOpen && assignment.dueAt && !c?.shots) { %>data-controller="countdown" data-countdown-at-value="<%= assignment.dueAt.toISOString() %>"<% } %>>
   <div class="task-card__head">
     <%- assignmentBadge(assignment) %>
     <span class="task-card__due">
       <% if (!assignment.isOpen) { -%>
         <%- icon('check', { size: 12 }) %> erledigt
+      <% } else if (assignment.dueAt && c?.shots) { -%>
+        <%# Flown already (images are there) – no more countdown/alarm -%>
+        <%= formatTime(assignment.dueAt) %> Uhr
       <% } else if (assignment.dueAt) { -%>
         <%= formatTime(assignment.dueAt) %> Uhr · <span data-countdown-target="label"></span>
       <% } else { -%>
@@ -26,10 +29,16 @@
       <% if (c) { %><span data-provision-assignment="<%= assignment.id %>"></span><% } %>
     </div>
   <% } -%>
+  <% if (steps?.length) { -%>
+    <ol class="card-steps" aria-label="Stand" data-card-steps="<%= assignment.id %>">
+      <% steps.forEach((s) => { %><li class="<%= s.done ? 'is-done' : '' %>"><%= s.label %></li><% }) %>
+    </ol>
+  <% } -%>
   <% if (dropTarget) { %><div class="task-card__drop"><%- icon('import', { size: 14 }) %> Bilder hier ablegen</div><% } %>
   <% if (assignment.isOpen && returnTo) { -%>
-    <%# With images: „Erledigt“ asks for confirmation as long as nothing has been provided (provision_controller) -%>
-    <div class="task-card__actions" <% if (c?.shots) { %>data-provision-complete="<%= assignment.id %>" data-provision-title="<%= assignment.title %>"<% } %>>
+    <%# With images: „Erledigt“ asks for confirmation as long as nothing has been provided (provision_controller).
+        Stays grey here – the red button of the page is „Nächster Schritt“ -%>
+    <div class="task-card__actions" <% if (c?.shots) { %>data-provision-complete="<%= assignment.id %>" data-provision-title="<%= assignment.title %>" data-provision-plain<% } %>>
       <% if (assignment.completion) { -%>
         <%- include('assignments/_complete_dialog', { assignment, completion: assignment.completion, returnTo }) %>
       <% } else { -%>

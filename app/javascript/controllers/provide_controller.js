@@ -29,7 +29,7 @@ export default class extends Controller {
         if (this.pendingValue) text += ` (+ ${formatDuration(this.pendingValue / this.speedValue)} für bereits Wartendes)`
         text += ` <span class="hint">bei zuletzt ${formatSpeed(this.speedValue)}</span>`
       } else {
-        text += ' · <span class="hint">Dauer wird nach dem ersten Upload geschätzt</span>'
+        text += ' · <span class="hint">Dauer wird nach dem ersten Bereitstellen geschätzt</span>'
       }
     }
     this.summaryTarget.innerHTML = text

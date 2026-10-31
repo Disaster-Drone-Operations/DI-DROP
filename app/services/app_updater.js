@@ -45,7 +45,7 @@ export async function askToInstall(info) {
   const current = await currentVersion()
   const uploads = uploadSummary()
   const busy = uploads.running || uploads.queued
-    ? '\n\nEs laufen gerade Uploads – sie werden nach dem Neustart automatisch fortgesetzt.'
+    ? '\n\nEs werden gerade Bilder bereitgestellt – das geht nach dem Neustart automatisch weiter.'
     : ''
   const notes = info.notes ? `\n\nNeu in dieser Version:\n${info.notes.slice(0, 900)}` : ''
   return platform.confirm(

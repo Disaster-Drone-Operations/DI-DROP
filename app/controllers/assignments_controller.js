@@ -13,6 +13,7 @@ import undo from '/lib/undo.js'
 import { db } from '/lib/db.js'
 import { TARGETS } from '/app/services/upload_targets.js'
 import Comparison from '/app/models/comparison.js'
+import { assignmentStates } from '/app/services/next_step.js'
 
 export default class AssignmentsController extends ApplicationController {
   async beforeAction() {
@@ -42,6 +43,7 @@ export default class AssignmentsController extends ApplicationController {
 
     const comparisons = await Comparison.forAssignment(this.assignment)
     for (const c of comparisons) await c.ensureThumbnail()
+    const state = (await assignmentStates([this.assignment], await Assignment.mediaCounts(this.mission.id))).get(this.assignment.id)
 
     await this.render('assignments/show', {
       mission: this.mission,
@@ -55,6 +57,7 @@ export default class AssignmentsController extends ApplicationController {
       completion: await completionOptions(this.assignment),
       provisions: await this.provisions(),
       comparisons: comparisons.map((c) => ({ comparison: c, viewpointName: viewpointNames.get(c.viewpoint_id) ?? null })),
+      needsComparisons: state.needsComparisons,
     }, { title: `${this.assignment.title} – ${this.mission.title}` })
   }
 

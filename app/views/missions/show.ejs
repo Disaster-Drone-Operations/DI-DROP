@@ -1,4 +1,4 @@
-<%# locals: mission, open, done, history, timeline, counts, canImport, newAssignment, newAssignmentParams, showNewAssignment -%>
+<%# locals: mission, open, done, history, timeline, counts, steps, nextStep, canImport, newAssignment, newAssignmentParams, showNewAssignment -%>
 <% const path = `/missions/${mission.id}` -%>
 <header class="page-header">
   <div>
@@ -27,14 +27,23 @@
   </div>
 </header>
 
-<div class="columns" data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>" data-media-import-return-path-value="<%= path %>">
+<div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>" data-media-import-return-path-value="<%= path %>">
+<div data-controller="next-step" data-next-step-mission-value="<%= mission.id %>" data-next-step-can-import-value="<%= canImport %>"><% if (nextStep) { %><%- include('missions/_next_step', { mission, step: nextStep, canImport }) %><% } %></div>
+<div class="columns">
   <div class="columns__main">
-    <% if (mission.isActive) { %><%- include('media/_import_zone', { canImport, label: null }) %><% } %>
+    <% if (mission.isActive) { %><%- include('media/_import_zone', { canImport, label: null, compact: history.length > 0, primary: false }) %><% } %>
 
     <section class="section">
       <h2 class="section__title">Verlauf</h2>
       <% if (!history.length) { -%>
-        <div class="empty empty--compact"><p class="subtle">Noch keine Bilder. Nach dem Flug einfach die SD-Karte oder den Ordner hierher – oder direkt auf einen Auftrag rechts – ziehen.</p></div>
+        <div class="empty empty--compact empty--steps">
+          <p><strong>Noch keine Bilder.</strong> So geht es weiter:</p>
+          <ol class="flow-steps">
+            <li><strong>Bilder importieren</strong> – nach dem Flug die SD-Karte einstecken (di-drop meldet sich) oder den Ordner hierher bzw. direkt auf einen Auftrag ziehen.</li>
+            <li><strong>Auswerten</strong> – Bilder ansehen; bei Kontrollflügen Vergleichsbilder erstellen.</li>
+            <li><strong>Bereitstellen</strong> – in die Nextcloud laden oder auf einen USB-Stick kopieren, dann den Auftrag als erledigt markieren.</li>
+          </ol>
+        </div>
       <% } else { -%>
         <div class="history">
           <% history.forEach((a) => { %><%- include('assignments/_history', { assignment: a, entry: timeline.get(a.id) }) %><% }) %>
@@ -72,7 +81,7 @@
     <% if (!open.length) { -%>
       <div class="empty empty--compact"><p class="subtle">Keine offenen Aufträge.</p></div>
     <% } -%>
-    <% open.forEach((a) => { %><%- include('assignments/_card', { assignment: a, counts, returnTo: path, showMission: false }) %><% }) %>
+    <% open.forEach((a) => { %><%- include('assignments/_card', { assignment: a, counts, steps: steps.get(a.id), returnTo: path, showMission: false }) %><% }) %>
 
     <% if (done.length) { -%>
       <details class="disclosure tasks__done">
@@ -91,5 +100,6 @@
     <% } -%>
   </aside>
 
+</div>
   <dialog class="import-dialog" data-media-import-target="dialog"></dialog>
 </div>

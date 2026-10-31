@@ -1,4 +1,5 @@
-<%# locals: mission -%>
+<%# locals: mission, status -%>
+<%# status (active missions): { open, next, missing } – where the mission stands -%>
 <% const d = mission.startsAt -%>
 <a class="list__row mission-row" href="#/missions/<%= mission.id %>">
   <div class="datebox <%= isToday(d) ? 'datebox--today' : '' %>">
@@ -13,9 +14,15 @@
     <div class="meta">
       <span><%- icon('pin', { size: 13 }) %><%= mission.location %></span>
       <% if (mission.start_time) { %><span><%- icon('clock', { size: 13 }) %><%= mission.start_time %> Uhr</span><% } %>
-      <span><%- icon('drone', { size: 13 }) %><%= pluralize(Number(mission.flights_count ?? 0), 'Flug', 'Flüge') %></span>
       <% if (mission.reference) { %><span class="subtle">Nr. <%= mission.reference %></span><% } %>
     </div>
+    <% if (status) { -%>
+      <div class="meta mission-row__status">
+        <span><%= status.open ? pluralize(status.open, 'offener Auftrag', 'offene Aufträge') : 'alle Aufträge erledigt – Einsatz abschließen?' %></span>
+        <% if (status.next) { %><span>als Nächstes: <%= status.next.title %><%= status.next.dueAt ? ` um ${formatTime(status.next.dueAt)} Uhr` : '' %></span><% } %>
+        <% if (status.missing) { %><span class="mission-row__missing"><%- icon('upload', { size: 12 }) %><%= pluralize(status.missing, 'Bild', 'Bilder') %> nicht bereitgestellt</span><% } %>
+      </div>
+    <% } -%>
   </div>
   <%- icon('chevron', { class: 'icon list__chevron' }) %>
 </a>

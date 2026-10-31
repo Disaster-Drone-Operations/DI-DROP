@@ -1,11 +1,11 @@
 <%# locals: session, qrDataUrl -%>
 <% const s = session ?? { status: 'stopped', text: '' } -%>
 <% const live = s.mode === 'stream' -%>
-<h2 class="dialog__title"><%= live ? 'Live-Standort' : 'Standort vom Smartphone' %></h2>
+<h2 class="dialog__title"><%= live ? 'Live-Standort' : 'Standort vom Telefon' %></h2>
 
 <% if (['waiting', 'pairing'].includes(s.status) && qrDataUrl) { -%>
-  <%- include('relay/_qr', { qrDataUrl, alt: 'QR-Code zum Verbinden des Smartphones', steps: [
-    'Mit der <strong>Kamera des Smartphones</strong> den Code scannen.',
+  <%- include('relay/_qr', { qrDataUrl, alt: 'QR-Code zum Verbinden des Telefons', steps: [
+    'Mit der <strong>Kamera des Telefons</strong> den Code scannen.',
     `Die Seite im Browser öffnen und <strong>${live ? '„Live-Übertragung starten“' : '„Meinen Standort senden“'}</strong> tippen.`,
     'Den Standortzugriff <strong>erlauben</strong>.',
   ] }) %>

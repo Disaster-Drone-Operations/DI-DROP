@@ -1,4 +1,4 @@
-<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons -%>
+<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, needsComparisons -%>
 <% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
      data-media-import-assignment-id-value="<%= assignment.id %>" data-media-import-return-path-value="<%= path %>">
@@ -31,7 +31,7 @@
                 title="<%= assignment.media_dir %>"><%- icon('folder') %><span><%= platformName() === 'windows' ? 'Im Explorer öffnen' : 'Im Finder öffnen' %></span></button>
       <% } -%>
       <% if (shotCount) { -%>
-        <a class="button" href="#<%= path %>/provide" title="In die Nextcloud laden oder als Dateien exportieren"><%- icon('upload') %><span>Bereitstellen …</span></a>
+        <a class="button" href="#<%= path %>/provide" title="In die Nextcloud laden oder auf einen USB-Stick kopieren"><%- icon('upload') %><span>Bereitstellen …</span></a>
       <% } -%>
       <% if (!shotCount) { -%>
         <%- buttonTo('Löschen', path, { method: 'delete', icon: 'trash', class: 'button button--danger-quiet',
@@ -42,7 +42,7 @@
           <% if (completion) { -%>
             <%- include('assignments/_complete_dialog', { assignment, completion, returnTo: path }) %>
           <% } else { -%>
-            <%- buttonTo('Erledigt', `${path}/complete`, { method: 'patch', icon: 'check', class: shotCount ? 'button' : 'button button--primary', params: { return_to: path } }) %>
+            <%- buttonTo('Erledigt', `${path}/complete`, { method: 'patch', icon: 'check', class: !shotCount && assignment.kind === 'other' ? 'button button--primary' : 'button', params: { return_to: path } }) %>
           <% } -%>
         </span>
       <% } else { -%>
@@ -52,7 +52,7 @@
   </header>
 
   <%# Next step: comparison images (control flights) → provide → (done) -%>
-  <% if (assignment.processing === 'comparison' && shotCount && !comparisons.length) { -%>
+  <% if (needsComparisons) { -%>
     <div class="next-step">
       <%- icon('control', { size: 20 }) %>
       <div class="next-step__text"><strong>Nächster Schritt:</strong> Vergleichsbilder aus diesem und früheren Kontrollflügen erstellen.</div>
@@ -61,12 +61,12 @@
   <% } else if (shotCount && !provisions.length) { -%>
     <div class="next-step">
       <%- icon('upload', { size: 20 }) %>
-      <div class="next-step__text"><strong>Nächster Schritt:</strong> <%= comparisons.length ? 'Bilder und Vergleichsbilder' : 'Bilder' %> bereitstellen – in die Nextcloud laden oder als Dateien exportieren.</div>
+      <div class="next-step__text"><strong>Nächster Schritt:</strong> <%= comparisons.length ? 'Bilder und Vergleichsbilder' : 'Bilder' %> bereitstellen – in die Nextcloud laden oder auf einen USB-Stick kopieren.</div>
       <a class="button button--primary" href="#<%= path %>/provide">Bereitstellen …</a>
     </div>
   <% } -%>
 
-  <% if (assignment.isOpen && assignment.kind !== 'other') { %><%- include('media/_import_zone', { canImport, label: 'Bilder für diesen Auftrag importieren' }) %><% } %>
+  <% if (assignment.isOpen && assignment.kind !== 'other') { %><%- include('media/_import_zone', { canImport, label: 'Bilder für diesen Auftrag importieren', compact: shotCount > 0, primary: !shotCount }) %><% } %>
 
   <% if (variants.length > 1) { -%>
     <nav class="filterbar" aria-label="Kamera">

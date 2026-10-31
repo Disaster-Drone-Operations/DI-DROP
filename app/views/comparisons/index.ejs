@@ -19,20 +19,20 @@
     <div class="empty">
       <%- icon('images', { size: 40, class: 'empty__icon' }) %>
       <p><strong>Noch keine Bilder in diesem Einsatz.</strong></p>
-      <p class="subtle">Importiere zuerst die Bilder mehrerer Flüge – Wegpunkte, die mehrfach angeflogen wurden, erscheinen dann hier.</p>
+      <p class="subtle">Importiere zuerst die Bilder mehrerer Kontrollflüge – Wegpunkte, die mehrfach angeflogen wurden, erscheinen dann hier.</p>
     </div>
   <% } else { -%>
     <div class="comparisons">
       <aside class="viewpoint-list">
         <h2 class="section__title">Wegpunkte <span class="count"><%= repeated.length %></span></h2>
         <% if (!repeated.length) { -%>
-          <p class="subtle">Noch kein Wegpunkt wurde in mehreren Flügen angeflogen.</p>
+          <p class="subtle">Noch kein Wegpunkt wurde mehrfach angeflogen.</p>
         <% } -%>
         <% repeated.forEach((entry) => { %><%- include('comparisons/_viewpoint', { entry, mission }) %><% }) %>
 
         <% if (single.length) { -%>
           <details class="viewpoint-list__more">
-            <summary class="subtle">Nur in einem Flug <span class="count"><%= single.length %></span></summary>
+            <summary class="subtle">Nur einmal aufgenommen <span class="count"><%= single.length %></span></summary>
             <% single.forEach((entry) => { %><%- include('comparisons/_viewpoint', { entry, mission }) %><% }) %>
           </details>
         <% } -%>
@@ -42,7 +42,7 @@
         <div class="empty" data-comparisons-target="hint">
           <%- icon('control', { size: 32, class: 'empty__icon' }) %>
           <p><strong>Wähle links einen oder mehrere Wegpunkte.</strong></p>
-          <p class="subtle">Vorausgewählt werden jeweils die letzten drei Flüge – per Klick auf die Uhrzeiten änderst du die Auswahl.</p>
+          <p class="subtle">Vorausgewählt werden jeweils die letzten drei Aufnahmen – per Klick auf die Uhrzeiten änderst du die Auswahl.</p>
         </div>
       </section>
     </div>

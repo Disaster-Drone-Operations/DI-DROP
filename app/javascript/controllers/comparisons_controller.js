@@ -12,9 +12,11 @@ export default class extends Controller {
 
   connect() {
     // Remember the selection so it survives e.g. renaming a viewpoint.
-    // No selection yet → same as last time: viewpoints of the most recently created comparison images
+    // No selection yet → same as last time: viewpoints of the most recently created comparison images;
+    // the very first time: the repeated viewpoints of the assignment we came from („Nächster Schritt“)
     const saved = this.loadSelection()
-    this.checkboxTargets.forEach((c) => (c.checked = saved ? saved.includes(c.value) : c.dataset.last === '1'))
+    const firstRound = !this.checkboxTargets.some((c) => c.dataset.last === '1')
+    this.checkboxTargets.forEach((c) => (c.checked = saved ? saved.includes(c.value) : c.dataset[firstRound ? 'from' : 'last'] === '1'))
     if (!saved && this.checkboxTargets.some((c) => c.checked)) this.saveSelection()
     this.sync()
   }

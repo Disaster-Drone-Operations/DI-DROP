@@ -1,19 +1,11 @@
 import ApplicationController from '/app/controllers/application_controller.js'
 import Mission from '/app/models/mission.js'
-import Assignment from '/app/models/assignment.js'
 
-// Module "Bilddaten": upcoming assignments and history of all active missions
+// The former module "Bilddaten": images always belong to a mission now – old links (and ⌘2 from
+// earlier habits) go to the only active mission or to the mission overview.
 export default class MediaController extends ApplicationController {
   async index() {
-    const groups = []
-    for (const mission of await Mission.active()) {
-      const timeline = await Assignment.timeline(mission.id, { thumbs: 4 })
-      const history = (await Assignment.forMission(mission.id))
-        .filter((a) => timeline.has(a.id))
-        .sort((a, b) => (timeline.get(b.id).last ?? '').localeCompare(timeline.get(a.id).last ?? ''))
-        .slice(0, 4)
-      groups.push({ mission, history, timeline })
-    }
-    await this.render('media/index', { groups, upcoming: await Assignment.upcoming() }, { title: 'Bilddaten' })
+    const active = await Mission.active()
+    this.redirectTo(active.length === 1 ? `/missions/${active[0].id}` : '/')
   }
 }

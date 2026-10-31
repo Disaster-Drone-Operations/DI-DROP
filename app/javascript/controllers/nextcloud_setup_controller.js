@@ -109,7 +109,7 @@ export default class extends Controller {
   }
 
   async logout() {
-    const ok = await platform.confirm('Von der Nextcloud abmelden? Laufende Uploads in die Nextcloud schlagen dann fehl. (Das App-Passwort kannst du zusätzlich in der Nextcloud unter Einstellungen → Sicherheit widerrufen.)', { okLabel: 'Abmelden' })
+    const ok = await platform.confirm('Von der Nextcloud abmelden? Laufende Bereitstellungen in die Nextcloud schlagen dann fehl. (Das App-Passwort kannst du zusätzlich in der Nextcloud unter Einstellungen → Sicherheit widerrufen.)', { okLabel: 'Abmelden' })
     if (!ok) return
     await platform.nextcloud.forget()
     this.set({ account: null, test: null })

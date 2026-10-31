@@ -2,7 +2,7 @@
 <div class="upload-status__line">
   <%- icon(s.finished ? 'check' : s.failed && !s.running && !s.queued ? 'alert' : 'upload', { size: 14 }) %>
   <span class="upload-status__title">
-    <% if (s.finished) { %>Uploads fertig<% } else if (!s.running && !s.queued && s.paused) { %>Uploads pausiert<% } else if (!s.running && !s.queued && s.failed) { %>Uploads fehlgeschlagen<% } else { %>Upload <%= percent(s.done, s.total) %> %<% } %>
+    <% if (s.finished) { %>Bereitgestellt<% } else if (!s.running && !s.queued && s.paused) { %>Bereitstellen pausiert<% } else if (!s.running && !s.queued && s.failed) { %>Bereitstellen fehlgeschlagen<% } else { %>Bereitstellen <%= percent(s.done, s.total) %> %<% } %>
   </span>
   <span class="upload-status__count"><%= s.filesDone %>/<%= s.files %></span>
 </div>

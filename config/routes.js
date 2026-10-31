@@ -12,7 +12,11 @@ export default (r) => {
     r.resources('viewpoints', { only: ['update'] })
   })
 
-  // Module "Bilddaten" (image data)
+  // "Alles bereitstellen" for a whole mission
+  r.get('/missions/:id/provide', 'mission_provisions#new')
+  r.post('/missions/:id/provide', 'mission_provisions#create')
+
+  // Former module "Bilddaten" → redirects (images always belong to a mission)
   r.get('/media', 'media#index')
 
   // "Mein Standort": position from the smartphone via your own relay

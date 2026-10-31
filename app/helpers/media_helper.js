@@ -15,7 +15,7 @@ export function variantLabel(variant) {
 
 // Short form for small buttons: "Sicht", "Wärme" …
 export function variantShort(variant) {
-  return { V: 'Sicht', W: 'Weitw.', Z: 'Zoom', T: 'Wärme' }[variant] ?? variant ?? 'Datei'
+  return { V: 'Sichtbild', W: 'Weitwinkel', Z: 'Zoom', T: 'Wärmebild' }[variant] ?? variant ?? 'Bild'
 }
 
 const DIRECTIONS = ['N', 'NNO', 'NO', 'ONO', 'O', 'OSO', 'SO', 'SSO', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
