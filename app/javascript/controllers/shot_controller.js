@@ -1,8 +1,10 @@
 import { Controller } from '@hotwired/stimulus'
 import platform from '/lib/platform/index.js'
+import { isVariantSpace } from '/lib/keys.js'
+import { toggledVariant } from '/app/helpers/media_helper.js'
 
-// Preview card of a shot: toggle thermal/visual, clicking the image opens the gallery
-// with all shots on the page (in the order they are displayed).
+// Preview card of a shot: toggle thermal/visual (chips, or space for all images of the page),
+// clicking the image opens the gallery with all shots on the page (in the order they are displayed).
 export default class extends Controller {
   static targets = ['image', 'chip']
   static values = { data: Object, variant: String }
@@ -30,9 +32,21 @@ export default class extends Controller {
   show({ params }) {
     const file = this.dataValue.files[params.variant]
     if (!file) return
+    if (this.variantValue !== 'T') this.lastVisible = this.variantValue
     this.variantValue = params.variant
     if (this.hasImageTarget && file.thumb) this.imageTarget.src = file.thumb
     this.chipTargets.forEach((c) => c.classList.toggle('is-active', c.dataset.variant === params.variant))
+  }
+
+  // Space (keydown@window): thermal ↔ visible – every card of the page switches
+  key(event) {
+    if (!isVariantSpace(event)) return
+    event.preventDefault()
+    const variant = toggledVariant(this.variantValue, Object.keys(this.dataValue.files), this.lastVisible)
+    if (!variant) return
+    this.show({ params: { variant } })
+    // „Anzeigen: Wärmebild | Sichtbild“ above the overview shows what is visible now
+    document.querySelectorAll('[data-variant-link]').forEach((a) => a.classList.toggle('is-active', a.dataset.variantLink === variant))
   }
 
   open() {

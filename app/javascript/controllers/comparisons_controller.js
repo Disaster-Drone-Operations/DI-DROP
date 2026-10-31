@@ -4,6 +4,7 @@ import { render } from '/lib/views.js'
 import Comparison from '/app/models/comparison.js'
 import Assignment from '/app/models/assignment.js'
 import { exportComparison, releaseBitmaps } from '/app/services/comparison_renderer.js'
+import { isVariantSpace } from '/lib/keys.js'
 
 // Comparison image page: select viewpoints (show/hide editors) and create them all
 export default class extends Controller {
@@ -53,6 +54,13 @@ export default class extends Controller {
       this.exportButtonTarget.disabled = checked.length === 0
       this.exportLabelTarget.textContent = checked.length > 1 ? `${checked.length} Vergleichsbilder erstellen` : 'Vergleichsbild erstellen'
     }
+  }
+
+  // Space: all previews thermal ↔ visible
+  key(event) {
+    if (!isVariantSpace(event) || !this.editors.length) return
+    event.preventDefault()
+    for (const editor of this.editors) editor.toggleVariant()
   }
 
   get editors() {

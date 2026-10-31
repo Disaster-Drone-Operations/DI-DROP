@@ -71,6 +71,8 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Neue App-Befehle: in `app/javascript/shortcuts.js` (Befehl + Taste für Windows/Browser)
   **und** in `src-tauri/src/menu.rs` (deutsches macOS-Menü, sendet die Befehls-Kennung).
   Kürzel-Übersicht: `app/views/layouts/_shortcuts.ejs`.
+- Leertaste = Sichtbild ↔ Wärmebild (Galerie, Bildübersicht, Verlauf, Vergleichsbilder): `isVariantSpace()` aus
+  `lib/keys.js` + `toggledVariant()` aus `media_helper.js`. Auf einem ausgewählten Bild der Übersicht öffnet sie es groß.
 - Widerrufbare Aktionen: `undo.record({ label, undo, redo })` aus `lib/undo.js` und in der
   Meldung `{ notice, undo: true }` mitgeben (zeigt den Knopf „Widerrufen“).
   Nicht widerrufbar (dafür mit Rückfrage): Import, Einsatz löschen.

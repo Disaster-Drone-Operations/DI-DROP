@@ -10,7 +10,11 @@
   </div>
   <% if (entry.thumbs.length) { -%>
     <div class="history-item__thumbs">
-      <% entry.thumbs.forEach((t) => { %><img src="<%= thumbUrl(t) %>" alt="" loading="lazy" draggable="false"><% }) %>
+      <%# Space on the mission page: thermal ↔ visible (history_thumbs_controller) -%>
+      <% entry.thumbs.forEach((t) => { -%>
+        <img src="<%= thumbUrl(t.T ?? t.visible) %>" alt="" loading="lazy" draggable="false"
+             <% if (t.T && t.visible) { %>data-thumb-t="<%= thumbUrl(t.T) %>" data-thumb-visible="<%= thumbUrl(t.visible) %>"<% } %>>
+      <% }) -%>
       <% if (entry.shots > entry.thumbs.length) { %><span class="history-item__more">+<%= entry.shots - entry.thumbs.length %></span><% } %>
     </div>
   <% } -%>

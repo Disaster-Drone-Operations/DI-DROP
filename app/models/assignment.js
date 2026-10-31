@@ -88,8 +88,9 @@ export default class Assignment extends Record {
     return new Map(rows.map((r) => [Number(r.assignment_id), { files: Number(r.files), shots: Number(r.shots) }]))
   }
 
-  // History: per assignment the time span, number of shots and a few thumbnails (thermal preferred)
-  // → Map(id → { first, last, shots, thumbs: [path] })
+  // History: per assignment the time span, number of shots and a few thumbnails (thermal preferred;
+  // the visible image too, for switching with the space bar)
+  // → Map(id → { first, last, shots, thumbs: [{ T, visible }] })
   static async timeline(missionId, { thumbs = 6 } = {}) {
     const rows = await db.select(
       `SELECT assignment_id, flight_id, shot_key, variant, thumb_path, taken_at
@@ -101,14 +102,15 @@ export default class Assignment extends Record {
       const entry = map.get(id)
       entry.last = r.taken_at ?? entry.last
       const key = `${r.flight_id}/${r.shot_key}`
-      const current = entry.shotKeys.get(key)
-      // Thermal beats everything else
-      if (r.thumb_path && (!current || r.variant === 'T')) entry.shotKeys.set(key, r.thumb_path)
-      else if (!current) entry.shotKeys.set(key, null)
+      if (!entry.shotKeys.has(key)) entry.shotKeys.set(key, { T: null, visible: null })
+      const shot = entry.shotKeys.get(key)
+      if (!r.thumb_path) continue
+      if (r.variant === 'T') shot.T = r.thumb_path
+      else if (r.variant === 'V' || !shot.visible) shot.visible = r.thumb_path // the visible image beats wide/zoom
     }
     for (const entry of map.values()) {
       entry.shots = entry.shotKeys.size
-      entry.thumbs = [...entry.shotKeys.values()].filter(Boolean).slice(0, thumbs)
+      entry.thumbs = [...entry.shotKeys.values()].filter((t) => t.T || t.visible).slice(0, thumbs)
       delete entry.shotKeys
     }
     return map

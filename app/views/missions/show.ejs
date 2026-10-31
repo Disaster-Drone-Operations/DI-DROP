@@ -45,7 +45,7 @@
           </ol>
         </div>
       <% } else { -%>
-        <div class="history">
+        <div class="history" data-controller="history-thumbs" data-action="keydown@window->history-thumbs#key">
           <% history.forEach((a) => { %><%- include('assignments/_history', { assignment: a, entry: timeline.get(a.id) }) %><% }) %>
         </div>
       <% } -%>

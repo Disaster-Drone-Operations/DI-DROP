@@ -43,6 +43,13 @@ export const PREFERRED_VARIANTS = ['T', 'V', 'W', 'Z']
 
 export const defaultVariantOf = (variants) => PREFERRED_VARIANTS.find((v) => variants.includes(v)) ?? variants[0]
 
+// Space: thermal ↔ visible image (wide/zoom count as visible; back to the one seen last).
+// null if the other kind is missing.
+export function toggledVariant(current, available, lastVisible = null) {
+  if (current === 'T') return [lastVisible, 'V', 'W', 'Z'].find((v) => v && v !== 'T' && available.includes(v)) ?? null
+  return available.includes('T') ? 'T' : null
+}
+
 export function defaultVariant(files) {
   const variants = files.map((f) => f.variant ?? 'other')
   return PREFERRED_VARIANTS.find((v) => variants.includes(v)) ?? variants[0]

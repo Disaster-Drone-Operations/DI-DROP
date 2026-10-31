@@ -57,6 +57,7 @@ export default class AssignmentsController extends ApplicationController {
       completion: await completionOptions(this.assignment),
       provisions: await this.provisions(),
       comparisons: comparisons.map((c) => ({ comparison: c, viewpointName: viewpointNames.get(c.viewpoint_id) ?? null })),
+      comparisonGroups: groupComparisons(comparisons),
       needsComparisons: state.needsComparisons,
     }, { title: `${this.assignment.title} – ${this.mission.title}` })
   }
@@ -153,4 +154,25 @@ export default class AssignmentsController extends ApplicationController {
     })
     this.redirectTo(`/missions/${this.mission.id}`, { notice: `Auftrag „${this.assignment.title}“ gelöscht.`, undo: true })
   }
+}
+
+// The same comparison as thermal and as visible image belongs together in the gallery (space switches).
+// Same viewpoint + same times in the file name ("Vergleich_Nord_1045_1118.jpg", second one "…_2.jpg").
+// → Map(comparison id → index of its group), groups: [[comparison, …]]
+function groupComparisons(comparisons) {
+  const groups = []
+  const byKey = new Map()
+  const index = new Map()
+  for (const c of comparisons) {
+    const key = `${c.viewpoint_id}|${c.fileName.replace(/(_\d{1,2})?\.jpe?g$/i, '')}`
+    let group = byKey.get(key)
+    if (!group || group.some((other) => other.variant === c.variant)) {
+      group = []
+      groups.push(group)
+      byKey.set(key, group)
+    }
+    group.push(c)
+    index.set(c.id, groups.indexOf(group))
+  }
+  return { groups, index }
 }

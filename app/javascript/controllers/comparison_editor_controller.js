@@ -1,5 +1,6 @@
 import { Controller } from '@hotwired/stimulus'
 import { draw, loadBitmap, captionFor, fileNameFor } from '/app/services/comparison_renderer.js'
+import { toggledVariant } from '/app/helpers/media_helper.js'
 
 const MAX_SHOTS = 4
 const DEFAULT_SHOTS = 3
@@ -30,6 +31,18 @@ export default class extends Controller {
 
   changeVariant() {
     this.selectDefaults()
+  }
+
+  // Space (comparisons page): thermal ↔ visible – keeps the chosen shots where they exist in the other type
+  toggleVariant() {
+    const variant = toggledVariant(this.variant, this.variantsValue, this.lastVisible)
+    if (!variant) return
+    if (this.variant !== 'T') this.lastVisible = this.variant
+    this.variantTarget.value = variant
+    const kept = [...this.selected].filter((i) => this.shotsValue[i].files[variant])
+    if (kept.length < 2) return this.selectDefaults()
+    this.selected = new Set(kept)
+    this.update()
   }
 
   toggleShot(event) {

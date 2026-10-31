@@ -2,7 +2,7 @@
 <% const viewpointId = shot.files.find((f) => f.viewpoint_id)?.viewpoint_id -%>
 <% const variant = shot.forcedVariant ?? defaultVariant(shot.files) -%>
 <% const file = shot.files.find((f) => (f.variant ?? 'other') === variant) ?? shot.files[0] -%>
-<figure class="shot" title="<%= shotTooltip(file) %>" data-controller="shot"
+<figure class="shot" title="<%= shotTooltip(file) %>" data-controller="shot" data-action="keydown@window->shot#key"
         data-shot-data-value="<%= shotData(shot, { assignmentTitle: assignmentTitle ?? '' }) %>" data-shot-variant-value="<%= variant %>">
   <button type="button" class="shot__image" data-action="shot#open" title="Groß anzeigen">
     <% if (file.thumb_path) { -%>

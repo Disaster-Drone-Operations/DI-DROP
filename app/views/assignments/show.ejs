@@ -1,4 +1,4 @@
-<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, needsComparisons -%>
+<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons -%>
 <% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
      data-media-import-assignment-id-value="<%= assignment.id %>" data-media-import-return-path-value="<%= path %>">
@@ -74,22 +74,25 @@
       <div class="segmented segmented--links">
         <% const shown = variant ?? defaultVariantOf(variants) -%>
         <% variants.slice().sort((a, b) => PREFERRED_VARIANTS.indexOf(a) - PREFERRED_VARIANTS.indexOf(b)).forEach((v) => { -%>
-          <a href="#<%= path %><%= v === defaultVariantOf(variants) ? '' : `?variant=${v}` %>" class="<%= shown === v ? 'is-active' : '' %>"><%= variantLabel(v) %></a>
+          <a href="#<%= path %><%= v === defaultVariantOf(variants) ? '' : `?variant=${v}` %>" class="<%= shown === v ? 'is-active' : '' %>" data-variant-link="<%= v %>"><%= variantLabel(v) %></a>
         <% }) -%>
       </div>
     </nav>
   <% } -%>
 
   <% if (comparisons.length) { -%>
-    <section class="section comparison-strip" data-controller="comparison-gallery" data-comparison-gallery-items-value="<%= JSON.stringify(comparisons.map(({ comparison: c, viewpointName }) => ({
-      key: `c${c.id}`, takenAt: c.created_at, viewpointName, assignmentTitle: assignment.title,
-      files: { [c.variant ?? 'other']: { path: c.path, thumb: c.thumb_path ? thumbUrl(c.thumb_path) : null, name: c.fileName } },
-      variant: c.variant ?? 'other',
+    <%# One gallery item per comparison – thermal + visible version of the same comparison together (space switches) -%>
+    <% const nameOf = new Map(comparisons.map(({ comparison: c, viewpointName }) => [c.id, viewpointName])) -%>
+    <section class="section comparison-strip" data-controller="comparison-gallery" data-comparison-gallery-items-value="<%= JSON.stringify(comparisonGroups.groups.map((group) => ({
+      key: `c${group[0].id}`, takenAt: group[0].created_at, viewpointName: nameOf.get(group[0].id), assignmentTitle: assignment.title,
+      files: Object.fromEntries(group.map((c) => [c.variant ?? 'other', { path: c.path, thumb: c.thumb_path ? thumbUrl(c.thumb_path) : null, name: c.fileName }])),
+      variant: group[0].variant ?? 'other',
     }))) %>">
       <h2 class="section__title">Vergleichsbilder <span class="count"><%= comparisons.length %></span></h2>
       <div class="comparison-strip__list">
         <% comparisons.forEach(({ comparison: c, viewpointName }, i) => { -%>
-          <button type="button" class="comparison-tile" data-action="comparison-gallery#open" data-comparison-gallery-index-param="<%= i %>" title="<%= c.fileName %>">
+          <button type="button" class="comparison-tile" data-action="comparison-gallery#open" data-comparison-gallery-index-param="<%= comparisonGroups.index.get(c.id) %>"
+                  data-comparison-gallery-variant-param="<%= c.variant ?? 'other' %>" title="<%= c.fileName %>">
             <% if (c.thumb_path) { %><img src="<%= thumbUrl(c.thumb_path) %>" alt="" loading="lazy"><% } else { %><span class="comparison-tile__empty"><%- icon('images', { size: 24 }) %></span><% } %>
             <span class="comparison-tile__label"><span class="truncate"><%= viewpointName ?? c.fileName %></span><span class="subtle"><%= variantLabel(c.variant) %></span></span>
           </button>

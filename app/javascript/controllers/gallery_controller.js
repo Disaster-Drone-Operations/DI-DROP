@@ -3,7 +3,8 @@ import platform from '/lib/platform/index.js'
 import MediaFile from '/app/models/media_file.js'
 import Assignment from '/app/models/assignment.js'
 import { formatDate, formatTime } from '/app/helpers/application_helper.js'
-import { variantLabel, PREFERRED_VARIANTS } from '/app/helpers/media_helper.js'
+import { variantLabel, PREFERRED_VARIANTS, toggledVariant } from '/app/helpers/media_helper.js'
+import { isVariantSpace } from '/lib/keys.js'
 import { viewpointNameTag } from '/app/helpers/mission_helper.js'
 import { escapeHtml } from '/app/helpers/application_helper.js'
 import { sendImageToPhone } from '/app/services/image_share.js'
@@ -14,6 +15,7 @@ import { relayBaseUrl } from '/app/services/location_service.js'
 //   ↑ / ↓  same spot (viewpoint) earlier / later – across all assignments of the mission;
 //          zoom and crop are kept (for comparing)
 //   + / − / 0, trackpad gesture, Ctrl+mouse wheel, double-click: zoom; drag: pan
+//   Space  visible ↔ thermal image
 //   Esc    close
 // The preview image appears immediately, the original is loaded afterwards.
 export default class extends Controller {
@@ -96,6 +98,10 @@ export default class extends Controller {
   key(event) {
     if (!this.element.open || event.target.closest?.('input, textarea, select')) return
     if (document.querySelector('.location-dialog[open]')) return // e.g. "An Telefon senden" on top
+    if (isVariantSpace(event, { inDialog: true })) {
+      event.preventDefault() // no click on a focused button, no scrolling
+      return this.toggleVariant()
+    }
     const actions = { ArrowLeft: 'prev', ArrowRight: 'next', ArrowUp: 'earlier', ArrowDown: 'later', '+': 'zoomIn', '=': 'zoomIn', '-': 'zoomOut', 0: 'resetZoom' }
     const action = actions[event.key]
     if (!action) return
@@ -143,7 +149,19 @@ export default class extends Controller {
   }
 
   showVariant({ params }) {
-    this.variant = params.variant
+    this.setVariant(params.variant)
+  }
+
+  // Space: thermal ↔ visible image of the same shot
+  toggleVariant() {
+    const variant = toggledVariant(this.variant, Object.keys(this.current.files), this.lastVisible)
+    if (variant) this.setVariant(variant)
+  }
+
+  setVariant(variant) {
+    if (variant === this.variant) return
+    if (this.variant !== 'T') this.lastVisible = this.variant
+    this.variant = variant
     this.resetZoom() // thermal and visual cameras have different fields of view
     this.render()
   }
