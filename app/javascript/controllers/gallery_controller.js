@@ -14,7 +14,7 @@ import { relayBaseUrl } from '/app/services/location_service.js'
 //   ← / →  previous / next shot on the page (chronological)
 //   ↑ / ↓  same spot (viewpoint) earlier / later – across all assignments of the mission;
 //          zoom and crop are kept (for comparing)
-//   + / − / 0, trackpad gesture, Ctrl+mouse wheel, double-click: zoom; drag: pan
+//   + / − / 0, trackpad gesture, Ctrl+mouse wheel (Windows/Linux: mouse wheel), double-click: zoom; drag: pan
 //   Space  visible ↔ thermal image
 //   Esc    close
 // The preview image appears immediately, the original is loaded afterwards.
@@ -213,6 +213,9 @@ export default class extends Controller {
     if (event.ctrlKey || event.metaKey) {
       // Trackpad zoom gesture (arrives as Ctrl+wheel) or Ctrl+mouse wheel
       this.zoomAt(this.view.scale * Math.exp(-event.deltaY * 0.01), this.pointFromEvent(event), { animate: false })
+    } else if (platform.os !== 'macos') {
+      // Windows/Linux: the wheel zooms like in the Windows photo viewer – 20 % per notch (100 px)
+      this.zoomAt(this.view.scale * 1.2 ** (-wheelPixels(event) / 100), this.pointFromEvent(event), { animate: false })
     } else if (this.view.scale > 1) {
       this.view.x -= event.deltaX
       this.view.y -= event.deltaY
@@ -378,4 +381,9 @@ export default class extends Controller {
     const file = this.current.files[this.variant]
     if (file && !file.video) sendImageToPhone(file.path)
   }
+}
+
+// Wheel distance in pixels (some devices report lines or pages)
+function wheelPixels(event) {
+  return event.deltaY * (event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? 800 : 1)
 }
