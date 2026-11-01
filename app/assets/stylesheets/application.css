@@ -1108,6 +1108,9 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 }
 .provide__summary { flex: 1; min-width: 0; }
 .provide-browser { width: 520px; }
+.provide-browser__new { margin-right: auto; } /* bottom left, like „Neuer Ordner“ on the Mac */
+.new-folder { width: 380px; }
+.new-folder__error { color: var(--danger); margin: -4px 0 0; }
 .provide-browser__crumbs { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
 .provide-browser__list { display: flex; flex-direction: column; max-height: 300px; min-height: 120px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; }
 .provide-browser__item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; border-radius: var(--radius-sm); }

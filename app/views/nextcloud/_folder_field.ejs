@@ -10,4 +10,20 @@
   <dialog class="sheet provide-browser" data-nextcloud-folder-target="dialog">
     <div class="sheet__body" data-nextcloud-folder-target="body"></div>
   </dialog>
+  <%# No <form>: the field usually sits inside another form (Enter there would submit it) -%>
+  <dialog class="sheet new-folder" data-nextcloud-folder-target="nameDialog">
+    <div class="sheet__body">
+      <h2 class="dialog__title">Neuer Ordner</h2>
+      <label class="field">
+        <span class="field__label">Name des Ordners in „<span data-nextcloud-folder-target="parent"></span>“</span>
+        <input type="text" spellcheck="false" data-nextcloud-folder-target="newFolder"
+               data-action="input->nextcloud-folder#nameChanged keydown.enter->nextcloud-folder#createFolder:prevent">
+      </label>
+      <p class="hint new-folder__error" data-nextcloud-folder-target="nameError" hidden></p>
+      <div class="dialog__actions">
+        <button type="button" class="button" data-action="nextcloud-folder#cancelNewFolder">Abbrechen</button>
+        <button type="button" class="button button--primary" data-nextcloud-folder-target="createButton" data-action="nextcloud-folder#createFolder">Anlegen</button>
+      </div>
+    </div>
+  </dialog>
 </div>

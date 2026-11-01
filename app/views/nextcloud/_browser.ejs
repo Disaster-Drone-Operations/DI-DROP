@@ -1,4 +1,4 @@
-<%# locals: path, folders, loading, error, suggestion -%>
+<%# locals: path, folders, loading, error -%>
 <% const parts = path.split('/').filter(Boolean) -%>
 <h2 class="dialog__title">Nextcloud-Ordner für diesen Einsatz wählen</h2>
 <nav class="provide-browser__crumbs">
@@ -20,11 +20,9 @@
     <% }) -%>
   <% } -%>
 </div>
-<div class="input-with-button provide-browser__new">
-  <input type="text" placeholder="Neuer Ordner" value="<%= suggestion %>" data-nextcloud-folder-target="newFolder" data-action="keydown.enter->nextcloud-folder#createFolder:prevent">
-  <button type="button" class="button" data-action="nextcloud-folder#createFolder">Anlegen</button>
-</div>
 <div class="dialog__actions">
+  <%# Like „Neuer Ordner“ in the macOS save dialog: quiet, bottom left, the name in a small dialog -%>
+  <button type="button" class="button button--quiet provide-browser__new" data-action="nextcloud-folder#newFolder" <%= error ? 'disabled' : '' %>><%- icon('folder-plus', { size: 14 }) %><span>Neuer Ordner</span></button>
   <button type="button" class="button" data-action="nextcloud-folder#closeBrowser">Abbrechen</button>
   <button type="button" class="button button--primary" data-action="nextcloud-folder#useFolder" <%= path === '/' ? 'disabled' : '' %>>Diesen Ordner verwenden</button>
 </div>
