@@ -354,9 +354,10 @@ form.button-to { display: inline; margin: 0; }
 
 /* Mission detail page ------------------------------------------------------ */
 
-.columns { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; align-items: start; }
+.columns { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
 .columns__side { display: flex; flex-direction: column; }
-@media (max-width: 860px) { .columns { grid-template-columns: 1fr; } }
+/* Too narrow for two columns (main column under ~460 px): one below the other – assignments first */
+@media (max-width: 1080px) { .columns { grid-template-columns: minmax(0, 1fr); } .columns__side { order: -1; margin-bottom: 8px; } .columns .tasks { position: static; } }
 
 .details { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
 .details dt { color: var(--text-2); }
@@ -728,7 +729,7 @@ a.stepper__step:hover { background: var(--hover); text-decoration: none; color: 
 .card-steps li.is-done { color: var(--success); }
 .card-steps li.is-done::before { background: currentColor; }
 .dropzone--compact { padding: 8px 12px; gap: 10px; }
-.dropzone--compact .dropzone__text { flex: 1; font-size: 12px; }
+.dropzone--compact .dropzone__text { flex: 1 1 260px; font-size: 12px; } /* narrow: buttons wrap below instead of squeezing the text */
 .flow-steps { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; text-align: left; color: var(--text-2); }
 .empty--steps { text-align: left; }
 .lead { font-size: 15px; }
@@ -745,7 +746,6 @@ a.stepper__step:hover { background: var(--hover); text-decoration: none; color: 
 .badge--task-other { background: var(--info-soft); color: var(--info); }
 .badge--task-mapping, .badge--task-position, .badge--task-area { background: var(--selected); color: var(--text-2); }
 
-.columns { grid-template-columns: minmax(0, 1fr) 300px; }
 .tasks { display: flex; flex-direction: column; gap: 10px; position: sticky; top: calc(var(--titlebar-h) + 8px); }
 .tasks__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .tasks__header .section__title { margin: 0; }
