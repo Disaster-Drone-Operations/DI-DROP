@@ -1,5 +1,6 @@
 <%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons -%>
 <% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
+<% const missionPath = `/missions/${mission.id}` /* „Erledigt“ → back to the mission: the assignment is done with */ -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
      data-media-import-assignment-id-value="<%= assignment.id %>" data-media-import-return-path-value="<%= path %>">
   <header class="page-header">
@@ -40,9 +41,9 @@
       <% if (assignment.isOpen) { -%>
         <span class="dialog-host" <% if (shotCount) { %>data-provision-complete="<%= assignment.id %>" data-provision-title="<%= assignment.title %>"<% } %>>
           <% if (completion) { -%>
-            <%- include('assignments/_complete_dialog', { assignment, completion, returnTo: path }) %>
+            <%- include('assignments/_complete_dialog', { assignment, completion, returnTo: missionPath }) %>
           <% } else { -%>
-            <%- buttonTo('Erledigt', `${path}/complete`, { method: 'patch', icon: 'check', class: !shotCount && assignment.kind === 'other' ? 'button button--primary' : 'button', params: { return_to: path } }) %>
+            <%- buttonTo('Erledigt', `${path}/complete`, { method: 'patch', icon: 'check', class: !shotCount && assignment.kind === 'other' ? 'button button--primary' : 'button', params: { return_to: missionPath } }) %>
           <% } -%>
         </span>
       <% } else { -%>
