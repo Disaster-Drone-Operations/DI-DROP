@@ -1357,6 +1357,7 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .training-device { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-sm); }
 .training-device + .training-device { margin-top: 2px; }
 .training-device__buttons { display: flex; gap: 6px; }
+.training-cloud-target { word-break: break-all; font-size: 11px; }
 .training-device.is-on { background: var(--training-soft); }
 .training-phone__qr { display: flex; gap: 12px; align-items: center; padding: 6px 8px; }
 .training-phone__qr img { width: 150px; height: 150px; border-radius: var(--radius-sm); background: #fff; image-rendering: pixelated; flex: none; }

@@ -31,6 +31,10 @@ flugprotokolle/DJIFlightRecord_….txt   echte Flugprotokolle (optional)
   },
   "phone": { "lat": 50.6351, "lon": 11.1284, "accuracy": 6 },   // simuliertes Telefon der Teilnehmer
                                            // (optional, sonst die Koordinaten des Vorschlags)
+  "nextcloud": {                           // optional: Ordner in der simulierten Nextcloud
+    "folders": ["/Documents", "/Einsätze/2026/2026_09_11_Unterhain/Fotos/Drohne"],   // werden angelegt (mit Elternordnern)
+    "target": "/Einsätze/2026/2026_09_11_Unterhain/Fotos/Drohne"                      // dorthin gehören die Bilder
+  },
   "cards": [{ "id": "flug1", "label": "Flug 1 · 11:48" }],
   "remote": {
     "name": "DJI RC Plus 2 (Simulation)",
@@ -62,6 +66,9 @@ flugprotokolle/DJIFlightRecord_….txt   echte Flugprotokolle (optional)
   den QR-Code wie gewohnt; in der Steuerung (oder auf dem Telefon als Fernbedienung) unter „Telefon der
   Teilnehmer“ „QR-Code scannen“ bzw. „Verweigern“, beim Live-Standort später „Am Telefon beenden“. Gesendet
   wird `phone` (mit ein paar Metern GPS-Rauschen).
+- **Nextcloud-Ordner:** `nextcloud.folders` legt di-drop bei jedem Start der Schulung an (vorhandene bleiben), damit
+  die Teilnehmer den echten Klickpfad bis zum richtigen Ordner üben. `target` zeigt die Steuerung dem Ausbilder
+  („Richtiger Ordner für die Bilder“); `build_scenario.mjs` nennt ihn auch im Drehbuch.
 - **Fertig angelegter Einsatz (Ausnahme):** Statt `missionSuggestion` legt `"mission": {…}` (dazu optional
   `"assignments": [{ "kind": "special", "title": "…", "due": "12:30" }, { "kind": "control", "interval": 30, "due": "12:45" }]`)
   den Einsatz schon beim Start an – z. B. für Übungen, die mitten im Einsatz beginnen.

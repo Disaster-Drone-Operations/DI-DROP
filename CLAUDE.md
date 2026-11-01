@@ -167,6 +167,8 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   klickbar – Befehl dann per `platform.training.emit('training:command', …)`).
 - Teilnehmer legen den Einsatz selbst an (Szenario `missionSuggestion` → Hinweis mit „Übernehmen“ im Formular)
   und schließen ihn am Ende ab; das Drehbuch führt mit `note`-Schritten dorthin.
+- Simulierte Nextcloud: Szenario `nextcloud.folders` wird bei jedem Start angelegt (Klickpfad üben), `nextcloud.target`
+  zeigt die Steuerung als „Richtiger Ordner für die Bilder“.
 - Standort vom Telefon ist simuliert (`lib/location/simulated_client.js`, `location_service.simulateLocation`):
   QR-Code wie echt, „QR-Code scannen“/„Verweigern“/„Am Telefon beenden“ in der Steuerung (Befehle `location.*`).
 - Telefon als Fernbedienung: `lib/relay/control_client.js` (Relay-Modus `control`, Protokoll §7). Das Telefon

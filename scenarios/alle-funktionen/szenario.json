@@ -15,6 +15,22 @@
     "alt": 451,
     "accuracy": 6
   },
+  "nextcloud": {
+    "folders": [
+      "/Documents",
+      "/Photos",
+      "/Templates",
+      "/Einsätze/2025/2025_08_09_Waldbrand_Hohe_Warte",
+      "/Einsätze/2025/2025_11_22_Personensuche_Schneekopf",
+      "/Einsätze/2026/2026_02_07_Vermisstensuche_Kickelhahn",
+      "/Einsätze/2026/2026_04_18_Flächenbrand_Gehlberg",
+      "/Einsätze/2026/2026_05_16_Scheunenbrand_Musterdorf",
+      "/Einsätze/2026/2026_06_20_Großbrand_Musterdorf/Fotos/Drohne",
+      "/Einsätze/2026/2026_06_20_Großbrand_Musterdorf/Lagekarten",
+      "/Einsätze/2026/2026_06_20_Großbrand_Musterdorf/Protokolle"
+    ],
+    "target": "/Einsätze/2026/2026_06_20_Großbrand_Musterdorf/Fotos/Drohne"
+  },
   "cards": [
     {
       "id": "flug1",
@@ -205,7 +221,7 @@
     {
       "at": "14:55",
       "action": "note",
-      "text": "Vergleichsbilder aus drei Kontrollflügen erstellen, dann auf der Einsatzseite „Alles bereitstellen“ (simulierte Nextcloud), Aufträge erledigen, Einsatz abschließen."
+      "text": "Vergleichsbilder aus drei Kontrollflügen erstellen, dann auf der Einsatzseite „Alles bereitstellen“ (simulierte Nextcloud, Ordner: Einsätze › 2026 › 2026_06_20_Großbrand_Musterdorf › Fotos › Drohne), Aufträge erledigen, Einsatz abschließen."
     },
     {
       "at": "15:00",

@@ -127,6 +127,9 @@
     <h3>Nextcloud</h3>
     <div class="training-device"><%- icon('cloud', { size: 16 }) %><span>Bereitgestelltes landet in einem Ordner der Schulung.</span>
       <button type="button" class="button button--small" data-command="cloud.reveal">Zeigen</button></div>
+    <% if (state.cloudTarget) { -%>
+      <div class="training-device"><span></span><span class="subtle">Richtiger Ordner für die Bilder:<br><span class="mono selectable training-cloud-target"><%= state.cloudTarget %></span></span><span></span></div>
+    <% } -%>
   </section>
 
   <footer class="training-control__foot">

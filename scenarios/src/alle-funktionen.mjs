@@ -15,6 +15,23 @@ export default {
   missionSuggestion: { kind: 'exercise', title: 'Großbrand Musterdorf', location: 'Musterdorf, Scheune am Ortsrand' },
   // Where the drone team stands (simulated phone for „Hier“ / „Mein Standort“)
   phone: { lat: 50.68305, lon: 10.91760, alt: 451, accuracy: 6 },
+  // Simulated Nextcloud: a small folder structure; the images belong into "target" (the click path is practised)
+  nextcloud: {
+    folders: [
+      '/Documents',
+      '/Photos',
+      '/Templates',
+      '/Einsätze/2025/2025_08_09_Waldbrand_Hohe_Warte',
+      '/Einsätze/2025/2025_11_22_Personensuche_Schneekopf',
+      '/Einsätze/2026/2026_02_07_Vermisstensuche_Kickelhahn',
+      '/Einsätze/2026/2026_04_18_Flächenbrand_Gehlberg',
+      '/Einsätze/2026/2026_05_16_Scheunenbrand_Musterdorf',
+      '/Einsätze/2026/2026_06_20_Großbrand_Musterdorf/Fotos/Drohne',
+      '/Einsätze/2026/2026_06_20_Großbrand_Musterdorf/Lagekarten',
+      '/Einsätze/2026/2026_06_20_Großbrand_Musterdorf/Protokolle',
+    ],
+    target: '/Einsätze/2026/2026_06_20_Großbrand_Musterdorf/Fotos/Drohne',
+  },
   cards: [
     // Old test flight from the day before + first flight → "Ältere Aufnahmen" in the import dialog
     { id: 'flug1', label: 'Flug 1 · Lageerkundung (+ alter Testflug)', folders: [
@@ -56,7 +73,7 @@ export default {
     { at: '14:32', action: 'card.insert', card: 'flug1', text: 'Karte von Flug 1 noch einmal einstecken – nur der alte Testflug ist noch drauf (oder, falls nicht gelöscht wurde: Karte leeren)' },
     { at: '14:34', action: 'card.remove', card: 'flug1' },
     { at: '14:48', action: 'card.insert', card: 'flug4', text: 'Flug 4 gelandet – dritter Kontrollflug' },
-    { at: '14:55', action: 'note', text: 'Vergleichsbilder aus drei Kontrollflügen erstellen, dann auf der Einsatzseite „Alles bereitstellen“ (simulierte Nextcloud), Aufträge erledigen, Einsatz abschließen.' },
+    { at: '14:55', action: 'note', text: 'Vergleichsbilder aus drei Kontrollflügen erstellen, dann auf der Einsatzseite „Alles bereitstellen“ (simulierte Nextcloud, Ordner: Einsätze › 2026 › 2026_06_20_Großbrand_Musterdorf › Fotos › Drohne), Aufträge erledigen, Einsatz abschließen.' },
     { at: '15:00', action: 'remote.connect', text: 'Fernsteuerung erneut anschließen – nur die neuen Flüge' },
     { at: '15:02', action: 'remote.disconnect' },
     { at: '15:10', action: 'note', text: 'Einsatzleitung: Einsatz beendet. Letzten Kontrollflug mit „Keine weiteren Kontrollflüge“ erledigen, alle Aufträge erledigen und den Einsatz abschließen.' },

@@ -13,6 +13,22 @@ export default {
   missionSuggestion: { kind: 'exercise', title: 'Scheunenbrand Musterdorf', location: 'Musterdorf, Scheune am Ortsrand' },
   // Where the drone team stands (simulated phone for „Hier“ / „Mein Standort“): ~120 m south-west of the barn
   phone: { lat: 50.68305, lon: 10.91760, alt: 451, accuracy: 6 },
+  // Simulated Nextcloud: a small folder structure; the images belong into "target" (the click path is practised)
+  nextcloud: {
+    folders: [
+      '/Documents',
+      '/Photos',
+      '/Templates',
+      '/Einsätze/2025/2025_08_09_Waldbrand_Hohe_Warte',
+      '/Einsätze/2025/2025_11_22_Personensuche_Schneekopf',
+      '/Einsätze/2026/2026_02_07_Vermisstensuche_Kickelhahn',
+      '/Einsätze/2026/2026_04_18_Flächenbrand_Gehlberg',
+      '/Einsätze/2026/2026_05_16_Scheunenbrand_Musterdorf/Fotos/Drohne',
+      '/Einsätze/2026/2026_05_16_Scheunenbrand_Musterdorf/Lagekarten',
+      '/Einsätze/2026/2026_05_16_Scheunenbrand_Musterdorf/Protokolle',
+    ],
+    target: '/Einsätze/2026/2026_05_16_Scheunenbrand_Musterdorf/Fotos/Drohne',
+  },
   cards: [
     { id: 'flug1', label: 'Flug 1 · Lageerkundung 10:12', folders: [{ time: '10:12', shots: 'overview', fire: 1, trucks: true }] },
     { id: 'flug2', label: 'Flug 2 · Kontrollflug 10:45', folders: [{ time: '10:45', shots: 'waypoints', fire: 0.7, trucks: true }] },
@@ -26,7 +42,7 @@ export default {
     { at: '10:01', action: 'note', text: 'Alarmierung: Scheunenbrand am Ortsrand von Musterdorf. Neuen Einsatz anlegen (Vorschlag: „Scheunenbrand Musterdorf“) – Einsatzort mit „Hier“ vom Telefon übernehmen (in der Steuerung „QR-Code scannen“).' },
     { at: '10:05', action: 'note', text: 'Einsatz ist angelegt – die Lageerkundung wurde automatisch angelegt. Lageerkundung fliegen.' },
     { at: '10:18', action: 'card.insert', card: 'flug1', text: 'Flug 1 gelandet – SD-Karte einstecken (Lageerkundung)' },
-    { at: '10:30', action: 'note', text: 'Bilder bereitstellen, Lageerkundung als erledigt markieren. Einsatzleitung: Kontrollflüge alle 30 Minuten (Auftrag „Kontrollflug“ anlegen) und Zufahrt für die Drehleiter bis 11:15 prüfen (Spezialauftrag anlegen).' },
+    { at: '10:30', action: 'note', text: 'Bilder bereitstellen (Nextcloud-Ordner: Einsätze › 2026 › 2026_05_16_Scheunenbrand_Musterdorf › Fotos › Drohne), Lageerkundung als erledigt markieren. Einsatzleitung: Kontrollflüge alle 30 Minuten (Auftrag „Kontrollflug“ anlegen) und Zufahrt für die Drehleiter bis 11:15 prüfen (Spezialauftrag anlegen).' },
     { at: '10:32', action: 'card.remove', card: 'flug1' },
     { at: '10:52', action: 'card.insert', card: 'flug2', text: 'Kontrollflug 1 gelandet – SD-Karte einstecken' },
     { at: '11:05', action: 'card.remove', card: 'flug2' },

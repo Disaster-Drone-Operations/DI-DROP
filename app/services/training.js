@@ -155,6 +155,15 @@ function locationState() {
   return { mode: session.mode, status: session.status }
 }
 
+// ── Simulated Nextcloud ──────────────────────────────────────────────────
+
+// Folder structure of the scenario ("nextcloud.folders") – at every start, existing folders stay
+async function createCloudFolders() {
+  for (const folder of scenario.nextcloud?.folders ?? []) {
+    await platform.training.cloudMkdir(trainingId, folder).catch((error) => console.warn('[training] Nextcloud-Ordner', folder, error))
+  }
+}
+
 // ── Simulated remote controller ───────────────────────────────────────────
 
 // Logs of the scenario with their start time; summary logs get a DJI-like file name
@@ -379,6 +388,7 @@ export function trainingState() {
     remote: scenario.remote ? { name: remoteProvider.device.name, connected: platform.simulation.remoteConnected(),
       flown: remoteLogs().filter((l) => l.landed <= nowMs()).length, total: remoteLogs().length } : null,
     steps: steps.map((s) => ({ index: s.index, at: s.at, label: s.label, action: s.action, done: s.index < next })),
+    cloudTarget: scenario.nextcloud?.target ?? null, // where the participants should provide to
     next,
     phone: phoneInfo,
     location: locationState(),
@@ -416,6 +426,7 @@ export async function startTrainingMode() {
     await initialize()
   }
   setClock(Setting.get('training.clock') ?? { at: timeOf(scenario.start) })
+  await createCloudFolders()
 
   await platform.training.listen('training:command', (cmd) => command(cmd))
   await platform.training.listen('training:hello', () => broadcast()) // control window (re)opened
