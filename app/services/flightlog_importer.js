@@ -29,7 +29,10 @@ function progress(detail) {
 
 async function store(report) {
   const added = await FlightLog.addSummaries(report.summaries ?? [])
-  if (added) await assignFlights().catch((e) => console.warn('[flight logs] Einsätze zuordnen', e))
+  if (added) {
+    await assignFlights().catch((e) => console.warn('[flight logs] Einsätze zuordnen', e))
+    window.dispatchEvent(new CustomEvent('flightlogs:changed')) // e.g. the flights box on the mission page
+  }
   return { added, copied: report.copied ?? 0, extras: report.extras_copied ?? 0, failed: report.failed ?? [] }
 }
 

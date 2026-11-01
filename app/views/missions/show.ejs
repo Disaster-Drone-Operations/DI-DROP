@@ -100,14 +100,7 @@
     <% } -%>
 
     <%# Flights from the remote controller's logs (app/services/flight_missions.js) -%>
-    <% if (flightStats.count) { -%>
-      <a class="mission-flights" href="#/flightlogs?mission=<%= mission.id %>">
-        <%- icon('protocol', { size: 16 }) %>
-        <span><strong><%= pluralize(flightStats.count, 'Flug', 'Flüge') %></strong> laut Flugprotokoll<br>
-          <span class="subtle"><%= formatFlightDuration(flightStats.duration) %> · <%= formatDistance(flightStats.distance) %></span></span>
-        <%- icon('chevron', { size: 14 }) %>
-      </a>
-    <% } -%>
+    <div data-controller="mission-flights" data-mission-flights-mission-value="<%= mission.id %>"><%- include('missions/_flights', { mission, flightStats }) %></div>
   </aside>
 
 </div>

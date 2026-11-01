@@ -1,0 +1,10 @@
+<%# locals: mission, flightStats -%>
+<%# Flights of the mission according to the flight logs – refreshed after new ones were imported (mission_flights_controller.js) -%>
+<% if (flightStats.count) { -%>
+  <a class="mission-flights" href="#/flightlogs?mission=<%= mission.id %>">
+    <%- icon('protocol', { size: 16 }) %>
+    <span><strong><%= pluralize(flightStats.count, 'Flug', 'Flüge') %></strong> laut Flugprotokoll<br>
+      <span class="subtle"><%= formatFlightDuration(flightStats.duration) %> · <%= formatDistance(flightStats.distance) %></span></span>
+    <%- icon('chevron', { size: 14 }) %>
+  </a>
+<% } -%>

@@ -1,5 +1,4 @@
 import ApplicationController from '/app/controllers/application_controller.js'
-import { db } from '/lib/db.js'
 import Mission from '/app/models/mission.js'
 import Assignment from '/app/models/assignment.js'
 import Viewpoint from '/app/models/viewpoint.js'
@@ -10,6 +9,7 @@ import { completionOptions } from '/app/services/control_planner.js'
 import { hasDraft } from '/lib/drafts.js'
 import { assignmentStates, cardSteps, missionProgress } from '/app/services/next_step.js'
 import { missionSuggestion } from '/app/services/training.js'
+import { flightStats } from '/app/services/flight_missions.js'
 
 export default class MissionsController extends ApplicationController {
   async beforeAction() {
@@ -82,7 +82,7 @@ export default class MissionsController extends ApplicationController {
       newAssignment: newAssignment ?? new Assignment({ mission_id: mission.id }),
       newAssignmentParams,
       showNewAssignment: !!newAssignment,
-      flightStats: await flightStatsOf(mission),
+      flightStats: await flightStats(mission.id),
     }, { title: mission.title })
   }
 
@@ -119,13 +119,4 @@ export default class MissionsController extends ApplicationController {
     await this.mission.destroy()
     this.redirectTo('/', { notice: `„${this.mission.title}“ gelöscht.` })
   }
-}
-
-// Flights of the mission according to the flight logs (assigned by app/services/flight_missions.js)
-async function flightStatsOf(mission) {
-  const [row] = await db.select(
-    'SELECT COUNT(*) AS count, COALESCE(SUM(duration_s), 0) AS duration, COALESCE(SUM(distance_m), 0) AS distance FROM flight_logs WHERE mission_id = ?',
-    [mission.id],
-  )
-  return { count: Number(row?.count ?? 0), duration: Number(row?.duration ?? 0), distance: Number(row?.distance ?? 0) }
 }

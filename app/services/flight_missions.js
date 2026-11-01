@@ -81,6 +81,15 @@ export async function reset(ids) {
 }
 
 // Suggestions for the selected flights: missions whose time window contains one of them, best first
+// Flights of a mission according to the flight logs → { count, duration, distance }
+export async function flightStats(missionId) {
+  const [row] = await db.select(
+    'SELECT COUNT(*) AS count, COALESCE(SUM(duration_s), 0) AS duration, COALESCE(SUM(distance_m), 0) AS distance FROM flight_logs WHERE mission_id = ?',
+    [missionId],
+  )
+  return { count: Number(row?.count ?? 0), duration: Number(row?.duration ?? 0), distance: Number(row?.distance ?? 0) }
+}
+
 export async function suggestedMissions(ids) {
   if (!ids.length) return []
   const flights = await db.select(`SELECT started_at FROM flight_logs WHERE id IN (${ids.map(() => '?').join(',')})`, ids)
