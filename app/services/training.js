@@ -433,6 +433,7 @@ export async function startTrainingMode() {
   await platform.training.listen('training:command', (cmd) => command(cmd))
   await platform.training.listen('training:hello', () => broadcast()) // control window (re)opened
   window.addEventListener('clock:changed', () => broadcast())
+  platform.sdcard?.onRemoved(() => broadcast()) // also ejected in di-drop → „Einstecken“ in the control
   window.addEventListener('location:changed', () => broadcast()) // QR code shown → „QR-Code scannen“ in the control
   // Keep the clock saved while it runs (continue after a restart), state for the control window
   setInterval(() => {

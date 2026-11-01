@@ -14,11 +14,35 @@ import { showNotice } from '/app/services/notice.js'
 
 // { card, scanned, missionId, newerThan } – waiting for the mission page
 let pending = null
+// Cards inserted right now (sidebar, „Auswerfen“) – event "sdcard:changed" on changes
+let cards = []
 // card root → number of new files we already asked about (don't ask again for the same card)
 const asked = new Map()
 let checking = false
 
 export const isAvailable = () => !!platform.sdcard
+
+export const insertedCards = () => cards
+
+function setCards(list) {
+  cards = list
+  document.dispatchEvent(new CustomEvent('sdcard:changed'))
+}
+
+// „Auswerfen“ (sidebar or after the import) – says itself whether it worked → true/false
+export async function ejectCard(root) {
+  const card = cards.find((c) => c.root === root)
+  const fail = (text) => (showNotice(text, { alert: true, delay: 10000 }), false)
+  if (document.querySelector('.import-dialog[open]')) return fail('Erst den Import abschließen, dann die Karte auswerfen.')
+  try {
+    await platform.sdcard.eject(root)
+  } catch (error) {
+    return fail(error?.message ?? String(error))
+  }
+  setCards(cards.filter((c) => c.root !== root)) // right away – the watcher follows
+  showNotice(`„${card?.name ?? 'SD-Karte'}“ ausgeworfen – die Karte kann jetzt entnommen werden.`)
+  return true
+}
 
 // For the media import controller: the card waiting for this mission (taken only once)
 export function takePendingCard(missionId) {
@@ -124,12 +148,17 @@ async function cardInserted(card, { atStartup = false } = {}) {
 // At app start: watch for inserted cards (and check cards that are already inserted)
 export function watchCards() {
   if (!isAvailable()) return
-  platform.sdcard.onInserted((card) => cardInserted(card)).catch((e) => console.warn('[sdcard]', e))
+  platform.sdcard.onInserted((card) => {
+    setCards([...cards.filter((c) => c.root !== card.root), card])
+    cardInserted(card)
+  }).catch((e) => console.warn('[sdcard]', e))
   platform.sdcard.onRemoved((card) => {
+    setCards(cards.filter((c) => c.root !== card.root))
     asked.delete(card.root)
     if (pending?.card.root === card.root) pending = null
     document.dispatchEvent(new CustomEvent('sdcard:removed', { detail: card }))
   }).catch((e) => console.warn('[sdcard]', e))
+  platform.sdcard.list().then(setCards).catch(() => {})
   setTimeout(async () => {
     for (const card of await platform.sdcard.list().catch(() => [])) await cardInserted(card, { atStartup: true })
   }, 3000)

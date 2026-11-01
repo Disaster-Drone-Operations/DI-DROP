@@ -143,6 +143,12 @@ async fn sdcard_delete(root: String, items: Vec<sdcard::DeleteItem>, companions:
         .map_err(|e| e.to_string())?
 }
 
+/// Ejects a card ("Auswerfen") – the watcher then reports it as removed
+#[tauri::command]
+async fn sdcard_eject(root: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || sdcard::eject(Path::new(&root))).await.map_err(|e| e.to_string())?
+}
+
 /// Memory card inserted/removed? → events "sdcard:inserted" / "sdcard:removed" to the UI
 fn watch_sdcards(app: AppHandle) {
     use tauri::Emitter;
@@ -400,7 +406,7 @@ pub fn run() {
             app_update::app_update_check, app_update::app_update_install,
             flightlogs_import_folder, flightlogs_scan_local, flightlogs_devices,
             flightlogs_device_status, flightlogs_device_import,
-            sdcard_list, sdcard_delete,
+            sdcard_list, sdcard_delete, sdcard_eject,
             training_list, training_paths, training_scenario, training_reset, training_card, training_stage_logs, training_log_placeholders,
             training_import, training_open_control, training_close_control,
             training_cloud_list, training_cloud_mkdir, training_cloud_path,

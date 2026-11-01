@@ -86,6 +86,75 @@ pub fn list() -> Vec<Card> {
     candidate_roots().iter().filter_map(|root| card_for(root)).collect()
 }
 
+/// Ejects a card like "Auswerfen" in Finder/Explorer. Only cards that are detected right now and that
+/// are a volume of their own – never the test folders from DIDROP_SDCARD_ROOTS or anything else.
+/// The watcher then reports the card as removed.
+pub fn eject(root: &Path) -> Result<(), String> {
+    let card = list().into_iter().find(|c| Path::new(&c.root) == root).ok_or("Diese Karte ist nicht mehr eingesteckt.")?;
+    if !is_volume_root(root) {
+        return Err(format!("„{}“ ist kein eigenes Laufwerk und lässt sich nicht auswerfen.", card.name));
+    }
+    eject_volume(root).map_err(|detail| {
+        eprintln!("[sdcard] eject {}: {detail}", root.display());
+        format!(
+            "„{}“ konnte nicht ausgeworfen werden – vermutlich ist darauf noch etwas geöffnet (z. B. ein Finder- oder \
+             Explorer-Fenster oder ein anderes Programm). Schließen und noch einmal versuchen.",
+            card.name
+        )
+    })
+}
+
+/// Mount point of its own (other device than the folder above it)
+#[cfg(unix)]
+fn is_volume_root(root: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    let (Ok(own), Some(parent)) = (std::fs::metadata(root), root.parent()) else { return false };
+    std::fs::metadata(parent).is_ok_and(|p| p.dev() != own.dev())
+}
+
+/// A drive like "E:\" (no folder above it)
+#[cfg(windows)]
+fn is_volume_root(root: &Path) -> bool {
+    root.parent().is_none()
+}
+
+#[cfg(target_os = "macos")]
+fn eject_volume(root: &Path) -> Result<(), String> {
+    let out = std::process::Command::new("/usr/sbin/diskutil").arg("eject").arg(root).output().map_err(|e| e.to_string())?;
+    if out.status.success() {
+        Ok(())
+    } else {
+        Err(format!("{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr)).trim().to_string())
+    }
+}
+
+/// Same as "Auswerfen" in the Explorer (shell verb) – it reports nothing back, so wait until the drive is gone
+#[cfg(target_os = "windows")]
+fn eject_volume(root: &Path) -> Result<(), String> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    let drive = root.display().to_string(); // "E:\" – from list(), so only a drive letter
+    let script = format!("(New-Object -ComObject Shell.Application).Namespace(17).ParseName('{drive}').InvokeVerb('Eject')");
+    std::process::Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+        .creation_flags(CREATE_NO_WINDOW)
+        .output()
+        .map_err(|e| e.to_string())?;
+    for _ in 0..20 {
+        if dcim_of(root).is_none() {
+            return Ok(());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+    Err("drive still there".into())
+}
+
+#[cfg(target_os = "linux")]
+fn eject_volume(root: &Path) -> Result<(), String> {
+    let out = std::process::Command::new("gio").args(["mount", "--eject"]).arg(root).output().map_err(|e| e.to_string())?;
+    if out.status.success() { Ok(()) } else { Err(String::from_utf8_lossy(&out.stderr).trim().to_string()) }
+}
+
 /// Polls the mounted volumes and reports changes (`inserted`, `removed`)
 pub fn watch(mut inserted: impl FnMut(&Card), mut removed: impl FnMut(&Card)) {
     let mut known: BTreeMap<String, Card> = list().into_iter().map(|c| (c.root.clone(), c)).collect();
@@ -384,5 +453,14 @@ mod tests {
         let report = delete_imported(&card, &[item(&src, &copy)], false).unwrap();
         assert!(report.companions.is_empty());
         assert!(folder.join("DJI_0001_D.MRK").exists());
+    }
+
+    #[test]
+    fn only_detected_cards_on_a_volume_of_their_own_can_be_ejected() {
+        let dir = tmp("eject");
+        std::fs::create_dir_all(dir.join("DCIM")).unwrap();
+        assert!(!is_volume_root(&dir)); // a folder with DCIM (like the test cards) is no drive
+        assert!(eject(&dir).is_err()); // not detected (no DIDROP_SDCARD_ROOTS here) → refused
+        assert!(dir.join("DCIM").exists());
     }
 }

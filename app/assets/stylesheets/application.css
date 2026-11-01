@@ -188,6 +188,13 @@ html:not(.runtime-tauri) .page, html.platform-windows .page { padding-top: 28px;
 .nav__item.is-active { background: var(--selected); font-weight: 500; }
 .nav__item .icon { color: var(--text-2); }
 .nav__item--sub { padding-left: 12px; font-size: .95em; }
+/* Inserted memory cards with „Auswerfen“ (layouts/_sdcards.ejs) */
+.sdcards:empty { display: none; }
+.sdcard-item { cursor: default; padding-right: 4px; }
+.sdcard-item:hover { background: none; }
+.sdcard-item__eject { margin-left: auto; flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text-2); }
+.sdcard-item__eject:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.sdcard-item__eject .spinner { width: 12px; height: 12px; border-width: 2px; }
 .nav__item .badge { margin-left: auto; }
 
 .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--text-3); }

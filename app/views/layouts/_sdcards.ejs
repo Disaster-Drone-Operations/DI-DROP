@@ -1,0 +1,14 @@
+<%# locals: cards, ejecting -%>
+<%# One entry per inserted memory card with „Auswerfen“ (sidebar, sdcards_controller.js) -%>
+<% if (cards.length) { -%>
+  <div class="nav__heading">SD-Karten</div>
+  <% cards.forEach((card) => { -%>
+    <div class="nav__item sdcard-item" title="<%= card.name %>">
+      <%- icon('sdcard') %><span class="truncate"><%= card.name %></span>
+      <button type="button" class="sdcard-item__eject" title="Auswerfen" aria-label="„<%= card.name %>“ auswerfen"
+              data-action="sdcards#eject" data-sdcards-root-param="<%= card.root %>" <%= ejecting ? 'disabled' : '' %>>
+        <% if (ejecting === card.root) { %><span class="spinner"></span><% } else { %><%- icon('eject', { size: 13 }) %><% } %>
+      </button>
+    </div>
+  <% }) -%>
+<% } -%>

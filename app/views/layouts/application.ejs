@@ -45,6 +45,9 @@
       </span>
     </nav>
 
+    <%# Inserted memory cards – eject like in the Finder (app/javascript/controllers/sdcards_controller.js) -%>
+    <nav class="nav sdcards" data-controller="sdcards" aria-label="SD-Karten"></nav>
+
     <% if (!hasNativeMenu()) { -%>
       <%# macOS: settings only in the „di-drop“ app menu (like Mail) -%>
       <nav class="nav nav--bottom">
