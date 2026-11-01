@@ -97,7 +97,7 @@ export default class MissionsController extends ApplicationController {
       await Assignment.create({ mission_id: mission.id, kind: 'initial', title: Assignment.KINDS.initial })
       return this.redirectTo(`/missions/${mission.id}`, { notice: `${mission.kindLabel} „${mission.title}“ angelegt.` })
     }
-    await this.render('missions/new', { mission }, { title: 'Neuer Einsatz' })
+    await this.render('missions/new', { mission, suggestion: missionSuggestion() }, { title: 'Neuer Einsatz' })
   }
 
   async edit() {
