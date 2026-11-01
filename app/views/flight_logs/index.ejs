@@ -95,7 +95,7 @@
               <%# Double-click on a flight: change its mission (of all selected flights) – later the flight details (TODO.md) -%>
               <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>" data-mission="<%= log.mission_id ?? '' %>" data-group="<%= group.key %>"
                   data-action="click->flight-logs#select dblclick->flight-logs#editMission"
-                  title="<%= m ? (log.mission_source === 'manual' ? 'Von Hand zugeordnet' : 'Automatisch zugeordnet (Bilder bzw. Zeit des Einsatzes)') : (log.mission_source === 'manual' ? 'Von Hand: kein Einsatz' : 'Keinem Einsatz zuzuordnen') %> – Doppelklick: Einsatz ändern">
+                  title="<%= m ? (log.mission_source === 'manual' ? 'Von Hand zugeordnet' : 'Automatisch zugeordnet (Bilder bzw. Zeit des Einsatzes)') : (log.mission_source === 'manual' ? 'Von Hand: kein Einsatz' : 'Kein passender Einsatz gefunden') %> – Doppelklick: <%= m ? 'Einsatz ändern' : 'Einsatz zuordnen' %>">
                 <td class="flightlogs__check"><input type="checkbox" tabindex="-1" aria-label="Flug auswählen"></td>
                 <td title="<%= log.file_name %>"><%= localDate(log.started_at) %></td>
                 <td class="num"><%= localTime(log.started_at) %></td>
