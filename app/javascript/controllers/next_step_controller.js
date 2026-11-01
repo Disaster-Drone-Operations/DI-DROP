@@ -25,6 +25,12 @@ export default class extends Controller {
     clearTimeout(this.timer)
   }
 
+  // „Auftrag anlegen …“ → the „Neuer Auftrag“ dialog of the assignment list
+  newAssignment() {
+    const host = document.querySelector('.tasks__header [data-controller~="dialog"]')
+    this.application.getControllerForElementAndIdentifier(host, 'dialog')?.open()
+  }
+
   // At most about every 1.5 s
   schedule() {
     this.timer ??= setTimeout(() => {

@@ -69,7 +69,7 @@ export function cardSteps(assignment, state) {
 }
 
 // The one next step of a mission → { kind, text, label, icon, href?, assignment?, dueAt? }
-//   kinds: import (opens the folder picker) · comparisons · provide · complete · close · wait
+//   kinds: import (opens the folder picker) · comparisons · provide · complete · add · wait
 export function missionNextStep(mission, open, all, states) {
   const path = `/missions/${mission.id}`
   if (!mission.isActive) return null
@@ -100,7 +100,9 @@ export function missionNextStep(mission, open, all, states) {
         : `„${finished.title}“ wird gerade bereitgestellt (läuft im Hintergrund weiter) – kann schon als erledigt markiert werden.` }
   }
   if (!open.length) {
-    return { kind: 'close', icon: 'archive', label: 'Einsatz abschließen …', text: 'Alle Aufträge sind erledigt.' }
+    // Missions usually go on (new tasks come in) – closing stays in the page header
+    return { kind: 'add', icon: 'plus', label: 'Auftrag anlegen …',
+      text: 'Alle Aufträge sind erledigt. Neue Aufträge der Einsatzleitung hier anlegen – ist der Einsatz vorbei, oben „Abschließen“.' }
   }
   // Next assignment that still needs a flight, otherwise the next open one
   const byDue = [...open].sort((a, b) => a.effectiveDue - b.effectiveDue)

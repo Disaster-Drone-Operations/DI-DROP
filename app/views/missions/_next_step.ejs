@@ -7,9 +7,8 @@
   </div>
   <% if (step.kind === 'import' || step.kind === 'wait') { -%>
     <% if (canImport) { %><button type="button" class="button <%= step.kind === 'import' ? 'button--primary' : '' %>" data-action="media-import#pickFolder"><%- icon('folder') %><span><%= step.label %></span></button><% } %>
-  <% } else if (step.kind === 'close') { -%>
-    <%- buttonTo(step.label, `/missions/${mission.id}`, { method: 'patch', icon: 'archive', class: 'button button--primary', params: { 'mission[status]': 'closed' },
-          confirm: `„${mission.title}“ abschließen? Er erscheint dann unter „Abgeschlossen“ und kann jederzeit wieder geöffnet werden.`, confirmButton: 'Abschließen' }) %>
+  <% } else if (step.kind === 'add') { -%>
+    <button type="button" class="button button--primary" data-action="next-step#newAssignment"><%- icon(step.icon) %><span><%= step.label %></span></button>
   <% } else if (step.kind === 'complete') { -%>
     <% const a = step.assignment, path = `/missions/${mission.id}` -%>
     <% if (a.completion) { -%>
