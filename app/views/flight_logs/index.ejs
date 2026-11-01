@@ -5,7 +5,7 @@
   <header class="page-header">
     <div>
       <h1>Flugprotokolle</h1>
-      <p class="subtle">Alle Flüge aus den Protokollen der DJI-Fernsteuerung. Fernsteuerung per USB anschließen – di-drop fragt dann, ob es die neuen übernehmen soll.</p>
+      <p class="subtle">Alle Flüge aus den Protokollen der DJI-Fernsteuerung. Neue Flüge übernehmen: <strong>1.</strong> Fernsteuerung einschalten, <strong>2.</strong> per USB-C an den Rechner anschließen – di-drop fragt dann, ob es die neuen übernehmen soll.</p>
     </div>
     <% if (available) { -%>
       <div class="toolbar">
@@ -46,10 +46,13 @@
       <p class="subtle"><%= missionFilter === 'none' ? 'Alle Flüge sind einem Einsatz zugeordnet.' : filterMission ? 'Diesem Einsatz ist noch kein Flug zugeordnet.' : 'Keine passenden Flüge.' %></p>
     </div>
   <% } else if (!logs.length) { -%>
-    <div class="empty">
+    <div class="empty empty--steps">
       <%- icon('protocol', { size: 40, class: 'empty__icon' }) %>
-      <p><strong>Noch keine Flugprotokolle.</strong></p>
-      <p class="subtle">DJI-Fernsteuerung (z. B. DJI RC Plus 2) per USB-Kabel an den Rechner anschließen. di-drop erkennt sie und übernimmt alle neuen Flugprotokolle.</p>
+      <p><strong>Noch keine Flugprotokolle.</strong> So kommen sie herein:</p>
+      <ol class="flow-steps">
+        <li><strong>Fernsteuerung einschalten</strong> (z. B. DJI RC Plus 2) – ausgeschaltet erkennt der Rechner sie nicht.</li>
+        <li><strong>Per USB-C an den Rechner anschließen</strong> – di-drop erkennt sie und übernimmt alle neuen Flugprotokolle.</li>
+      </ol>
       <p class="subtle">Alternativ: Ordner <span class="mono">FlightRecord</span> (auf der Fernsteuerung unter <span class="mono">DJI/com.dji.industry.pilot</span>) auf einen USB-Stick kopieren und „Aus Ordner übernehmen …“ wählen.</p>
     </div>
   <% } else { -%>
