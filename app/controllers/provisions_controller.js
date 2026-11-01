@@ -36,7 +36,7 @@ export default class ProvisionsController extends ApplicationController {
       viewpointName: names.get(shot.files.find((f) => f.viewpoint_id)?.viewpoint_id) ?? null,
     }))
     const comparisons = await this.comparisons()
-    for (const c of comparisons) await c.ensureThumbnail()
+    for (const c of comparisons) await Promise.all([c.ensureThumbnail(), c.ensureSize()])
     const provided = target ? await providedKeys([this.assignment.id], targetKey) : new Set()
     const previous = await this.previousProvision()
 

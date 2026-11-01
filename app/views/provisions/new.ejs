@@ -92,7 +92,7 @@
       <% comparisons.forEach((c) => { -%>
         <label class="provide-file <%= provided.has(`c${c.id}`) ? 'is-provided' : '' %>" data-range-item <%= provided.has(`c${c.id}`) ? 'data-range-skip' : '' %>>
           <% if (c.thumb_path) { %><img src="<%= thumbUrl(c.thumb_path) %>" alt="" loading="lazy" draggable="false"><% } else { %><span class="shot__placeholder"><%- icon('images', { size: 22 }) %></span><% } %>
-          <input type="checkbox" data-provide-target="item" data-key="c<%= c.id %>" data-kind="comparison" data-size="0" data-path="<%= c.path %>" <%= selected.has(`c${c.id}`) ? 'checked' : '' %>>
+          <input type="checkbox" data-provide-target="item" data-key="c<%= c.id %>" data-kind="comparison" data-size="<%= c.size ?? 0 %>" data-path="<%= c.path %>" <%= selected.has(`c${c.id}`) ? 'checked' : '' %>>
           <span class="provide-file__label"><span class="truncate"><%= c.fileName %></span><% if (provided.has(`c${c.id}`)) { %><span class="provide-badge provide-badge--done">✓</span><% } %></span>
         </label>
       <% }) -%>

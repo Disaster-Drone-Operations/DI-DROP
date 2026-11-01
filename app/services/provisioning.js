@@ -3,7 +3,6 @@
 // (app/services/upload_queue.js).
 
 import { db } from '/lib/db.js'
-import platform from '/lib/platform/index.js'
 import Setting from '/app/models/setting.js'
 import UploadItem from '/app/models/upload_item.js'
 import { TARGETS, availableTargets } from '/app/services/upload_targets.js'
@@ -79,7 +78,7 @@ export async function entriesFor(files, comparisons) {
       viewpoint_id: c.viewpoint_id,
       source_path: c.path,
       file_name: c.fileName,
-      size: await platform.readImage(c.path).then((b) => b.size).catch(() => 0),
+      size: await c.ensureSize(),
     })))),
   ]
 }

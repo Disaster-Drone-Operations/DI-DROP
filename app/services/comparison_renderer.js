@@ -72,7 +72,7 @@ export function fileNameFor(viewpointName, shots) {
   return `Vergleich_${name}_${times.join('_')}.jpg`
 }
 
-// Creates the comparison image in full resolution and saves it.
+// Creates the comparison image in full resolution and saves it → { path, size }
 // shots: [{ taken_at, files: { T: { path } … } }], variant: 'T' | 'V' …
 export async function exportComparison({ viewpointName, shots, variant, joinPath }) {
   // Don't cache originals: a 12 MP visible image takes ~50 MB as a bitmap
@@ -89,5 +89,6 @@ export async function exportComparison({ viewpointName, shots, variant, joinPath
 
   // Saved next to the most recent shot (folder of the last control flight)
   const dir = shots.at(-1).files[variant].path.replace(/[\\/][^\\/]*$/, '')
-  return platform.writeImage(await joinPath(dir, fileNameFor(viewpointName, shots)), blob)
+  const path = await platform.writeImage(await joinPath(dir, fileNameFor(viewpointName, shots)), blob)
+  return { path, size: blob.size }
 }

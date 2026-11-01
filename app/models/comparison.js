@@ -12,6 +12,7 @@ export default class Comparison extends Record {
     path: 'string',
     media_file_ids: 'text',
     thumb_path: 'string',
+    size: 'integer',
   }
 
   static forMission(missionId) {
@@ -35,6 +36,15 @@ export default class Comparison extends Record {
       console.warn('Thumbnail for comparison image missing:', error)
     }
     return this.thumb_path
+  }
+
+  // File size – older comparison images don't have it yet (read once, then stored)
+  async ensureSize() {
+    if (this.size == null) {
+      const size = await platform.readImage(this.path).then((b) => b.size).catch(() => null)
+      if (size != null) await this.update({ size })
+    }
+    return this.size ?? 0
   }
 
   get fileName() {
