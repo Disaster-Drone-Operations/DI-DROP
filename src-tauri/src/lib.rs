@@ -203,6 +203,12 @@ async fn training_stage_logs(app: AppHandle, id: String, files: Vec<String>) -> 
 }
 
 #[tauri::command]
+async fn training_log_placeholders(app: AppHandle, id: String, files: Vec<String>) -> Result<String, String> {
+    let root = training_root(&app)?;
+    tauri::async_runtime::spawn_blocking(move || training::write_log_placeholders(&root, &id, &files)).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 async fn training_import(app: AppHandle, path: String) -> Result<training::ScenarioInfo, String> {
     let root = training_root(&app)?;
     tauri::async_runtime::spawn_blocking(move || training::import(&root, Path::new(&path))).await.map_err(|e| e.to_string())?
@@ -395,7 +401,7 @@ pub fn run() {
             flightlogs_import_folder, flightlogs_scan_local, flightlogs_devices,
             flightlogs_device_status, flightlogs_device_import,
             sdcard_list, sdcard_delete,
-            training_list, training_paths, training_scenario, training_reset, training_card, training_stage_logs,
+            training_list, training_paths, training_scenario, training_reset, training_card, training_stage_logs, training_log_placeholders,
             training_import, training_open_control, training_close_control,
             training_cloud_list, training_cloud_mkdir, training_cloud_path,
             places::places_info, places::places_read, places::places_update,

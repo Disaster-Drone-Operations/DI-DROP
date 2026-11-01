@@ -55,7 +55,8 @@ flugprotokolle/DJIFlightRecord_….txt   echte Flugprotokolle (optional)
 
 - **Zeiten:** `"HH:MM"` gilt am Tag von `start`, sonst `"YYYY-MM-DDTHH:MM"` (Ortszeit).
 - **Flugprotokolle:** mit `file` eine echte Datei aus `flugprotokolle/`. Ohne `file` die **Eckdaten**
-  direkt aus dem Szenario (für öffentliche Szenarien – echte DJI-Dateien lassen sich nicht erzeugen).
+  direkt aus dem Szenario (für öffentliche Szenarien – echte DJI-Dateien lassen sich nicht erzeugen);
+  beim Übernehmen legt di-drop dafür eine kurze Platzhalter-Textdatei im Ordner `Flugprotokolle` ab.
   Die simulierte Fernsteuerung liefert nur, was laut simulierter Uhr schon geflogen ist.
 - **Drehbuch:** `card.insert`, `card.remove`, `remote.connect`, `remote.disconnect`, `note`
   (nur ein Hinweis für den Ausbilder). Die Steuerung zeigt immer den nächsten Schritt;

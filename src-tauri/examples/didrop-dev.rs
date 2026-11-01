@@ -75,6 +75,10 @@ fn training(req: Value) -> Result<Value, String> {
             let files: Vec<String> = serde_json::from_value(req["files"].clone()).unwrap_or_default();
             to_value(t::stage_logs(&root, builtin, &s("id"), &files))
         }
+        "log_placeholders" => {
+            let files: Vec<String> = serde_json::from_value(req["files"].clone()).unwrap_or_default();
+            to_value(t::write_log_placeholders(&root, &s("id"), &files))
+        }
         "import" => to_value(t::import(&root, s("path").as_ref())),
         "cloud_list" => to_value(t::cloud_list(&root, &s("id"), &s("path"))),
         "cloud_mkdir" => to_value(t::cloud_mkdir(&root, &s("id"), &s("path"))),

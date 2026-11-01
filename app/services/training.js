@@ -203,12 +203,14 @@ const remoteProvider = {
       Object.assign(report, { copied: real.copied, extras_copied: real.extras_copied, failed: real.failed })
       report.summaries.push(...real.summaries)
     }
-    // Key data from the scenario (no file)
+    // Key data from the scenario (no file) – a placeholder file each, so the flight log folder exists
+    const summaryLogs = fresh.filter((l) => !l.file)
+    const folder = summaryLogs.length ? await platform.training.logPlaceholders(trainingId, summaryLogs.map((l) => l.name)) : null
     let done = files.length
-    for (const log of fresh.filter((l) => !l.file)) {
+    for (const log of summaryLogs) {
       await new Promise((r) => setTimeout(r, 250)) // looks like a transfer
       report.summaries.push({
-        file_name: log.name, path: '', size: 0, log_version: 0,
+        file_name: log.name, path: await platform.joinPath(folder, log.name), size: 0, log_version: 0,
         start_time: new Date(log.start).toISOString(),
         duration_s: log.duration_s ?? 600, distance_m: log.distance_m ?? 0, max_height_m: log.max_height_m ?? 0, max_speed_ms: log.max_speed_ms ?? 0,
         battery_sn: log.battery_sn ?? '', aircraft_name: log.aircraft_name ?? '', aircraft_sn: log.aircraft_sn ?? '',

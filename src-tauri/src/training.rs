@@ -176,6 +176,24 @@ pub fn stage_logs(root: &Path, builtin: Option<&Path>, id: &str, files: &[String
     Ok(staging.display().to_string())
 }
 
+/// Simulated remote controller, logs from the scenario's key data (no real file): a short text file each in
+/// the flight log folder of the training (Daten/<id>/Bilder/Flugprotokolle), so the folder exists and
+/// "Im Finder zeigen" works. Returns the folder.
+pub fn write_log_placeholders(root: &Path, id: &str, files: &[String]) -> Result<String, String> {
+    check_id(id)?;
+    let dir = data_dir(root, id).join("Bilder").join("Flugprotokolle");
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    for name in files {
+        if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
+            return Err(format!("Ungültiger Dateiname: {name}"));
+        }
+        let text = "Simulierter Flug aus der Schulung – kein echtes DJI-Flugprotokoll.\n\
+                    Im Einsatz liegen hier die Originaldateien der Fernsteuerung.\n";
+        fs::write(dir.join(name), text).map_err(|e| format!("{name}: {e}"))?;
+    }
+    Ok(dir.display().to_string())
+}
+
 // ── Simulated Nextcloud: a local folder Daten/<id>/Nextcloud ──────────────────
 
 #[derive(Debug, Serialize, PartialEq)]
@@ -320,6 +338,11 @@ mod tests {
         let staged = stage_logs(&root, None, "test", &["DJIFlightRecord_1.txt".into()]).unwrap();
         assert!(Path::new(&staged).join("DJIFlightRecord_1.txt").exists());
         assert!(stage_logs(&root, None, "test", &["../szenario.json".into()]).is_err());
+
+        let logs = write_log_placeholders(&root, "test", &["DJIFlightRecord_SIM.txt".into()]).unwrap();
+        assert!(Path::new(&logs).ends_with("Daten/test/Bilder/Flugprotokolle"));
+        assert!(Path::new(&logs).join("DJIFlightRecord_SIM.txt").exists());
+        assert!(write_log_placeholders(&root, "test", &["../x.txt".into()]).is_err());
 
         reset(&root, "test").unwrap();
         assert!(!root.join("Daten/test").exists());
