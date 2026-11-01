@@ -38,10 +38,11 @@ export default class extends Controller {
     this.input.addEventListener('click', (e) => e.stopPropagation())
 
     const finish = async (save) => {
-      if (!this.input) return
-      const value = this.input.value.trim()
-      this.input.remove()
-      this.input = null
+      const input = this.input
+      if (!input) return
+      this.input = null // before remove(): removing fires "blur", which calls finish() again
+      const value = input.value.trim()
+      input.remove()
       let shown = current
       if (save) {
         try {
