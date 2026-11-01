@@ -23,7 +23,7 @@ const titles = (assignments, max = 2) => {
 
 // Map(id → { hasImages, comparisons, needsComparisons, missing, inProgress, provided, done })
 //   missing: images + comparison images neither provided nor on their way (to any target) – images only
-//   as long as nothing of the assignment was provided (same rule as provisioning.missingFor)
+//   as long as nothing of the assignment was provided (the selection counts as made, e.g. only thermal images)
 export async function assignmentStates(assignments, counts) {
   const ids = assignments.map((a) => a.id)
   const [provided, pending] = await Promise.all([providedKeys(ids), pendingKeys(ids)])
@@ -87,9 +87,12 @@ export function missionNextStep(mission, open, all, states) {
   }
   const missing = all.filter((a) => state(a).missing > 0)
   if (missing.length) {
-    const count = missing.reduce((n, a) => n + state(a).missing, 0)
-    return { kind: 'provide', icon: 'upload', label: 'Alles bereitstellen …', href: `${path}/provide`,
-      text: `${count} ${count === 1 ? 'Bild ist' : 'Bilder sind'} noch nicht bereitgestellt (${titles(missing)}).` }
+    // Provided per assignment (its page has the selection) – the button leads to the first one
+    const [first, ...rest] = missing
+    const count = state(first).missing
+    return { kind: 'provide', icon: 'upload', label: 'Zum Auftrag', href: `${path}/assignments/${first.id}`,
+      text: `„${first.title}“: ${count} ${count === 1 ? 'Bild ist' : 'Bilder sind'} noch nicht bereitgestellt – im Auftrag „Bereitstellen …“ wählen.` +
+        (rest.length ? ` Danach: ${titles(rest)}.` : '') }
   }
   // Provided or still on its way (the queue keeps running) → can be marked as done
   const finished = open.find((a) => state(a).provided || (state(a).inProgress && !state(a).missing))

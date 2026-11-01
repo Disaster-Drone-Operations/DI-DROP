@@ -73,7 +73,7 @@ export default {
     { at: '14:32', action: 'card.insert', card: 'flug1', text: 'Karte von Flug 1 noch einmal einstecken – nur der alte Testflug ist noch drauf (oder, falls nicht gelöscht wurde: Karte leeren)' },
     { at: '14:34', action: 'card.remove', card: 'flug1' },
     { at: '14:48', action: 'card.insert', card: 'flug4', text: 'Flug 4 gelandet – dritter Kontrollflug' },
-    { at: '14:55', action: 'note', text: 'Vergleichsbilder aus drei Kontrollflügen erstellen, dann auf der Einsatzseite „Alles bereitstellen“ (simulierte Nextcloud, Ordner: Einsätze › 2026 › 2026_06_20_Großbrand_Musterdorf › Fotos › Drohne), Aufträge erledigen, Einsatz abschließen.' },
+    { at: '14:55', action: 'note', text: 'Vergleichsbilder aus drei Kontrollflügen erstellen, dann je Auftrag „Bereitstellen …“ (simulierte Nextcloud, Ordner: Einsätze › 2026 › 2026_06_20_Großbrand_Musterdorf › Fotos › Drohne), Aufträge erledigen, Einsatz abschließen.' },
     { at: '15:00', action: 'remote.connect', text: 'Fernsteuerung erneut anschließen – nur die neuen Flüge' },
     { at: '15:02', action: 'remote.disconnect' },
     { at: '15:10', action: 'note', text: 'Einsatzleitung: Einsatz beendet. Letzten Kontrollflug mit „Keine weiteren Kontrollflüge“ erledigen, alle Aufträge erledigen und den Einsatz abschließen.' },

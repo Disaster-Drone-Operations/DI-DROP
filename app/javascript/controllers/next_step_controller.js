@@ -5,7 +5,7 @@ import Mission from '/app/models/mission.js'
 import { missionProgress } from '/app/services/next_step.js'
 
 // Mission page: keeps „Nächster Schritt“ and the steps on the assignment cards up to date while
-// images are being provided (e.g. „Alles bereitstellen“ → „Erledigt“ as soon as the queue is through)
+// images are being provided (e.g. „Zum Auftrag“ → „Erledigt“ as soon as the queue is through)
 // and when an assignment becomes due (real time or the training clock).
 //   <div data-controller="next-step" data-next-step-mission-value="3" data-next-step-can-import-value="true">
 export default class extends Controller {

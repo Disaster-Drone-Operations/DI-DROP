@@ -1,11 +1,9 @@
-// Shared parts of "Bereitstellen" for one assignment (provisions_controller) and for a whole mission
-// ("Alles bereitstellen", mission_provisions_controller): what is still missing at a target, which base
-// folder applies, and the entries for the upload queue (app/services/upload_queue.js).
+// Shared parts of "Bereitstellen" (provisions_controller) and of the next step (next_step.js): what is
+// already at a target or on its way, which base folder applies, and the entries for the upload queue
+// (app/services/upload_queue.js).
 
 import { db } from '/lib/db.js'
 import platform from '/lib/platform/index.js'
-import MediaFile from '/app/models/media_file.js'
-import Comparison from '/app/models/comparison.js'
 import Setting from '/app/models/setting.js'
 import UploadItem from '/app/models/upload_item.js'
 import { TARGETS, availableTargets } from '/app/services/upload_targets.js'
@@ -61,21 +59,6 @@ export async function pendingKeys(assignmentIds, targetKey = null) {
   )
   return new Set(rows.map((r) => (r.media_file_id ? `m${r.media_file_id}` : `c${r.comparison_id}`)))
 }
-
-// Files and comparison images of an assignment that are not yet provided (at the target).
-// skip: provided (and/or pending) keys. Once some of its images were provided, the selection for that
-// assignment counts as made (e.g. only thermal images of a control flight) – only comparison images
-// created afterwards are still missing; more single images can be added on the assignment page.
-export async function missingFor(assignment, skip) {
-  const all = await MediaFile.where('assignment_id = ?', [assignment.id], { order: 'taken_at ASC, id ASC' })
-  const selectionMade = all.some((f) => skip.has(`m${f.id}`))
-  const files = selectionMade ? [] : all
-  const comparisons = (await Comparison.forAssignment(assignment)).filter((c) => !skip.has(`c${c.id}`))
-  return { files, comparisons }
-}
-
-// Category for the queue order (thermal → comparison → visible …)
-export const categoryOf = (file) => UploadItem.categoryOf(file.variant)
 
 // Queue entries for files + comparison images
 export async function entriesFor(files, comparisons) {

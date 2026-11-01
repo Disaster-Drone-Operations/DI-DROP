@@ -56,9 +56,9 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   zu einem Einsatz (kein eigenes „Bilddaten“-Modul mehr; `/media` leitet um).
 - **Nächster Schritt:** `app/services/next_step.js` bestimmt ihn für Einsatz (Leiste oben auf der Einsatzseite,
   einziger roter Knopf) und Auftragskarten (Stand: Bilder · Vergleich · Bereitgestellt · Erledigt).
-  Neue Arbeitsschritte dort einordnen. „Alles bereitstellen“: `/missions/:id/provide`.
+  Neue Arbeitsschritte dort einordnen. Bereitgestellt wird je Auftrag (`/missions/:id/assignments/:id/provide`).
   „Fehlt noch“: Ist von einem Auftrag schon etwas bereitgestellt, gilt die Auswahl als getroffen (z. B. nur
-  Wärmebilder) – danach fehlen nur noch neue Vergleichsbilder (`provisioning.missingFor`, `assignmentStates`).
+  Wärmebilder) – danach fehlen nur noch neue Vergleichsbilder (`assignmentStates`).
   Vergleichsbilder erst vorschlagen, wenn ein Wegpunkt mehrfach angeflogen wurde. Die Leiste aktualisiert sich
   live (`next_step_controller.js`: Bereitstellungen, Uhr).
 - **Eine Hauptaktion pro Seite** (roter Knopf) – weitere Knöpfe grau.

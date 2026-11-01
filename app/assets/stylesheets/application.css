@@ -1386,8 +1386,6 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .training-dock { position: fixed; right: 16px; bottom: 16px; width: 360px; max-height: calc(100vh - 32px); overflow-y: auto; z-index: 9000;
   background: var(--surface); border: 2px solid var(--training); border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, .35); }
 
-/* "Alles bereitstellen" (mission) */
-.provide-mission-row { display: flex; align-items: center; gap: 10px; cursor: default; }
-.provide-mission-row .mission-row__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+/* Mission card: provision status */
 .mission-row__status { font-size: 12px; }
 .mission-row__missing { color: var(--warning); }

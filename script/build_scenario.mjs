@@ -114,7 +114,7 @@ if (!script) {
       script.push({ at: hhmm(firstLanding), action: 'note', text: `Bilder bereitstellen – als Nextcloud-Ordner des Einsatzes wählen: ${target.split('/').filter(Boolean).join(' › ')} (Klickpfad üben).` })
     }
     const end = new Date(Math.max(...flights.map((f) => f.last.getTime())) + 25 * 60_000)
-    script.push({ at: hhmm(end), action: 'note', text: 'Alles bereitstellen, Aufträge erledigen („Keine weiteren Kontrollflüge“) und den Einsatz abschließen.' })
+    script.push({ at: hhmm(end), action: 'note', text: 'Alle Aufträge bereitstellen, erledigen („Keine weiteren Kontrollflüge“) und den Einsatz abschließen.' })
   }
   script.sort((a, b) => a.at.localeCompare(b.at))
 }
