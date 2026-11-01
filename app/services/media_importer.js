@@ -81,12 +81,14 @@ export default class MediaImporter {
 
     this.blocks = this.buildBlocks(shots.filter((s) => !s.isDuplicate))
     const openAssignments = await Assignment.open(this.mission.id)
+    const counts = await Assignment.mediaCounts(this.mission.id)
+    const flown = new Set(openAssignments.filter((a) => counts.get(a.id)?.files).map((a) => a.id))
     const recentlyDone = (await Assignment.done(this.mission.id)).slice(0, 5)
     if (card) await this.markOlder(this.blocks)
     const current = this.blocks.filter((b) => !b.older)
     const several = current.length > 1
     for (const block of this.blocks) {
-      Object.assign(block, block.older ? { target: 'skip', newKind: 'special' } : this.suggest(block, openAssignments, preferredAssignmentId, several))
+      Object.assign(block, block.older ? { target: 'skip', newKind: 'special' } : this.suggest(block, openAssignments, preferredAssignmentId, several, flown))
     }
 
     const newEntries = this.entries.filter((e) => !e.duplicate)
@@ -143,15 +145,17 @@ export default class MediaImporter {
   // One block: the most due matching assignment (control flights are sometimes flown manually).
   // Several blocks: waypoint images → control flight, manual shots → other assignment or a new one.
   // Mapping flights (images straight down) → open mapping assignment or a new one.
-  suggest(block, open, preferredId, several) {
+  // flown: ids of open assignments that already have images – those still waiting for theirs come first
+  suggest(block, open, preferredId, several, flown = new Set()) {
     if (block.isMapping && !preferredId) {
       const mapping = open.find((a) => a.kind === 'mapping')
       return { target: mapping ? String(mapping.id) : 'new', newKind: 'mapping', newTitle: 'Kartierung' }
     }
     const newKind = block.hasWaypoint ? 'control' : 'special'
     if (preferredId) return { target: String(preferredId), newKind } // dragged onto a specific assignment
-    const controls = open.filter((a) => a.isControl)
-    const others = open.filter((a) => !a.isControl)
+    const waitingFirst = (list) => [...list.filter((a) => !flown.has(a.id)), ...list.filter((a) => flown.has(a.id))]
+    const controls = waitingFirst(open.filter((a) => a.isControl))
+    const others = waitingFirst(open.filter((a) => !a.isControl && a.kind !== 'mapping')) // mapping: only mapping flights
     const match = block.hasWaypoint
       ? controls[0] ?? (several ? null : others[0])
       : others[0] ?? (several ? null : controls[0])
