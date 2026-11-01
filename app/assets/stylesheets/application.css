@@ -1240,7 +1240,8 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .flightlogs__table td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .flightlogs__table .num { text-align: right; }
 .flightlogs__table th.num { text-align: right; }
-.flightlogs__check { width: 28px; padding-right: 0 !important; }
+/* The whole cell is the click area of the checkbox (flight_logs_controller) */
+.flightlogs__table .flightlogs__check { width: 22px; padding-left: 14px; padding-right: 10px; }
 .flightlogs__check input { margin: 0; accent-color: var(--accent); }
 .flightlogs__row { cursor: default; user-select: none; -webkit-user-select: none; }
 .flightlogs__row:hover { background: var(--hover); }

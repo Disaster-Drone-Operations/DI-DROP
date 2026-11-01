@@ -27,12 +27,13 @@ export default class extends Controller {
     if (event.target.closest('.renamable__input')) return
     const row = event.currentTarget
     const index = this.rowTargets.indexOf(row)
-    const onCheckbox = event.target.matches('input[type=checkbox]')
+    // The whole checkbox cell counts as the checkbox – a click just beside it adds to the selection too
+    const box = event.target.closest('.flightlogs__check')?.querySelector('input[type=checkbox]')
     if (event.shiftKey && this.anchor != null) {
       const [from, to] = [Math.min(this.anchor, index), Math.max(this.anchor, index)]
       this.rowTargets.forEach((r, i) => this.mark(r, i >= from && i <= to))
-    } else if (event.metaKey || event.ctrlKey || onCheckbox) {
-      this.mark(row, onCheckbox ? event.target.checked : !this.isSelected(row))
+    } else if (event.metaKey || event.ctrlKey || box) {
+      this.mark(row, event.target === box ? box.checked : !this.isSelected(row))
       this.anchor = index
     } else {
       const only = this.isSelected(row) && this.selected.length === 1
@@ -41,6 +42,11 @@ export default class extends Controller {
     }
     window.getSelection()?.removeAllRanges() // otherwise ⇧-click selects text
     this.updateSum()
+  }
+
+  // Header: a click beside the „Alle auswählen“ checkbox counts as a click on it
+  allCell(event) {
+    if (event.target === event.currentTarget) this.allTarget.click()
   }
 
   toggleAll(event) {
