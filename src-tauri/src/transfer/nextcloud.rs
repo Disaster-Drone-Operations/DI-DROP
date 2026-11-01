@@ -277,16 +277,28 @@ pub async fn list(account: &Account, path: &str) -> Result<Vec<Folder>, String> 
         return Err(http_error(response.status()));
     }
     let xml = response.text().await.map_err(|e| e.to_string())?;
-    let own = url.path().trim_end_matches('/').to_string();
+    subfolders(&xml, url.path(), path)
+}
+
+/// Comparable form of a WebDAV path: percent-decoded, from "/remote.php/" on, without trailing slash.
+/// Nextcloud and the URL library encode differently (e.g. "ä", "@" in the user name, spaces), and hrefs
+/// may be absolute URLs – so the folder itself is only recognised in this form.
+fn dav_path(href: &str) -> String {
+    let decoded = percent_encoding::percent_decode_str(href).decode_utf8_lossy();
+    let from = decoded.find("/remote.php/").unwrap_or(0);
+    decoded[from..].trim_end_matches('/').to_string()
+}
+
+/// Subfolders in a PROPFIND (depth 1) response – without the requested folder itself
+fn subfolders(xml: &str, own: &str, path: &str) -> Result<Vec<Folder>, String> {
+    let own = dav_path(own);
     let base = path.trim_end_matches('/');
-    let mut folders = parse_folders(&xml)?
+    let mut folders = parse_folders(xml)?
         .into_iter()
-        .filter(|href| href.trim_end_matches('/') != own)
+        .map(|href| dav_path(&href))
+        .filter(|href| *href != own)
         .filter_map(|href| {
-            let name = percent_encoding::percent_decode_str(href.trim_end_matches('/').rsplit('/').next()?)
-                .decode_utf8()
-                .ok()?
-                .to_string();
+            let name = href.rsplit('/').next().filter(|n| !n.is_empty())?.to_string();
             Some(Folder { path: format!("{base}/{name}"), name })
         })
         .collect::<Vec<_>>();
@@ -525,5 +537,27 @@ mod tests {
           <d:response><d:href>/remote.php/dav/files/anna/a.jpg</d:href><d:propstat><d:prop><d:resourcetype/></d:prop></d:propstat></d:response>
         </d:multistatus>"#;
         assert_eq!(parse_folders(xml).unwrap(), vec!["/remote.php/dav/files/anna/", "/remote.php/dav/files/anna/Eins%C3%A4tze/"]);
+    }
+
+    #[test]
+    fn subfolders_leave_out_the_folder_itself_whatever_the_encoding() {
+        // Request URL as the URL library encodes it, hrefs as Nextcloud does (lower-case hex, "@" encoded,
+        // the folder itself as absolute URL)
+        let own = "/remote.php/dav/files/rene@example.org/F%C3%BChrungsmittel";
+        let xml = r#"<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">
+          <d:response><d:href>https://cloud.example.org/remote.php/dav/files/rene%40example.org/F%c3%bchrungsmittel/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>
+          <d:response><d:href>/remote.php/dav/files/rene%40example.org/F%c3%bchrungsmittel/Einsatz%20Doku/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>
+          <d:response><d:href>/remote.php/dav/files/rene%40example.org/F%c3%bchrungsmittel/Drohnen/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>
+        </d:multistatus>"#;
+        let folders = subfolders(xml, own, "/Führungsmittel").unwrap();
+        let names: Vec<_> = folders.iter().map(|f| (f.name.as_str(), f.path.as_str())).collect();
+        assert_eq!(names, vec![("Drohnen", "/Führungsmittel/Drohnen"), ("Einsatz Doku", "/Führungsmittel/Einsatz Doku")]);
+        // Root: the account folder itself is left out too
+        let root = r#"<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">
+          <d:response><d:href>/remote.php/dav/files/rene%40example.org/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>
+          <d:response><d:href>/remote.php/dav/files/rene%40example.org/Photos/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>
+        </d:multistatus>"#;
+        let folders = subfolders(root, "/remote.php/dav/files/rene@example.org/", "/").unwrap();
+        assert_eq!(folders.iter().map(|f| f.path.as_str()).collect::<Vec<_>>(), vec!["/Photos"]);
     }
 }
