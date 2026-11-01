@@ -1360,6 +1360,8 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .training-clock__time { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; color: var(--training); }
 .training-clock__buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
 .training-next { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: var(--radius); border: 2px solid var(--training); }
+/* Long Nextcloud paths in the script ("…/Fotos/Drohne-BWMB") wrap instead of widening the panel */
+.training-next strong, .training-script li > span:last-child { overflow-wrap: anywhere; }
 .training-next__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--training); }
 .training-next__buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .training-script { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }

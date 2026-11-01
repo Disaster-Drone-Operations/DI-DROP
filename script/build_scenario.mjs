@@ -111,7 +111,7 @@ if (!script) {
     const target = config.nextcloud?.target
     if (target && flights.length) {
       const firstLanding = new Date(flights[0].last.getTime() + 8 * 60_000)
-      script.push({ at: hhmm(firstLanding), action: 'note', text: `Bilder bereitstellen – als Nextcloud-Ordner des Einsatzes „${target}“ wählen (Klickpfad üben).` })
+      script.push({ at: hhmm(firstLanding), action: 'note', text: `Bilder bereitstellen – als Nextcloud-Ordner des Einsatzes wählen: ${target.split('/').filter(Boolean).join(' › ')} (Klickpfad üben).` })
     }
     const end = new Date(Math.max(...flights.map((f) => f.last.getTime())) + 25 * 60_000)
     script.push({ at: hhmm(end), action: 'note', text: 'Alles bereitstellen, Aufträge erledigen („Keine weiteren Kontrollflüge“) und den Einsatz abschließen.' })
