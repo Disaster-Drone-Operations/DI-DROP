@@ -61,7 +61,7 @@ export default {
     { at: '13:01', action: 'note', text: 'Alarmierung Großbrand. Neuen Einsatz anlegen (Vorschlag: „Großbrand Musterdorf“), unter „Weitere Angaben“ Pilot, Luftraumbeobachter und Gruppenführer eintragen. Einsatzort mit „Hier“ – in der Steuerung „QR-Code scannen“ (oder „Verweigern“ ausprobieren).' },
     { at: '13:04', action: 'note', text: 'Einsatzleitung: Zufahrt für die Drehleiter bis 14:00 prüfen (Spezialauftrag anlegen), Kontrollflüge alle 30 Minuten. Auf „Mein Standort“ den Live-Standort starten und in der Steuerung scannen – später „Am Telefon beenden“.' },
     { at: '13:18', action: 'card.insert', card: 'flug1', text: 'Flug 1 gelandet – Karte einstecken: auch ein alter Testflug von gestern ist drauf' },
-    { at: '13:25', action: 'note', text: 'Ein Wärmebild der Lageerkundung per „An Telefon“ an die Einsatzleitung schicken, Lageerkundung als erledigt markieren.' },
+    { at: '13:25', action: 'note', text: 'Ein Wärmebild der Lageerkundung per „An Telefon“ an die Einsatzleitung schicken, Lageerkundung als erledigt markieren. Falls die Karte nicht schon nach dem Import ausgeworfen wurde: in der Seitenleiste unter „SD-Karten“ auswerfen (⏏).' },
     { at: '13:28', action: 'card.remove', card: 'flug1' },
     { at: '13:58', action: 'card.insert', card: 'flug2', text: 'Flug 2 gelandet – zwei Ordner: Kontrollflug und Kartierung (mit RTK-Dateien)' },
     { at: '14:05', action: 'card.remove', card: 'flug2' },

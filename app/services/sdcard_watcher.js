@@ -29,19 +29,20 @@ function setCards(list) {
   document.dispatchEvent(new CustomEvent('sdcard:changed'))
 }
 
-// „Auswerfen“ (sidebar or after the import) – says itself whether it worked → true/false
-export async function ejectCard(root) {
+// „Auswerfen“ → null, or the reason it didn't work. Says so itself (notice), unless quiet:
+// the import („Anschließend auswerfen“) puts the result into its own message.
+export async function ejectCard(root, { quiet = false } = {}) {
   const card = cards.find((c) => c.root === root)
-  const fail = (text) => (showNotice(text, { alert: true, delay: 10000 }), false)
-  if (document.querySelector('.import-dialog[open]')) return fail('Erst den Import abschließen, dann die Karte auswerfen.')
+  const fail = (text) => (quiet || showNotice(text, { alert: true, delay: 10000 }), text)
+  if (!quiet && document.querySelector('.import-dialog[open]')) return fail('Erst den Import abschließen, dann die Karte auswerfen.')
   try {
     await platform.sdcard.eject(root)
   } catch (error) {
     return fail(error?.message ?? String(error))
   }
   setCards(cards.filter((c) => c.root !== root)) // right away – the watcher follows
-  showNotice(`„${card?.name ?? 'SD-Karte'}“ ausgeworfen – die Karte kann jetzt entnommen werden.`)
-  return true
+  if (!quiet) showNotice(`„${card?.name ?? 'SD-Karte'}“ ausgeworfen – die Karte kann jetzt entnommen werden.`)
+  return null
 }
 
 // For the media import controller: the card waiting for this mission (taken only once)

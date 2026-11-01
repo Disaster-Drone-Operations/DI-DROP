@@ -3,7 +3,7 @@ import platform from '/lib/platform/index.js'
 import { render } from '/lib/views.js'
 import Mission from '/app/models/mission.js'
 import MediaImporter from '/app/services/media_importer.js'
-import { takePendingCard, showCardIn } from '/app/services/sdcard_watcher.js'
+import { takePendingCard, showCardIn, ejectCard } from '/app/services/sdcard_watcher.js'
 
 // Import a flight's images: drag & drop onto the window or choose folder/files,
 // then assign the image blocks to assignments in the dialog.
@@ -22,7 +22,7 @@ export default class extends Controller {
     if (this.element.isConnected) this.unlisten = unlisten
     else unlisten()
 
-    this.dialogTarget.addEventListener('cancel', (e) => ['importing', 'deleting'].includes(this.state) && e.preventDefault())
+    this.dialogTarget.addEventListener('cancel', (e) => ['importing', 'deleting', 'ejecting'].includes(this.state) && e.preventDefault())
     this.dialogTarget.addEventListener('close', () => (this.state = null))
 
     this.checkCard = () => this.startPendingCard()
@@ -131,6 +131,7 @@ export default class extends Controller {
     try {
       const { imported, failed, assignments, copies } = await this.importer.import(selection, (progress) => this.show('importing', { progress }))
       const cleanup = this.card && data.get('delete_from_card') ? await this.deleteFromCard(copies, { companions: !!data.get('delete_companions'), clear: !!data.get('clear_card') }) : null
+      const ejectError = this.card && data.get('eject_card') ? await this.ejectCard() : undefined
       this.close()
       const names = (assignments ?? []).map((a) => `„${a.title}“`).join(', ')
       let flash = failed.length
@@ -139,6 +140,7 @@ export default class extends Controller {
           ? { notice: `${imported} ${imported === 1 ? 'Bild' : 'Bilder'} importiert${names ? ` – ${names}` : ''}. Wie es weitergeht, steht oben unter „Nächster Schritt“.` }
           : { notice: 'Nichts ausgewählt – nichts importiert.' }
       if (cleanup) flash = this.withCleanup(flash, cleanup)
+      if (ejectError !== undefined) flash = this.withEject(flash, ejectError)
       document.dispatchEvent(new CustomEvent('router:visit', { detail: { path: this.returnPathValue, flash } }))
     } catch (error) {
       console.error(error)
@@ -162,6 +164,18 @@ export default class extends Controller {
     } catch (error) {
       return { deleted: [], kept: items.map((i) => ({ src: i.src, reason: String(error) })) }
     }
+  }
+
+  // „Anschließend auswerfen“ → null or why it didn't work (the result goes into the import message)
+  async ejectCard() {
+    this.show('ejecting')
+    return ejectCard(this.card.root, { quiet: true })
+  }
+
+  withEject(flash, error) {
+    const text = flash.alert ?? flash.notice
+    if (error) return { alert: `${text} Die Karte wurde nicht ausgeworfen: ${error}` }
+    return flash.alert ? { alert: `${text} Karte ausgeworfen.` } : { notice: `${text} Die SD-Karte ist ausgeworfen und kann entnommen werden.` }
   }
 
   withCleanup(flash, { deleted, kept }) {

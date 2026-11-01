@@ -16,6 +16,11 @@
       <div class="spinner"></div>
       <p>Kopien werden geprüft und die Bilder von der Karte gelöscht …</p>
     </div>
+  <% } else if (state === 'ejecting') { -%>
+    <div class="dialog__center">
+      <div class="spinner"></div>
+      <p>Die SD-Karte wird ausgeworfen …</p>
+    </div>
 
   <% } else if (state === 'importing') { -%>
     <h2 class="dialog__title">Importiere …</h2>
@@ -120,6 +125,10 @@
             <% } -%>
             <label class="checkbox import-card__sub"><input type="checkbox" name="delete_companions" value="yes" checked> RTK-Rohdaten der Drohne mit löschen</label>
             <p class="subtle">.MRK, .OBS, .NAV, .RTK – nur in Ordnern, in denen danach keine Aufnahme mehr liegt. Werden bisher nicht gebraucht; die genauen Positionen stehen schon in den Bildern.</p>
+          </div>
+          <div class="import-card__delete">
+            <label class="checkbox"><input type="checkbox" name="eject_card" value="yes" checked> SD-Karte anschließend auswerfen</label>
+            <p class="subtle">Nach dem Import (und dem Löschen) – danach kann die Karte direkt entnommen werden.</p>
           </div>
         <% } -%>
 
