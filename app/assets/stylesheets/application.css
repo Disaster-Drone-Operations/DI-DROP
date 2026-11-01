@@ -1234,9 +1234,12 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 
 /* Flight logs */
 .flightlogs { display: flex; flex-direction: column; gap: 14px; }
-.flightlogs__table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: auto; max-height: calc(100vh - 290px); }
+.flightlogs__table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: auto; max-height: calc(100vh - 290px); isolation: isolate; }
+/* isolation: the sticky header rows (z-index) stay inside this layer – otherwise WebKit paints them over the
+   macOS overlay scrollbar, which then looks as if it ran behind the headings */
 .flightlogs__table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.flightlogs__table th { position: sticky; top: 0; z-index: 2; background: var(--surface-2); text-align: left; font-weight: 600; font-size: 12px; color: var(--text-2); padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+/* top: -1px (+1px padding): reaches 1px above the scroll area, otherwise WebKit lets a pixel row of the content show at the top */
+.flightlogs__table th { position: sticky; top: -1px; z-index: 2; background: var(--surface-2); text-align: left; font-weight: 600; font-size: 12px; color: var(--text-2); padding: 8px 10px 7px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .flightlogs__table td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .flightlogs__table .num { text-align: right; }
 .flightlogs__table th.num { text-align: right; }
@@ -1273,7 +1276,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .flightlog-progress--error { color: var(--danger); }
 .button--icon-quiet > span { display: none; } /* icon-only buttons: label only as tooltip */
 /* Sticky offset measured by flight_logs_controller (--sticky-head); 1 px overlap against rounding gaps */
-.flightlogs__group-head td { position: sticky; top: calc(var(--sticky-head, 31px) - 1px); z-index: 1; background: var(--surface-2); padding: 9px 10px; font-weight: 600; border-bottom: 1px solid var(--border); }
+.flightlogs__group-head td { position: sticky; top: calc(var(--sticky-head, 32px) - 2px); z-index: 1; background: var(--surface-2); padding: 9px 10px; font-weight: 600; border-bottom: 1px solid var(--border); }
 .flightlogs__group-head .icon { vertical-align: -2px; color: var(--text-2); margin-right: 4px; }
 .flightlogs__group-head .subtle { font-weight: 400; margin-left: 8px; }
 .flightlogs__group-head .badge { margin-left: 8px; font-weight: 500; }
