@@ -36,6 +36,8 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 keyring = { version = "3", features = ["apple-native", "windows-native"] }
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+# Started again (e.g. by Windows AutoPlay for a memory card) → the running di-drop comes to the front
+tauri-plugin-single-instance = "2"
 dji-log-parser = "0.5.7"
 mtp-rs = "0.33"
 

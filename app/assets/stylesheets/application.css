@@ -476,6 +476,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); box-sha
 .settings__nav { display: flex; flex-direction: column; gap: 1px; }
 .settings__title { font-size: 17px; margin-bottom: 4px; }
 .settings__panel .form-actions { max-width: 560px; margin-top: 20px; }
+.settings__appendix { max-width: 560px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.settings__subtitle { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; }
+.settings__subtitle .icon { color: var(--text-2); }
+.settings__appendix .flow-steps { margin: 0; }
 
 /* Module navigation -------------------------------------------------------- */
 

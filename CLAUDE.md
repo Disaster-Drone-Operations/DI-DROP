@@ -155,6 +155,12 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   RTK float/single, XMP `RtkFlag` ≠ 50) wären sie die Grundlage; bei RTK fixed stehen die Positionen schon im Bild.
 - Testen nie mit echter Karte: in der Browser-Brücke gilt jeder Ordner in `tmp/dev-sdcards/` als Karte
   (dort Kopien von Testbildern ablegen; gelöscht wird in der Brücke nur dort).
+- Auswerfen (`sdcard::eject`, Seitenleiste „SD-Karten“ ⏏ und „SD-Karte anschließend auswerfen“ beim Import):
+  nur gerade erkannte Karten auf einem eigenen Laufwerk – Testordner nie (Brücke: nur ausblenden).
+  Mit eigenem Disk-Image testen (`hdiutil create -fs MS-DOS -srcfolder <Ordner mit DCIM>` + `hdiutil attach`).
+- Neu eingesteckte Karte holt di-drop nach vorne (`bring_to_front`). Windows erlaubt das zuverlässig nur, wenn
+  di-drop in der Automatischen Wiedergabe für Speicherkarten gewählt ist: der Installer trägt es dafür ein
+  (`src-tauri/windows/hooks.nsh`), ein zweiter Start landet per `tauri-plugin-single-instance` im laufenden di-drop.
 
 ## Schulungsmodus
 

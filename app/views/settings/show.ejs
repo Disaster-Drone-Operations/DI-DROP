@@ -45,6 +45,7 @@
     <div class="form-actions">
       <button type="submit" class="button button--primary">Speichern</button>
     </div>
+    <% if (section.appendix && platformName() === section.appendix.os) { %><%- include(section.appendix.partial) %><% } %>
   </form>
   <% } -%>
 </div>

@@ -1,0 +1,13 @@
+<%# Settings → Bildablage, Windows only: di-drop instead of the Explorer window for an inserted memory card
+    (AutoPlay handler from the installer, src-tauri/windows/hooks.nsh) -%>
+<section class="settings__appendix" data-controller="system-open">
+  <h3 class="settings__subtitle"><%- icon('sdcard', { size: 15 }) %>SD-Karten unter Windows</h3>
+  <p class="subtle">Windows öffnet beim Einstecken einer Karte sonst ein Explorer-Fenster. So kommt stattdessen di-drop nach vorne – auch wenn es noch nicht läuft:</p>
+  <ol class="flow-steps">
+    <li>Windows-<strong>Einstellungen</strong> → <strong>Bluetooth und Geräte</strong> → <strong>Automatische Wiedergabe</strong> öffnen (oder unten auf den Knopf).</li>
+    <li>Bei <strong>Speicherkarte</strong> den Eintrag „<strong>Bilder importieren</strong>“ von <strong>di-drop</strong> wählen.</li>
+    <li>Karte einstecken – di-drop erscheint statt des Explorers.</li>
+  </ol>
+  <p class="hint">Fehlt di-drop in der Auswahl: „Keine Aktion durchführen“ wählen. Dann öffnet sich zumindest kein Explorer-Fenster mehr – di-drop erkennt die Karte trotzdem.</p>
+  <button type="button" class="button" data-action="system-open#openUrl" data-system-open-url-param="ms-settings:autoplay"><%- icon('settings') %><span>Automatische Wiedergabe öffnen …</span></button>
+</section>

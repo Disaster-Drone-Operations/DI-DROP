@@ -74,6 +74,7 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
+        "installerHooks": "windows/hooks.nsh",
         "languages": [
           "German",
           "English"

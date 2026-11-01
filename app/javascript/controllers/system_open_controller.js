@@ -13,6 +13,11 @@ export default class extends Controller {
     platform.revealPath(params.path).catch((e) => this.fail(e))
   }
 
+  // Web page or system settings page:  data-action="system-open#openUrl" data-system-open-url-param="…"
+  openUrl({ params }) {
+    platform.openUrl(params.url).catch((e) => this.fail(e))
+  }
+
   // Image to a smartphone via the relay (QR code)
   sendToPhone({ params }) {
     sendImageToPhone(params.path)

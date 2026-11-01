@@ -6,6 +6,7 @@
 //
 // Field types: text, textarea, number, select, url, folder
 // partial: custom view instead of the default form (e.g. a setup assistant)
+// appendix: { partial, os } – extra view below the form, only on that platform ('windows' …)
 //   folder opens the native folder dialog in the desktop app.
 
 export default [
@@ -44,6 +45,8 @@ export default [
       { key: 'base_path', label: 'Basisordner', type: 'folder', default: '',
         hint: 'Leer lassen für den Standard: Ordner „Bilder/di-drop“ in deinem Benutzerordner. Darin entsteht pro Einsatz „2026_10_06__Einsatzname“ und pro Flug „2026_10_06__1430“. Gilt für Einsätze, die noch keine Bilder haben.' },
     ],
+    // Windows opens an Explorer window for every inserted memory card – how to get di-drop instead
+    appendix: { partial: 'settings/_autoplay', os: 'windows' },
   },
   {
     key: 'flightlogs',

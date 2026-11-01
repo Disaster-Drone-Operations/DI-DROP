@@ -347,10 +347,11 @@ fn rename_dir(from: String, to: String) -> Result<String, String> {
     media::rename_dir(Path::new(&from), Path::new(&to)).map(|p| p.display().to_string())
 }
 
-/// Opens a web page in the default browser (e.g. maps, Cloudflare). https only.
+/// Opens a web page in the default browser (e.g. maps, Cloudflare). https only – plus the AutoPlay page
+/// of the Windows settings (instructions in Settings → Bildablage)
 #[tauri::command]
 fn open_url(app: AppHandle, url: String) -> Result<(), String> {
-    if !url.starts_with("https://") {
+    if !url.starts_with("https://") && url != "ms-settings:autoplay" {
         return Err("Nur https-Adressen".into());
     }
     app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
@@ -385,6 +386,10 @@ pub fn run() {
     });
 
     builder
+        // Must come first: started a second time (e.g. by Windows AutoPlay for a memory card, see
+        // windows/hooks.nsh) → no second window, the running di-drop comes to the front instead.
+        // The card itself is reported by the memory card watcher.
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| bring_to_front(app)))
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
