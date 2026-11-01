@@ -6,6 +6,7 @@ import { distance } from '/lib/geo.js'
 import { formatDecimal, formatDms, formatUtm, mapLinks } from '/lib/location/coordinates.js'
 import { currentLocation, startTransfer, stopTransfer } from '/app/services/location_service.js'
 import { describeLocation } from '/app/services/address_service.js'
+import { nowMs } from '/lib/clock.js'
 
 // "Mein Standort" page: redraws the position on every change (dialog: location-transfer)
 export default class extends Controller {
@@ -85,7 +86,7 @@ export default class extends Controller {
 }
 
 function age(timestamp) {
-  const minutes = Math.floor((Date.now() - timestamp) / 60_000)
+  const minutes = Math.floor((nowMs() - timestamp) / 60_000) // training: simulated clock
   if (minutes < 1) return 'gerade eben'
   if (minutes < 60) return `vor ${minutes} Min.`
   const hours = Math.floor(minutes / 60)

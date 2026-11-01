@@ -7,6 +7,7 @@
 import { LocationRelayClient } from '/lib/location/relay_client.js'
 import { SimulatedLocationClient } from '/lib/location/simulated_client.js'
 import Setting from '/app/models/setting.js'
+import { nowMs } from '/lib/clock.js'
 
 const state = {
   position: null, // { lat, lon, alt, accuracy, timestamp, receivedAt, source }
@@ -79,7 +80,7 @@ export function closeTransfer() {
 // Position no older than maxAgeMs (e.g. for „Hier“ in the mission form)
 export function freshPosition(maxAgeMs = 5 * 60_000) {
   const p = state.position
-  return p && Date.now() - p.timestamp <= maxAgeMs ? p : null
+  return p && nowMs() - p.timestamp <= maxAgeMs ? p : null // training: simulated clock
 }
 
 export const isLive = () => state.session?.mode === 'stream' && ['streaming', 'paired', 'reconnecting'].includes(state.session.status)
