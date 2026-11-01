@@ -6,11 +6,12 @@ import { importFromFolder, importFromDevice, connectedDevices } from '/app/servi
 // "Flugprotokolle" page: selection like in macOS lists (click, ⌘/Ctrl-click, ⇧-click) and
 // a totals bar at the bottom like in Numbers (count, total duration, total distance)
 export default class extends Controller {
-  static targets = ['row', 'all', 'sum', 'deviceButton']
+  static targets = ['row', 'all', 'sum', 'deviceButton', 'table']
 
   async connect() {
     this.anchor = null
     this.updateSum()
+    this.stackStickyRows()
     if (this.hasDeviceButtonTarget) {
       this.devices = await connectedDevices()
       if (this.devices.length) {
@@ -18,6 +19,26 @@ export default class extends Controller {
         this.deviceButtonTarget.title = this.devices.map((d) => d.name).join(', ')
       }
     }
+  }
+
+  disconnect() {
+    this.resizeObserver?.disconnect()
+  }
+
+  // Column header → drone → month stay on top while scrolling. Their heights depend on font and rendering
+  // (desktop app vs. browser), so the offsets are measured instead of fixed – otherwise a gap shows the rows below.
+  stackStickyRows() {
+    if (!this.hasTableTarget) return
+    const table = this.tableTarget
+    const measure = () => {
+      const head = table.querySelector('thead')?.getBoundingClientRect().height ?? 0
+      const drone = table.querySelector('.flightlogs__drone')?.getBoundingClientRect().height ?? 0
+      table.style.setProperty('--sticky-head', `${head}px`)
+      table.style.setProperty('--sticky-drone', `${drone}px`)
+    }
+    measure()
+    this.resizeObserver = new ResizeObserver(measure)
+    for (const el of [table.querySelector('thead'), table.querySelector('.flightlogs__drone')]) if (el) this.resizeObserver.observe(el)
   }
 
   // ── Selection ────────────────────────────────────────────────────────
