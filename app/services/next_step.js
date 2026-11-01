@@ -2,7 +2,7 @@
 // The red guiding thread of the app: Einsatz → Auftrag → Bilder → Vergleichsbilder → Bereitstellen → Erledigt.
 //
 //   const states = await assignmentStates(assignments, counts)       // per assignment, for the cards
-//   const step = missionNextStep(mission, open, all, states)         // one red button on the mission page
+//   const step = missionNextStep(mission, open, states)              // one red button on the mission page
 //   const { open, done, counts, steps, nextStep } = await missionProgress(mission)   // all of it
 
 import { db } from '/lib/db.js'
@@ -70,7 +70,7 @@ export function cardSteps(assignment, state) {
 
 // The one next step of a mission → { kind, text, label, icon, href?, assignment?, dueAt? }
 //   kinds: import (opens the folder picker) · comparisons · provide · complete · add · wait
-export function missionNextStep(mission, open, all, states) {
+export function missionNextStep(mission, open, states) {
   const path = `/missions/${mission.id}`
   if (!mission.isActive) return null
   const state = (a) => states.get(a.id) ?? {}
@@ -85,7 +85,8 @@ export function missionNextStep(mission, open, all, states) {
     return { kind: 'comparisons', icon: 'control', label: 'Vergleichsbilder erstellen', href: `${path}/comparisons?from=${compare.id}`,
       text: `„${compare.title}“: Vergleichsbilder aus diesem und früheren Kontrollflügen erstellen.` }
   }
-  const missing = all.filter((a) => state(a).missing > 0)
+  // Only open assignments: whoever marks one done without providing it has decided so
+  const missing = open.filter((a) => state(a).missing > 0)
   if (missing.length) {
     // Provided per assignment (its page has the selection) – the button leads to the first one
     const [first, ...rest] = missing
@@ -125,5 +126,5 @@ export async function missionProgress(mission) {
   const all = [...open, ...done]
   const states = await assignmentStates(all, counts)
   const steps = new Map(all.map((a) => [a.id, cardSteps(a, states.get(a.id))]))
-  return { open, done, counts, states, steps, nextStep: missionNextStep(mission, open, all, states) }
+  return { open, done, counts, states, steps, nextStep: missionNextStep(mission, open, states) }
 }

@@ -33,7 +33,7 @@ export default class MissionsController extends ApplicationController {
       status.set(mission.id, {
         open: open.length,
         next: open[0] ?? null,
-        missing: assignments.reduce((n, a) => n + (states.get(a.id)?.missing ?? 0), 0),
+        missing: open.reduce((n, a) => n + (states.get(a.id)?.missing ?? 0), 0), // like „Nächster Schritt“: open ones only
       })
       for (const a of assignments) steps.set(a.id, cardSteps(a, states.get(a.id)))
     }
