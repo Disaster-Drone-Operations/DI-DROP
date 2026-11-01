@@ -149,13 +149,16 @@ async fn sdcard_eject(root: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || sdcard::eject(Path::new(&root))).await.map_err(|e| e.to_string())?
 }
 
-/// Memory card inserted/removed? → events "sdcard:inserted" / "sdcard:removed" to the UI
+/// Memory card inserted/removed? → events "sdcard:inserted" / "sdcard:removed" to the UI.
+/// A newly inserted card also brings di-drop to the front (Windows may only flash the taskbar
+/// button – unless di-drop is the AutoPlay handler for memory cards)
 fn watch_sdcards(app: AppHandle) {
     use tauri::Emitter;
     std::thread::spawn(move || {
         let removed_app = app.clone();
         sdcard::watch(
             |card| {
+                bring_to_front(&app);
                 let _ = app.emit("sdcard:inserted", card);
             },
             |card| {
@@ -163,6 +166,15 @@ fn watch_sdcards(app: AppHandle) {
             },
         )
     });
+}
+
+/// Main window to the front (also when minimized or di-drop is in the background)
+fn bring_to_front(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
 }
 
 // ── Training mode (src/training.rs) ─────────────────────────────────
