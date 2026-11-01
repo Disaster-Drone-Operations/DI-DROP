@@ -1000,6 +1000,7 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .relay-steps .is-done .stepper__num { background: var(--success-soft); color: var(--success); }
 .relay-steps .is-disabled { color: var(--text-3); }
 .relay-actions { justify-content: flex-start; }
+.training-scenarios { margin: 14px 0; }
 
 /* Phone connection: laptop ↔ relay ↔ phone (settings) */
 .relay-diagram { margin: 12px 0 18px; padding: 18px 16px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
