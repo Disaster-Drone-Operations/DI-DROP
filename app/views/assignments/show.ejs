@@ -8,8 +8,11 @@
       <a class="backlink" href="#/missions/<%= mission.id %>"><%= mission.title %></a>
       <div class="eyebrow">
         <%- assignmentBadge(assignment) %>
-        <% if (assignment.isOpen) { -%>
+        <% if (assignment.isOpen && !shotCount) { -%>
           <span class="subtle"><%= assignment.dueAt ? `geplant ${formatTime(assignment.dueAt)} Uhr` : 'sofort' %></span>
+        <% } else if (assignment.isOpen) { -%>
+          <%# Already flown: when it was planned for, without „geplant“ (the flight times are shown below the title) -%>
+          <% if (assignment.dueAt) { %><span class="subtle"><%= formatTime(assignment.dueAt) %> Uhr</span><% } %>
         <% } else { -%>
           <span class="badge badge--muted"><%- icon('check', { size: 12 }) %>Erledigt</span>
         <% } -%>
