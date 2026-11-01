@@ -3,7 +3,7 @@ import Mission from '/app/models/mission.js'
 import Assignment from '/app/models/assignment.js'
 import Viewpoint from '/app/models/viewpoint.js'
 import Setting from '/app/models/setting.js'
-import platform from '/lib/platform/index.js'
+import platform, { trainingId } from '/lib/platform/index.js'
 import { syncFileNames } from '/app/services/file_namer.js'
 import { completionOptions } from '/app/services/control_planner.js'
 import { hasDraft } from '/lib/drafts.js'
@@ -44,7 +44,7 @@ export default class MissionsController extends ApplicationController {
       upcoming,
       status,
       steps,
-      needsSetup: !Setting.isSet('general.operator_name'),
+      needsSetup: !trainingId && !Setting.isSet('general.operator_name'), // training: own settings, no welcome
     }, { title: 'Einsätze' })
   }
 
