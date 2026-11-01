@@ -1,12 +1,12 @@
 import { Controller } from '@hotwired/stimulus'
 import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
-import { load, summarize } from '/app/services/provision_status.js'
+import { load, summarize, byTarget } from '/app/services/provision_status.js'
 
 // Shows on every page what has already been provided – live during uploads.
 //   <span data-provision-assignment="12"></span>        status of an assignment
 //   <span data-provision-files="5" data-compact data-label="W"></span>  status of a file (icon)
-//   data-wide: text + long bar (header of the assignment page)
+//   data-wide: text + long bar + where to (header of the assignment page)
 //   <div data-provision-complete="12" data-provision-title="…">  „Erledigt“: asks for confirmation
 //        as long as nothing has been provided; highlighted afterwards (not with data-provision-plain)
 export default class extends Controller {
@@ -42,7 +42,9 @@ export default class extends Controller {
 
     const options = (el) => ({ compact: 'compact' in el.dataset, wide: 'wide' in el.dataset, label: el.dataset.label ?? null })
     for (const el of assignmentSlots) {
-      morph(el, render('provisions/_status', { s: forAssignment(Number(el.dataset.provisionAssignment)), ...options(el) }))
+      const id = Number(el.dataset.provisionAssignment)
+      const targets = 'wide' in el.dataset ? byTarget(rows.filter((r) => r.assignment_id === id)) : []
+      morph(el, render('provisions/_status', { s: forAssignment(id), targets, ...options(el) }))
     }
     for (const el of fileSlots) {
       const ids = new Set(fileIdsOf(el))

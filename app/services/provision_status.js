@@ -3,6 +3,7 @@
 
 import { db } from '/lib/db.js'
 import { progressOf } from '/app/services/upload_queue.js'
+import { TARGETS } from '/app/services/upload_targets.js'
 
 const placeholders = (list) => list.map(() => '?').join(',')
 
@@ -22,6 +23,15 @@ export function summarize(rows) {
   }
 }
 
+// Per target (Nextcloud, USB stick …) → [{ label, done, files }]
+export function byTarget(rows) {
+  const targets = [...new Set(rows.map((r) => r.target))]
+  return targets.map((target) => {
+    const own = rows.filter((r) => r.target === target)
+    return { label: TARGETS[target]?.label ?? target, done: own.filter((r) => r.status === 'done').length, files: own.length }
+  })
+}
+
 // All items for the given assignments/images (canceled ones don't count)
 export async function load({ assignmentIds = [], fileIds = [] }) {
   if (!assignmentIds.length && !fileIds.length) return []
@@ -36,7 +46,7 @@ export async function load({ assignmentIds = [], fileIds = [] }) {
     params.push(...fileIds)
   }
   return db.select(
-    `SELECT id, assignment_id, media_file_id, status, size FROM upload_items WHERE status <> 'canceled' AND (${where.join(' OR ')})`,
+    `SELECT id, assignment_id, media_file_id, target, status, size FROM upload_items WHERE status <> 'canceled' AND (${where.join(' OR ')})`,
     params,
   )
 }

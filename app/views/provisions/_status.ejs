@@ -1,5 +1,5 @@
-<%# locals: s, compact, wide, label -%>
-<%# compact: icon only (+ abbreviation like „W“/„S“), e.g. on image tiles · wide: text + long bar (assignment page) -%>
+<%# locals: s, compact, wide, label, targets -%>
+<%# compact: icon only (+ abbreviation like „W“/„S“), e.g. on image tiles · wide: text + long bar + targets (assignment page) -%>
 <% if (s && s.state !== 'none') { -%>
   <% const text = { done: 'bereitgestellt', running: `wird bereitgestellt · ${s.percent} %`, queued: 'wartet', paused: 'pausiert', failed: 'fehlgeschlagen – wird wiederholt' }[s.state] -%>
   <% const symbol = { done: 'check', running: 'upload', queued: 'clock', paused: 'pause', failed: 'alert' }[s.state] -%>
@@ -9,7 +9,10 @@
         title="<%= label ? `${label}: ` : '' %><%= s.state === 'done' ? `${s.done} ${s.done === 1 ? 'Datei' : 'Dateien'} bereitgestellt` : text %>">
     <span class="provision__icon"><%- icon(symbol, { size: compact ? 12 : 11 }) %></span>
     <% if (compact && label) { %><span class="provision__tag"><%= label %></span><% } %>
-    <% if (!compact) { %><span class="provision__label"><%= text %><% if (wide) { %> · <%= s.done %> von <%= s.files %> Dateien<% } %></span><% } %>
+    <% if (!compact) { %><span class="provision__label"><%= text %><% if (wide) { -%>
+      <% const parts = (targets ?? []).length > 1 ? targets.map((t) => `${t.label}: ${t.done} von ${t.files}`) : [`${targets?.[0] ? `${targets[0].label}: ` : ''}${s.done} von ${s.files}`] -%>
+      · <%= parts.join(' · ') %> <%= s.files === 1 ? 'Datei' : 'Dateien' %>
+    <% } -%></span><% } %>
     <% if (!compact && s.state !== 'done') { %><span class="provision__bar"><span style="width: <%= s.percent %>%"></span></span><% } %>
   </span>
 <% } -%>

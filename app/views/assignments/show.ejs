@@ -17,13 +17,6 @@
       <h1><%= assignment.title %></h1>
       <% if (timeline) { %><div class="meta meta--large"><span><%- icon('clock', { size: 14 }) %><%= timeRange(timeline.first, timeline.last) %></span><span><%- icon('images', { size: 14 }) %><%= pluralize(shotCount, 'Aufnahme', 'Aufnahmen') %></span></div><% } %>
       <% if (shotCount) { %><div class="assignment-provision" data-provision-assignment="<%= assignment.id %>" data-wide></div><% } %>
-      <% if (provisions.length) { -%>
-        <div class="meta provisions-meta">
-          <% provisions.forEach((p) => { -%>
-            <span title="<%= p.running ? 'Wird gerade bereitgestellt' : 'Bereitgestellt' %>"><%- icon(p.running ? 'clock' : 'check', { size: 12 }) %><%= p.label %>: <%= p.done %><%= p.running ? ` von ${p.total}` : '' %> <%= p.total === 1 ? 'Datei' : 'Dateien' %></span>
-          <% }) -%>
-        </div>
-      <% } -%>
       <% if (assignment.notes) { %><p class="subtle"><%= assignment.notes %></p><% } %>
     </div>
     <div class="toolbar" data-controller="system-open">
