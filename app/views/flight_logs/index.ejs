@@ -70,29 +70,27 @@
         <% groups.forEach((group) => { -%>
           <tbody class="flightlogs__group">
             <% const m = group.mission -%>
-            <%# Click: select all flights of the mission (⌘/Ctrl: add to / remove from the selection) -%>
-            <tr class="flightlogs__group-head" data-action="click->flight-logs#selectGroup" title="Klicken: alle Flüge dieser Gruppe markieren">
+            <%# Click: select all flights of the mission – all of its parts (⌘/Ctrl: add to / remove from the selection) -%>
+            <tr class="flightlogs__group-head" data-action="click->flight-logs#selectGroup" data-group="<%= group.key %>"
+                title="Klicken: <%= m ? 'alle Flüge dieses Einsatzes' : 'alle Flüge dieses Blocks' %> markieren">
               <td colspan="8">
                 <% if (m) { -%>
-                  <%- icon('pin', { size: 14 }) %>
+                  <%- kindBadge(m) %>
                   <span class="flightlogs__group-title"><%= m.title %></span>
                   <span class="subtle"><%= formatDate(m.date, { weekday: false }) %></span>
+                  <% if (group.part) { %><span class="badge badge--muted badge--tiny">Teil <%= group.part.n %> von <%= group.part.of %></span><% } %>
                 <% } else { -%>
-                  <%- icon('protocol', { size: 14 }) %>
+                  <% const [newest, oldest] = [localDay(group.logs[0].started_at), localDay(group.logs.at(-1).started_at)] -%>
+                  <span class="badge badge--muted">Unbekannt</span>
                   <span class="flightlogs__group-title">Ohne Einsatz</span>
+                  <span class="subtle"><%= newest === oldest ? newest : `${oldest} – ${newest}` %></span>
                 <% } -%>
                 <span class="subtle"><%= pluralize(group.logs.length, 'Flug', 'Flüge') %></span>
               </td>
             </tr>
-            <%# Months only where flights of different days come together (without a mission) -%>
-            <% let month = null -%>
             <% group.logs.forEach((log) => { -%>
-              <% const logMonth = localMonth(log.started_at) -%>
-              <% if (!m && logMonth !== month) { month = logMonth -%>
-                <tr class="flightlogs__month" data-action="click->flight-logs#selectGroup" title="Klicken: alle Flüge dieses Monats markieren"><td colspan="8"><%= logMonth %></td></tr>
-              <% } -%>
               <%# Double-click on a flight: change its mission (of all selected flights) – later the flight details (TODO.md) -%>
-              <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>" data-mission="<%= log.mission_id ?? '' %>"
+              <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>" data-mission="<%= log.mission_id ?? '' %>" data-group="<%= group.key %>"
                   data-action="click->flight-logs#select dblclick->flight-logs#editMission"
                   title="<%= m ? (log.mission_source === 'manual' ? 'Von Hand zugeordnet' : 'Automatisch zugeordnet (Bilder bzw. Zeit des Einsatzes)') : (log.mission_source === 'manual' ? 'Von Hand: kein Einsatz' : 'Keinem Einsatz zuzuordnen') %> – Doppelklick: Einsatz ändern">
                 <td class="flightlogs__check"><input type="checkbox" tabindex="-1" aria-label="Flug auswählen"></td>

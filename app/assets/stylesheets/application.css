@@ -1246,8 +1246,6 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .flightlogs__row { cursor: default; user-select: none; -webkit-user-select: none; }
 .flightlogs__row:hover { background: var(--hover); }
 .flightlogs__row.is-selected { background: var(--accent-soft); }
-/* Sticky offsets measured by flight_logs_controller (--sticky-head/--sticky-drone); 1 px overlap against rounding gaps */
-.flightlogs__month td { position: sticky; top: calc(var(--sticky-head, 31px) + var(--sticky-drone, 39px) - 2px); background: var(--bg); font-weight: 600; font-size: 12px; color: var(--text-2); padding-top: 12px; }
 .flightlogs__battery { font-size: 12px; color: var(--text-2); }
 .mission-flights { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); text-decoration: none; }
 .mission-flights:hover { background: var(--hover); text-decoration: none; }
@@ -1274,11 +1272,14 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 .flightlog-progress--done .icon { color: var(--success); }
 .flightlog-progress--error { color: var(--danger); }
 .button--icon-quiet > span { display: none; } /* icon-only buttons: label only as tooltip */
+/* Sticky offset measured by flight_logs_controller (--sticky-head); 1 px overlap against rounding gaps */
 .flightlogs__group-head td { position: sticky; top: calc(var(--sticky-head, 31px) - 1px); z-index: 1; background: var(--surface-2); padding: 9px 10px; font-weight: 600; border-bottom: 1px solid var(--border); }
 .flightlogs__group-head .icon { vertical-align: -2px; color: var(--text-2); margin-right: 4px; }
 .flightlogs__group-head .subtle { font-weight: 400; margin-left: 8px; }
+.flightlogs__group-head .badge { margin-left: 8px; font-weight: 500; }
+.flightlogs__group-head td > .badge:first-child { margin: 0 8px 0 0; } /* Übung / Einsatz / Unbekannt in front */
 .flightlogs__group-title { margin-right: 2px; }
-.flightlogs__group-head, .flightlogs__month { cursor: default; user-select: none; -webkit-user-select: none; }
+.flightlogs__group-head { cursor: default; user-select: none; -webkit-user-select: none; }
 .flightlogs__group-head:hover td { background: color-mix(in srgb, var(--surface-2), var(--text) 5%); }
 .flightlogs__name { font-family: var(--font-mono); font-weight: 500; color: var(--text-2); }
 .flightlogs__row .flightlogs__name { font-size: 12px; }

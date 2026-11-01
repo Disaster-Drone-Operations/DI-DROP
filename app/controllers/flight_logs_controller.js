@@ -19,13 +19,22 @@ export default class FlightLogsController extends ApplicationController {
     const logs = missionFilter === 'none' ? all.filter((l) => !l.mission_id)
       : missionFilter ? all.filter((l) => l.mission_id === Number(missionFilter)) : all
     const missions = new Map((await Mission.all({ order: 'date DESC, start_time DESC' })).map((m) => [m.id, m]))
-    // Grouped by mission (and „Ohne Einsatz“), the group with the most recent flight first
+    // Strictly by time (newest first), a new block whenever the mission changes – flights without a mission in
+    // between form blocks of their own; a mission interrupted by other flights appears in parts („Teil 1 von 2“)
     const groups = []
     for (const log of logs) {
       const mission = (log.mission_id && missions.get(log.mission_id)) || null
-      let group = groups.find((g) => g.mission === mission)
-      if (!group) groups.push((group = { mission, logs: [] }))
-      group.logs.push(log)
+      const last = groups.at(-1)
+      if (last && last.mission === mission) last.logs.push(log)
+      else groups.push({ mission, key: mission ? `m${mission.id}` : `n${groups.length}`, logs: [log] })
+    }
+    const partsOf = new Map()
+    for (const g of groups) if (g.mission) partsOf.set(g.key, (partsOf.get(g.key) ?? 0) + 1)
+    const counted = new Map()
+    for (const g of [...groups].reverse()) { // numbered from the oldest part
+      if (!g.mission || partsOf.get(g.key) < 2) continue
+      counted.set(g.key, (counted.get(g.key) ?? 0) + 1)
+      g.part = { n: counted.get(g.key), of: partsOf.get(g.key) }
     }
     await this.render('flight_logs/index', {
       logs,

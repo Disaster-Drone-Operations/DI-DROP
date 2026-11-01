@@ -27,20 +27,19 @@ export default class extends Controller {
     this.resizeObserver?.disconnect()
   }
 
-  // Column header → mission → month stay on top while scrolling. Their heights depend on font and rendering
+  // Column header → mission stay on top while scrolling. Their heights depend on font and rendering
   // (desktop app vs. browser), so the offsets are measured instead of fixed – otherwise a gap shows the rows below.
   stackStickyRows() {
     if (!this.hasTableTarget) return
     const table = this.tableTarget
     const measure = () => {
       const head = table.querySelector('thead')?.getBoundingClientRect().height ?? 0
-      const drone = table.querySelector('.flightlogs__group-head')?.getBoundingClientRect().height ?? 0
       table.style.setProperty('--sticky-head', `${head}px`)
-      table.style.setProperty('--sticky-drone', `${drone}px`)
     }
     measure()
     this.resizeObserver = new ResizeObserver(measure)
-    for (const el of [table.querySelector('thead'), table.querySelector('.flightlogs__group-head')]) if (el) this.resizeObserver.observe(el)
+    const thead = table.querySelector('thead')
+    if (thead) this.resizeObserver.observe(thead)
   }
 
   // ── Selection ────────────────────────────────────────────────────────
@@ -76,16 +75,10 @@ export default class extends Controller {
     if (event.target === event.currentTarget) this.allTarget.click()
   }
 
-  // Click on a mission (or a month of „Ohne Einsatz“): mark all its flights – once more: unmark them;
-  // ⌘/Ctrl: add them to the selection or remove them from it
+  // Click on a mission: mark all its flights (all parts) – on a block „Ohne Einsatz“: its flights. Once more:
+  // unmark them; ⌘/Ctrl: add them to the selection or remove them from it
   selectGroup(event) {
-    if (event.target.closest('.renamable')) return
-    const head = event.currentTarget
-    const rows = []
-    for (let tr = head.nextElementSibling; tr; tr = tr.nextElementSibling) {
-      if (tr.matches('.flightlogs__group-head') || (head.matches('.flightlogs__month') && tr.matches('.flightlogs__month'))) break
-      if (this.rowTargets.includes(tr)) rows.push(tr)
-    }
+    const rows = this.rowTargets.filter((r) => r.dataset.group === event.currentTarget.dataset.group)
     if (!rows.length) return
     const all = rows.every((r) => this.isSelected(r))
     if (event.metaKey || event.ctrlKey) {
