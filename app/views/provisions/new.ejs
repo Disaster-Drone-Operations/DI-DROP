@@ -13,10 +13,10 @@
 <% if (!target) { -%>
   <div class="callout callout--subtle"><%- icon('alert') %><span>Bereitstellen geht nur in der Desktop-App.</span></div>
 <% } else { -%>
-<form class="provide" action="#<%= path %>/provide" method="post" data-controller="provide"
+<form class="provide" action="#<%= path %>/provide" method="post" data-controller="provide range-select"
       data-provide-target-value="<%= target.key %>" data-provide-pending-value="<%= pending %>" data-provide-speed-value="<%= speed ?? 0 %>"
       data-provide-mission-folder-value="<%= mission.folderName %>" data-provide-assignment-folder-value="<%= assignmentFolder %>"
-      data-action="change->provide#update submit->provide#submit">
+      data-action="change->provide#update submit->provide#submit pointerdown->range-select#down pointerover->range-select#over change->range-select#changed">
   <input type="hidden" name="target" value="<%= target.key %>">
   <input type="hidden" name="selection" data-provide-target="selection">
 
@@ -83,13 +83,14 @@
     <% if (comparisons.length) { %><button type="button" class="button button--small" data-action="provide#toggleKind" data-provide-kind-param="comparison">Alle Vergleichsbilder</button><% } %>
     <button type="button" class="button button--small" data-action="provide#toggleKind" data-provide-kind-param="visible">Alle Sichtbilder</button>
     <button type="button" class="button button--small button--quiet" data-action="provide#selectNone">Keine</button>
+    <span class="hint provide__tip">Mehrere auf einmal: <kbd>⇧</kbd>-Klick wählt alles dazwischen – oder mit gedrückter Maustaste über die Bilder ziehen.</span>
   </div>
 
   <% if (comparisons.length) { -%>
     <h2 class="section__title">Vergleichsbilder</h2>
     <div class="provide-grid provide-grid--wide">
       <% comparisons.forEach((c) => { -%>
-        <label class="provide-file <%= provided.has(`c${c.id}`) ? 'is-provided' : '' %>">
+        <label class="provide-file <%= provided.has(`c${c.id}`) ? 'is-provided' : '' %>" data-range-item <%= provided.has(`c${c.id}`) ? 'data-range-skip' : '' %>>
           <% if (c.thumb_path) { %><img src="<%= thumbUrl(c.thumb_path) %>" alt="" loading="lazy" draggable="false"><% } else { %><span class="shot__placeholder"><%- icon('images', { size: 22 }) %></span><% } %>
           <input type="checkbox" data-provide-target="item" data-key="c<%= c.id %>" data-kind="comparison" data-size="0" data-path="<%= c.path %>" <%= selected.has(`c${c.id}`) ? 'checked' : '' %>>
           <span class="provide-file__label"><span class="truncate"><%= c.fileName %></span><% if (provided.has(`c${c.id}`)) { %><span class="provide-badge provide-badge--done">✓</span><% } %></span>
@@ -106,7 +107,7 @@
         <div class="provide-shot__files">
           <% shot.files.slice().sort((a, b) => rank(a) - rank(b)).forEach((f) => { -%>
             <% const key = `m${f.id}`; const last = lastKeys.has(`${f.viewpoint_id ?? ''}|${f.variant ?? ''}`) -%>
-            <label class="provide-file <%= provided.has(key) ? 'is-provided' : '' %>" title="<%= f.path.split(/[\\/]/).pop() %>">
+            <label class="provide-file <%= provided.has(key) ? 'is-provided' : '' %>" title="<%= f.path.split(/[\\/]/).pop() %>" data-range-item <%= provided.has(key) ? 'data-range-skip' : '' %>>
               <% if (f.thumb_path) { %><img src="<%= thumbUrl(f.thumb_path) %>" alt="" loading="lazy" draggable="false"><% } else { %><span class="shot__placeholder"><%- icon('images', { size: 22 }) %></span><% } %>
               <input type="checkbox" data-provide-target="item" data-key="<%= key %>" data-kind="<%= categoryOf(f) %>" data-size="<%= f.size ?? 0 %>" data-last="<%= last ? '1' : '' %>" <%= selected.has(key) ? 'checked' : '' %>>
               <span class="provide-file__label">

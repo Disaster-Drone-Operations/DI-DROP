@@ -111,6 +111,8 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 ## Bereitstellen / Uploads
 
 - Reihenfolge: Wärmebilder → Vergleichsbilder → Sichtbilder (über alle Aufträge).
+- Auswahl wie im Finder/Explorer (⇧-Klick = Bereich, Ziehen = mehrere): `range_select_controller.js`
+  (`data-range-item`, Bereitgestelltes mit `data-range-skip` wird in Bereichen übersprungen) – auch für andere Kästchen-Listen.
 - Neues Ziel: Eintrag in `app/services/upload_targets.js` + Übertragung in
   `src-tauri/src/transfer/` + `lib/platform/*`. Die Warteschlange bleibt unverändert.
 - Zugangsdaten (Nextcloud-App-Passwort) nur im Schlüsselbund, nie in der Datenbank.

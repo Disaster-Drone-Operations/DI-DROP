@@ -56,9 +56,10 @@
     </div>
 
     <h2 class="section__title">Aufträge <span class="count"><%= rows.length %></span></h2>
-    <div class="list provide-missions">
+    <div class="list provide-missions" data-controller="range-select"
+         data-action="pointerdown->range-select#down pointerover->range-select#over change->range-select#changed">
       <% rows.forEach((r) => { -%>
-        <label class="list__row checkbox provide-mission-row">
+        <label class="list__row checkbox provide-mission-row" data-range-item>
           <input type="checkbox" name="assignments[<%= r.assignment.id %>]" value="1" checked>
           <%- assignmentBadge(r.assignment) %>
           <span class="mission-row__main">
