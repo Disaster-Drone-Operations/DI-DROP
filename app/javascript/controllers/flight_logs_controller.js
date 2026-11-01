@@ -2,11 +2,13 @@ import { Controller } from '@hotwired/stimulus'
 import platform from '/lib/platform/index.js'
 import { formatFlightDuration, formatDistance } from '/app/helpers/index.js'
 import { importFromFolder, importFromDevice, connectedDevices } from '/app/services/flightlog_importer.js'
+import { suggestedMissions } from '/app/services/flight_missions.js'
 
 // "Flugprotokolle" page: selection like in macOS lists (click, ⌘/Ctrl-click, ⇧-click) and
-// a totals bar at the bottom like in Numbers (count, total duration, total distance)
+// a totals bar at the bottom like in Numbers (count, total duration, total distance); selected flights
+// can be assigned to a mission („Einsatz zuordnen …“)
 export default class extends Controller {
-  static targets = ['row', 'all', 'sum', 'deviceButton', 'table']
+  static targets = ['row', 'all', 'sum', 'deviceButton', 'table', 'assignDialog', 'assignIds', 'assignTitle', 'assignList']
 
   async connect() {
     this.anchor = null
@@ -56,9 +58,13 @@ export default class extends Controller {
     } else if (event.metaKey || event.ctrlKey || box) {
       this.mark(row, event.target === box ? box.checked : !this.isSelected(row))
       this.anchor = index
+    } else if (event.target.closest('.flightlogs__mission') && this.isSelected(row) && this.selected.length > 1) {
+      // Maybe the start of a double-click (change the mission of all selected) → only then select just this row
+      clearTimeout(this.pendingOnly)
+      this.pendingOnly = setTimeout(() => this.selectOnly(row), 350)
+      this.anchor = index
     } else {
-      const only = this.isSelected(row) && this.selected.length === 1
-      this.rowTargets.forEach((r) => this.mark(r, !only && r === row))
+      this.selectOnly(row)
       this.anchor = index
     }
     window.getSelection()?.removeAllRanges() // otherwise ⇧-click selects text
@@ -68,6 +74,12 @@ export default class extends Controller {
   // Header: a click beside the „Alle auswählen“ checkbox counts as a click on it
   allCell(event) {
     if (event.target === event.currentTarget) this.allTarget.click()
+  }
+
+  selectOnly(row) {
+    const only = this.isSelected(row) && this.selected.length === 1
+    this.rowTargets.forEach((r) => this.mark(r, !only && r === row))
+    this.updateSum()
   }
 
   toggleAll(event) {
@@ -101,11 +113,49 @@ export default class extends Controller {
       <span class="flightlogs__sum-label">${label}</span>
       <span class="flightlogs__sum-value"><span>Anzahl</span><strong>${rows.length}</strong></span>
       <span class="flightlogs__sum-value"><span>Flugdauer</span><strong>${formatFlightDuration(duration)}</strong></span>
-      <span class="flightlogs__sum-value"><span>Strecke</span><strong>${formatDistance(distance)}</strong></span>`
+      <span class="flightlogs__sum-value"><span>Strecke</span><strong>${formatDistance(distance)}</strong></span>
+      ${selected.length && this.hasAssignDialogTarget ? '<button type="button" class="button button--small" data-action="flight-logs#openAssign">Einsatz zuordnen …</button>' : ''}`
     if (this.hasAllTarget) {
       this.allTarget.checked = selected.length > 0 && selected.length === this.rowTargets.length
       this.allTarget.indeterminate = selected.length > 0 && selected.length < this.rowTargets.length
     }
+  }
+
+  // ── Mission ──────────────────────────────────────────────────────────
+
+  // Dialog for the selection: missions that fit the flight times on top (and preselected)
+  async openAssign() {
+    const rows = this.selected
+    const ids = rows.map((r) => Number(r.dataset.id))
+    this.assignIdsTarget.value = ids.join(',')
+    this.assignTitleTarget.textContent = ids.length === 1 ? 'Flug einem Einsatz zuordnen' : `${ids.length} Flüge einem Einsatz zuordnen`
+    const suggested = await suggestedMissions(ids)
+    const options = [...this.assignListTarget.querySelectorAll('[data-mission-option]')]
+    const rank = (o) => { const i = suggested.indexOf(Number(o.dataset.missionOption)); return i < 0 ? Infinity : i }
+    options.sort((a, b) => rank(a) - rank(b) || options.indexOf(a) - options.indexOf(b))
+    for (const option of options) {
+      option.classList.toggle('is-suggested', rank(option) < Infinity)
+      this.assignListTarget.append(option)
+    }
+    // Preselection: the mission all of them already belong to, otherwise the best suggestion
+    const current = new Set(rows.map((r) => r.dataset.mission))
+    const value = current.size === 1 && [...current][0] ? [...current][0] : suggested[0] ? String(suggested[0]) : null
+    for (const radio of this.assignDialogTarget.querySelectorAll('input[name="mission"]')) radio.checked = radio.value === value
+    this.assignDialogTarget.showModal()
+    this.assignListTarget.scrollTop = 0
+  }
+
+  // Double-click on the mission of a flight: change it – for all selected flights if it is one of them
+  editMission(event) {
+    clearTimeout(this.pendingOnly)
+    const row = event.currentTarget.closest('[data-flight-logs-target~="row"]')
+    if (!this.isSelected(row)) this.rowTargets.forEach((r) => this.mark(r, r === row))
+    this.updateSum()
+    this.openAssign()
+  }
+
+  closeAssign() {
+    this.assignDialogTarget.close()
   }
 
   // ── Import ───────────────────────────────────────────────────────────

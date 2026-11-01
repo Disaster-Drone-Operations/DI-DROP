@@ -1,5 +1,6 @@
-<%# locals: logs, groups, names, battery, available, dir, canPickFolder -%>
+<%# locals: logs, groups, names, battery, missions, missionFilter, filterMission, unassigned, available, dir, canPickFolder -%>
 <% const named = (kind, sn) => names.get(`${kind}:${sn}`) -%>
+<% const path = `/flightlogs${missionFilter ? `?mission=${missionFilter}` : battery ? `?battery=${encodeURIComponent(battery)}` : ''}` -%>
 <div class="flightlogs" data-controller="flight-logs">
   <header class="page-header">
     <div>
@@ -20,13 +21,31 @@
       <a class="button button--small" href="#/flightlogs">Alle Flüge zeigen</a>
       <a class="button button--small button--quiet" href="#/batteries">Zur Akkunutzung</a>
     </div>
+  <% } else if (filterMission) { -%>
+    <div class="flightlogs__filter">
+      <span>Nur Flüge von <strong><%= filterMission.title %></strong></span>
+      <a class="button button--small" href="#/flightlogs">Alle Flüge zeigen</a>
+      <a class="button button--small button--quiet" href="#/missions/<%= filterMission.id %>">Zum Einsatz</a>
+    </div>
+  <% } else if (missionFilter === 'none' || unassigned) { -%>
+    <nav class="filterbar" aria-label="Flüge">
+      <span class="subtle">Anzeigen:</span>
+      <div class="segmented segmented--links">
+        <a href="#/flightlogs" class="<%= missionFilter ? '' : 'is-active' %>">Alle Flüge</a>
+        <a href="#/flightlogs?mission=none" class="<%= missionFilter === 'none' ? 'is-active' : '' %>">Ohne Einsatz (<%= unassigned %>)</a>
+      </div>
+    </nav>
   <% } -%>
 
   <% if (!available) { -%>
     <div class="callout callout--subtle"><%- icon('alert') %><span>Flugprotokolle lassen sich nur in der Desktop-App übernehmen.</span></div>
   <% } -%>
 
-  <% if (!logs.length) { -%>
+  <% if (!logs.length && (missionFilter || battery)) { -%>
+    <div class="empty empty--compact">
+      <p class="subtle"><%= missionFilter === 'none' ? 'Alle Flüge sind einem Einsatz zugeordnet.' : filterMission ? 'Diesem Einsatz ist noch kein Flug zugeordnet.' : 'Keine passenden Flüge.' %></p>
+    </div>
+  <% } else if (!logs.length) { -%>
     <div class="empty">
       <%- icon('protocol', { size: 40, class: 'empty__icon' }) %>
       <p><strong>Noch keine Flugprotokolle.</strong></p>
@@ -45,12 +64,13 @@
             <th class="num">Flugdauer</th>
             <th class="num">Strecke</th>
             <th>Akku</th>
+            <th>Einsatz</th>
           </tr>
         </thead>
         <% groups.forEach((group) => { -%>
           <tbody class="flightlogs__group">
             <tr class="flightlogs__drone">
-              <td colspan="7">
+              <td colspan="8">
                 <%- icon('drone', { size: 14 }) %>
                 <span class="flightlogs__model"><%= group.model %></span>
                 <% if (group.sn) { -%>
@@ -64,9 +84,9 @@
             <% group.logs.forEach((log) => { -%>
               <% const m = localMonth(log.started_at) -%>
               <% if (m !== month) { month = m -%>
-                <tr class="flightlogs__month"><td colspan="7"><%= m %></td></tr>
+                <tr class="flightlogs__month"><td colspan="8"><%= m %></td></tr>
               <% } -%>
-              <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>"
+              <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>" data-mission="<%= log.mission_id ?? '' %>"
                   data-action="click->flight-logs#select">
                 <td class="flightlogs__check"><input type="checkbox" tabindex="-1" aria-label="Flug auswählen"></td>
                 <td title="<%= log.file_name %>"><%= localDate(log.started_at) %></td>
@@ -80,6 +100,12 @@
                           data-device-name-kind-value="battery" data-device-name-serial-value="<%= log.battery_sn %>"><%= named('battery', log.battery_sn) ?? log.battery_sn %></span>
                   <% } else { %>–<% } %>
                 </td>
+                <%# Double-click: change the mission (of all selected flights) – a link to the mission comes with the flight details (TODO.md) -%>
+                <% const mission = log.mission_id && missions.get(log.mission_id) -%>
+                <td class="flightlogs__mission" data-action="dblclick->flight-logs#editMission"
+                    title="<%= mission ? (log.mission_source === 'manual' ? 'Von Hand zugeordnet' : 'Automatisch zugeordnet (Bilder bzw. Zeit des Einsatzes)') : (log.mission_source === 'manual' ? 'Von Hand: kein Einsatz' : 'Keinem Einsatz zuzuordnen') %> – Doppelklick zum Ändern">
+                  <% if (mission) { %><span class="truncate"><%= mission.title %></span><% } else { %><span class="subtle">–</span><% } %>
+                </td>
               </tr>
             <% }) -%>
           </tbody>
@@ -89,6 +115,34 @@
 
     <%# Totals bar like in Numbers: the selection or – without a selection – all flights -%>
     <footer class="flightlogs__sum" data-flight-logs-target="sum"></footer>
+
+    <%# „Einsatz zuordnen …“ for the selected flights (flight_logs_controller fills ids + suggestions) -%>
+    <dialog class="sheet flightlogs__assign" data-flight-logs-target="assignDialog">
+      <form class="sheet__body" action="#/flightlogs/mission" method="post">
+        <input type="hidden" name="_method" value="patch">
+        <input type="hidden" name="ids" data-flight-logs-target="assignIds">
+        <input type="hidden" name="return_to" value="<%= path %>">
+        <h2 class="dialog__title" data-flight-logs-target="assignTitle">Einsatz zuordnen</h2>
+        <div class="choices flightlogs__missions" data-flight-logs-target="assignList">
+          <% missions.forEach((m) => { -%>
+            <label class="choice" data-mission-option="<%= m.id %>">
+              <input type="radio" name="mission" value="<%= m.id %>">
+              <span class="choice__label"><%= m.title %><span class="flightlogs__suggested">passt zur Flugzeit</span></span>
+              <span class="choice__result"><%= formatDate(m.date, { weekday: false }) %></span>
+            </label>
+          <% }) -%>
+          <% if (!missions.size) { %><p class="hint">Noch keine Einsätze angelegt.</p><% } %>
+        </div>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="mission" value="none"><span class="choice__label">Keinem Einsatz zuordnen</span><span class="choice__result subtle">z. B. Übungs- oder Testflug</span></label>
+          <label class="choice"><input type="radio" name="mission" value="auto"><span class="choice__label">Automatisch zuordnen</span><span class="choice__result subtle">nach Bildern und Zeit</span></label>
+        </div>
+        <div class="dialog__actions">
+          <button type="button" class="button" data-action="flight-logs#closeAssign">Abbrechen</button>
+          <button type="submit" class="button button--primary">Zuordnen</button>
+        </div>
+      </form>
+    </dialog>
   <% } -%>
 
   <% if (dir && logs.length) { -%>

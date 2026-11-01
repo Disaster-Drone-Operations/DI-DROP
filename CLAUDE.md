@@ -23,9 +23,10 @@ Einsatz (missions)
                                 pro Auftrag + Ziel (Nextcloud, Ordner …); Warteschlange in
                                 app/services/upload_queue.js, Ziele in app/services/upload_targets.js
 
-Flugprotokolle (flight_logs)    Flüge aus den Protokollen der DJI-Fernsteuerung (unabhängig von Einsätzen;
-                                mission_id für eine spätere Zuordnung). Originaldateien unverändert in
-                                <Bildablage>/Flugprotokolle (src-tauri/src/flightlogs.rs)
+Flugprotokolle (flight_logs)    Flüge aus den Protokollen der DJI-Fernsteuerung. Originaldateien unverändert in
+                                <Bildablage>/Flugprotokolle (src-tauri/src/flightlogs.rs). Einsatz: mission_id,
+                                mission_source auto (Bilder während des Flugs, sonst Zeitfenster genau eines
+                                Einsatzes) | manual (von Hand, auch „kein Einsatz“) – app/services/flight_missions.js
 ```
 
 Neuer Einsatz → Auftrag „Lageerkundung“ wird automatisch angelegt.

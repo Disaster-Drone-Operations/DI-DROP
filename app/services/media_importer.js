@@ -25,6 +25,7 @@ import Flight from '/app/models/flight.js'
 import MediaFile, { groupShots } from '/app/models/media_file.js'
 import Viewpoint from '/app/models/viewpoint.js'
 import { syncFileNames } from '/app/services/file_namer.js'
+import { assignFlights } from '/app/services/flight_missions.js'
 
 const BLOCK_GAP_MINUTES = 5
 // Mapping flight: most images straight down, enough of them
@@ -247,6 +248,7 @@ export default class MediaImporter {
       // The copies were renamed → current paths (the card cleanup verifies these files)
       const current = new Map((await MediaFile.where('mission_id = ?', [this.mission.id])).map((f) => [f.fingerprint, f.path]))
       for (const c of copies) c.copy = current.get(c.fingerprint) ?? c.copy
+      await assignFlights().catch((e) => console.warn('[import] Flüge zuordnen', e)) // flight logs ↔ mission (image times)
     }
     const flights = [...new Map(plan.map((p) => [p.flight.id, p.flight])).values()].sort((a, b) => a.number - b.number)
     return { imported, failed, flights, copies, assignments: [...new Map(plan.map((p) => [p.assignment.id, p.assignment])).values()] }

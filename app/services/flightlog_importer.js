@@ -9,6 +9,7 @@ import FlightLog from '/app/models/flight_log.js'
 import { mediaBaseDir } from '/app/services/media_importer.js'
 import Setting from '/app/models/setting.js'
 import { showNotice } from '/app/services/notice.js'
+import { assignFlights } from '/app/services/flight_missions.js'
 
 let busy = false
 const asked = new Set() // ask only once while the remote controller stays connected
@@ -28,6 +29,7 @@ function progress(detail) {
 
 async function store(report) {
   const added = await FlightLog.addSummaries(report.summaries ?? [])
+  if (added) await assignFlights().catch((e) => console.warn('[flight logs] Einsätze zuordnen', e))
   return { added, copied: report.copied ?? 0, extras: report.extras_copied ?? 0, failed: report.failed ?? [] }
 }
 

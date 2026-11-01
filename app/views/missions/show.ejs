@@ -1,4 +1,4 @@
-<%# locals: mission, open, done, history, timeline, counts, steps, nextStep, canImport, newAssignment, newAssignmentParams, showNewAssignment -%>
+<%# locals: mission, open, done, history, timeline, counts, steps, nextStep, canImport, newAssignment, newAssignmentParams, showNewAssignment, flightStats -%>
 <% const path = `/missions/${mission.id}` -%>
 <header class="page-header">
   <div>
@@ -97,6 +97,16 @@
           <% }) -%>
         </div>
       </details>
+    <% } -%>
+
+    <%# Flights from the remote controller's logs (app/services/flight_missions.js) -%>
+    <% if (flightStats.count) { -%>
+      <a class="mission-flights" href="#/flightlogs?mission=<%= mission.id %>">
+        <%- icon('protocol', { size: 16 }) %>
+        <span><strong><%= pluralize(flightStats.count, 'Flug', 'Flüge') %></strong> laut Flugprotokoll<br>
+          <span class="subtle"><%= formatFlightDuration(flightStats.duration) %> · <%= formatDistance(flightStats.distance) %></span></span>
+        <%- icon('chevron', { size: 14 }) %>
+      </a>
     <% } -%>
   </aside>
 

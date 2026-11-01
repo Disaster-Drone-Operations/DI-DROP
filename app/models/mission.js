@@ -107,6 +107,8 @@ export default class Mission extends Record {
     for (const table of ['comparisons', 'media_files', 'viewpoints', 'assignments', 'assignment_series', 'flights']) {
       await db.execute(`DELETE FROM ${table} WHERE mission_id = ?`, [this.id])
     }
+    // Flight logs stay – they only lose the assignment (and may be assigned automatically again)
+    await db.execute('UPDATE flight_logs SET mission_id = NULL, mission_source = NULL WHERE mission_id = ?', [this.id])
     await super.destroy()
   }
 }

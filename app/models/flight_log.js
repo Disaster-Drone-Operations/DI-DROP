@@ -28,6 +28,7 @@ export default class FlightLog extends Record {
     video_s: 'integer',
     app_version: 'string',
     mission_id: 'integer',
+    mission_source: 'string', // auto | manual (app/services/flight_missions.js)
     notes: 'text',
   }
 

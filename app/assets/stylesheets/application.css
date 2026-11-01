@@ -1249,6 +1249,16 @@ kbd { font: 12px var(--font); padding: 1px 6px; border: 1px solid var(--border-s
 /* Sticky offsets measured by flight_logs_controller (--sticky-head/--sticky-drone); 1 px overlap against rounding gaps */
 .flightlogs__month td { position: sticky; top: calc(var(--sticky-head, 31px) + var(--sticky-drone, 39px) - 2px); background: var(--bg); font-weight: 600; font-size: 12px; color: var(--text-2); padding-top: 12px; }
 .flightlogs__battery { font-size: 12px; color: var(--text-2); }
+.flightlogs__mission { max-width: 220px; }
+.mission-flights { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); text-decoration: none; }
+.mission-flights:hover { background: var(--hover); text-decoration: none; }
+.mission-flights > span { flex: 1; }
+.mission-flights .icon { color: var(--text-2); }
+.flightlogs__mission .truncate { display: block; }
+.flightlogs__assign { width: min(480px, calc(100vw - 48px)); }
+.flightlogs__missions { max-height: 280px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; }
+.flightlogs__suggested { display: none; margin-left: 8px; font-size: 11px; color: var(--accent); }
+.choice.is-suggested .flightlogs__suggested { display: inline; }
 .flightlogs__sum {
   position: sticky; bottom: 0; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
   padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2);
