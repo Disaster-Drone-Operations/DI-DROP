@@ -1,8 +1,9 @@
-<%# locals: name, value, suggestion, inputTarget, inputAction -%>
-<%# Choose a Nextcloud folder (base folder of a mission) -%>
-<div class="nextcloud-folder" data-controller="nextcloud-folder" data-nextcloud-folder-suggestion-value="<%= suggestion ?? '' %>">
+<%# locals: name, value, suggestion, inputTarget, inputAction, inputId, title, placeholder -%>
+<%# Choose a Nextcloud folder (base folder of a mission, the base path in the settings …) -%>
+<div class="nextcloud-folder" data-controller="nextcloud-folder" data-nextcloud-folder-suggestion-value="<%= suggestion ?? '' %>"
+     <% if (title) { %>data-nextcloud-folder-title-value="<%= title %>"<% } %>>
   <div class="input-with-button">
-    <input type="text" name="<%= name %>" value="<%= value ?? '' %>" placeholder="z. B. /Einsätze/<%= suggestion ?? '' %>" spellcheck="false"
+    <input type="text" name="<%= name %>" value="<%= value ?? '' %>" placeholder="<%= placeholder ?? `z. B. /Einsätze/${suggestion ?? ''}` %>" spellcheck="false" <% if (inputId) { %>id="<%= inputId %>"<% } %>
            data-nextcloud-folder-target="input" <%- inputTarget ?? '' %>
            data-action="keydown.enter->nextcloud-folder#ignore:prevent <%= inputAction ?? '' %>">
     <button type="button" class="button" data-action="nextcloud-folder#open"><%- icon('folder') %><span>Auswählen …</span></button>

@@ -116,6 +116,8 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Neues Ziel: Eintrag in `app/services/upload_targets.js` + Übertragung in
   `src-tauri/src/transfer/` + `lib/platform/*`. Die Warteschlange bleibt unverändert.
 - Zugangsdaten (Nextcloud-App-Passwort) nur im Schlüsselbund, nie in der Datenbank.
+- Ordner-Auswahl (`nextcloud_folder_controller.js`): beginnt beim Ordner im Feld, sonst beim Grund-Ordner aus den
+  Einstellungen (`nextcloud.base_path`, fehlt er → ganz oben). Der Grund-Ordner wird in die Schulung übernommen.
 - Sicherheitsregeln (in Rust erzwungen, `src-tauri/src/transfer/`): Nextcloud nur PROPFIND (Ordnernamen),
   HEAD, MKCOL, PUT – nie DELETE/MOVE/COPY/GET. Hochladen nur in den übergebenen Ordner (nie in `/`,
   kein `..`), reiner Dateiname; vorhandene Dateien werden nie überschrieben (`If-None-Match: *`,

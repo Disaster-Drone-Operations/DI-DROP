@@ -54,6 +54,7 @@ export default class Setting {
 
     for (const field of section.fields) {
       let value = (values[field.key] ?? '').toString().trim()
+      if (field.normalize) value = field.normalize(value)
       if (field.type === 'url' && value && !/^https?:\/\/\S+$/i.test(value)) {
         ;(errors[field.key] ||= []).push('muss mit http:// oder https:// beginnen')
       }

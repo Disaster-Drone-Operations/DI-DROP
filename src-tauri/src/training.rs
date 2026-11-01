@@ -199,7 +199,12 @@ pub fn cloud_dir(root: &Path, id: &str, path: &str) -> Result<PathBuf, String> {
 
 pub fn cloud_list(root: &Path, id: &str, path: &str) -> Result<Vec<Folder>, String> {
     let dir = cloud_dir(root, id, path)?;
-    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    // Like the real Nextcloud: only the top level always exists – listing never creates a folder
+    if path.split('/').all(|p| p.is_empty()) {
+        fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    } else if !dir.is_dir() {
+        return Err("Ordner in der Nextcloud nicht gefunden.".into());
+    }
     let base = path.trim_end_matches('/');
     let mut folders: Vec<Folder> = fs::read_dir(&dir)
         .map_err(|e| e.to_string())?
@@ -327,6 +332,10 @@ mod tests {
         cloud_mkdir(&root, "s", "/Einsätze/Übung").unwrap();
         let list = cloud_list(&root, "s", "/Einsätze").unwrap();
         assert_eq!(list, vec![Folder { name: "Übung".into(), path: "/Einsätze/Übung".into() }]);
+        // Listing a missing folder fails like the real Nextcloud (and doesn't create it); the top level always exists
+        assert!(cloud_list(&root, "s", "/Gibt/es/nicht").unwrap_err().contains("nicht gefunden"));
+        assert!(!cloud_dir(&root, "s", "/Gibt").unwrap().exists());
+        assert_eq!(cloud_list(&root, "s", "/").unwrap().len(), 1);
         assert!(cloud_dir(&root, "s", "/../../etc").is_err());
         assert!(cloud_dir(&root, "s", "/a/../b").is_err());
     }

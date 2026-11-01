@@ -2,4 +2,19 @@
 <div data-controller="nextcloud-setup" data-nextcloud-setup-server-value="<%= values.server ?? '' %>">
   <div data-nextcloud-setup-target="body"><p class="hint">Wird geladen …</p></div>
 </div>
+<%# Not inside the setup body: it's redrawn by the nextcloud-setup controller -%>
+<form class="settings__subform" action="#/settings/nextcloud" method="post" novalidate data-shortcut="save">
+  <input type="hidden" name="_method" value="patch">
+  <% const f = section.fields.find((x) => x.key === 'base_path') -%>
+  <div class="field">
+    <label class="field__label" for="settings_base_path"><%= f.label %></label>
+    <%- include('nextcloud/_folder_field', { name: 'settings[base_path]', value: values.base_path, suggestion: '', inputId: 'settings_base_path',
+          title: 'Grund-Ordner in der Nextcloud wählen', placeholder: f.placeholder }) %>
+    <% (errors.base_path ?? []).forEach((e) => { %><p class="field__error"><%= f.label %> <%= e %></p><% }) %>
+    <p class="hint">Hier beginnt die Ordner-Auswahl, wenn ein Einsatz noch keinen Ordner hat – z. B. der Ordner mit den Einsatzordnern des Jahres. Gibt es ihn nicht, beginnt sie ganz oben.</p>
+  </div>
+  <div class="form-actions form-actions--inline">
+    <button type="submit" class="button">Speichern</button>
+  </div>
+</form>
 <p class="hint settings__note">Den Ordner in der Nextcloud legst du pro Einsatz fest – beim Bearbeiten des Einsatzes (Weitere Angaben → Bereitstellen) oder beim ersten Hochladen.</p>

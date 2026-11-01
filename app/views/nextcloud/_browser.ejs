@@ -1,6 +1,6 @@
-<%# locals: path, folders, loading, error -%>
+<%# locals: path, folders, loading, error, title -%>
 <% const parts = path.split('/').filter(Boolean) -%>
-<h2 class="dialog__title">Nextcloud-Ordner für diesen Einsatz wählen</h2>
+<h2 class="dialog__title"><%= title %></h2>
 <nav class="provide-browser__crumbs">
   <button type="button" class="button button--small button--quiet" data-action="nextcloud-folder#browse" data-nextcloud-folder-path-param="/"><%- icon('cloud', { size: 14 }) %></button>
   <% parts.forEach((p, i) => { -%>

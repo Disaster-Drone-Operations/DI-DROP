@@ -2,13 +2,14 @@ import { Controller } from '@hotwired/stimulus'
 import { render } from '/lib/views.js'
 import { morph } from '/lib/morph.js'
 import platform from '/lib/platform/index.js'
+import Setting from '/app/models/setting.js'
 
 // Choose a Nextcloud folder (partial nextcloud/_folder_field): browse folders, create a new one
 // („Neuer Ordner“ → small name dialog, like on the Mac), confirm. Writes the path into the input and
 // dispatches "nextcloud-folder:chosen".
 export default class extends Controller {
   static targets = ['input', 'dialog', 'body', 'nameDialog', 'newFolder', 'parent', 'nameError', 'createButton']
-  static values = { suggestion: String }
+  static values = { suggestion: String, title: { type: String, default: 'Nextcloud-Ordner für diesen Einsatz wählen' } }
 
   ignore() {}
 
@@ -21,25 +22,35 @@ export default class extends Controller {
         ? 'Noch keine Nextcloud verbunden – erst unter Einstellungen → Nextcloud anmelden.'
         : 'Die Nextcloud lässt sich nur in der Desktop-App durchsuchen. Den Ordner kannst du aber von Hand eintragen.' })
     }
+    // Start: the folder in the field (missing → its parent folders), otherwise the base path from the
+    // settings (missing → the top level)
     const current = this.inputTarget.value.trim()
-    await this.browse({ params: { path: current || '/' } })
+    if (current) return this.show(current)
+    const base = (Setting.get('nextcloud.base_path') ?? '').trim()
+    await this.show(base || '/', { missing: 'top' })
   }
 
-  async browse({ params: { path } }) {
+  browse({ params: { path } }) {
+    return this.show(path)
+  }
+
+  // missing: 'parent' – go one level up until a folder exists · 'top' – straight to the top level
+  async show(path, { missing = 'parent' } = {}) {
     this.path = path
     this.paint({ loading: true })
     try {
       this.folders = await platform.nextcloud.list(path)
       this.paint({ folders: this.folders })
     } catch (error) {
-      // Folder doesn't exist (yet) → one level up
-      if (path !== '/' && /nicht gefunden/.test(String(error))) return this.browse({ params: { path: path.split('/').slice(0, -1).join('/') || '/' } })
+      if (path !== '/' && /nicht gefunden/.test(String(error))) {
+        return this.show(missing === 'top' ? '/' : path.split('/').slice(0, -1).join('/') || '/', { missing })
+      }
       this.paint({ error: String(error) })
     }
   }
 
   paint({ folders = [], loading = false, error = null } = {}) {
-    morph(this.bodyTarget, render('nextcloud/_browser', { path: this.path, folders, loading, error }))
+    morph(this.bodyTarget, render('nextcloud/_browser', { path: this.path, folders, loading, error, title: this.titleValue }))
   }
 
   // ── New folder ───────────────────────────────────────────────────────────
@@ -83,7 +94,7 @@ export default class extends Controller {
     try {
       await platform.nextcloud.mkdir(path)
       this.nameDialogTarget.close()
-      await this.browse({ params: { path } }) // straight into the new folder
+      await this.show(path) // straight into the new folder
     } catch (error) {
       this.showNameError(String(error))
       this.createButtonTarget.disabled = false

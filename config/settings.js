@@ -62,7 +62,11 @@ export default [
     icon: 'cloud',
     description: 'Bilder eines Auftrags direkt in die Nextcloud laden, damit Einsatzleitung und Kameraden sie sofort sehen.',
     partial: 'settings/_nextcloud',
-    fields: [],
+    fields: [
+      // Starting point of the folder selection (e.g. "/Führungsmittel/Einsatzdokumentation/2026")
+      { key: 'base_path', label: 'Grund-Ordner', type: 'text', default: '', placeholder: '/Einsätze/2026',
+        normalize: (v) => (v ? `/${v.replace(/\\/g, '/').split('/').filter(Boolean).join('/')}`.replace(/^\/$/, '') : '') },
+    ],
   },
   {
     key: 'relay',

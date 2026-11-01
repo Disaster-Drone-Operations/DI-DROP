@@ -22,7 +22,7 @@ import { RELAY_BUNDLE_VERSION } from '/relay/bundle.js'
 export const isTraining = () => !!trainingId
 
 // Carried over from the normal mode when starting (the training database is separate)
-const CARRY_KEYS = ['relay.url', 'general.unit_name', 'general.operator_name']
+const CARRY_KEYS = ['relay.url', 'general.unit_name', 'general.operator_name', 'nextcloud.base_path']
 const CARRY_STORAGE = 'di-drop:training-carry'
 // "Neu starten" from the settings: the training window deletes its data at startup
 export const RESET_FLAG = 'di-drop:training-reset'
