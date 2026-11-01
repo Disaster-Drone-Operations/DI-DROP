@@ -8,6 +8,7 @@ import routes from '/config/routes.js'
 import Setting from '/app/models/setting.js'
 import Mission from '/app/models/mission.js'
 import { install as installShortcuts } from '/app/javascript/shortcuts.js'
+import { install as installFieldErrors } from '/app/javascript/field_errors.js'
 import { start as startUploads } from '/app/services/upload_queue.js'
 import { checkOnStartup as checkForAppUpdate } from '/app/services/app_updater.js'
 import { watchDevices as watchFlightLogDevices } from '/app/services/flightlog_importer.js'
@@ -52,6 +53,7 @@ if (controlId) {
   }
   await new Router({ routes, controllers, element }).start()
   installShortcuts()
+  installFieldErrors()
   startUploads().catch((error) => console.error('Upload queue:', error))
   checkForAppUpdate()
   watchFlightLogDevices()

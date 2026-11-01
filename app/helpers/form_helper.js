@@ -76,7 +76,7 @@ export function formFor(record, model) {
 export function errorSummary(record) {
   const count = Object.keys(record.errors ?? {}).length
   if (!count) return ''
-  return `<div class="callout callout--danger" role="alert">${icon('alert')}<span>Bitte prüfe die markierten Felder.</span></div>`
+  return `<div class="callout callout--danger" role="alert" data-error-summary>${icon('alert')}<span>Bitte prüfe die markierten Felder.</span></div>`
 }
 
 export function isDesktop() {
