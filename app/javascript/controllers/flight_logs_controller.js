@@ -27,20 +27,20 @@ export default class extends Controller {
     this.resizeObserver?.disconnect()
   }
 
-  // Column header → drone → month stay on top while scrolling. Their heights depend on font and rendering
+  // Column header → mission → month stay on top while scrolling. Their heights depend on font and rendering
   // (desktop app vs. browser), so the offsets are measured instead of fixed – otherwise a gap shows the rows below.
   stackStickyRows() {
     if (!this.hasTableTarget) return
     const table = this.tableTarget
     const measure = () => {
       const head = table.querySelector('thead')?.getBoundingClientRect().height ?? 0
-      const drone = table.querySelector('.flightlogs__drone')?.getBoundingClientRect().height ?? 0
+      const drone = table.querySelector('.flightlogs__group-head')?.getBoundingClientRect().height ?? 0
       table.style.setProperty('--sticky-head', `${head}px`)
       table.style.setProperty('--sticky-drone', `${drone}px`)
     }
     measure()
     this.resizeObserver = new ResizeObserver(measure)
-    for (const el of [table.querySelector('thead'), table.querySelector('.flightlogs__drone')]) if (el) this.resizeObserver.observe(el)
+    for (const el of [table.querySelector('thead'), table.querySelector('.flightlogs__group-head')]) if (el) this.resizeObserver.observe(el)
   }
 
   // ── Selection ────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ export default class extends Controller {
     } else if (event.metaKey || event.ctrlKey || box) {
       this.mark(row, event.target === box ? box.checked : !this.isSelected(row))
       this.anchor = index
-    } else if (event.target.closest('.flightlogs__mission') && this.isSelected(row) && this.selected.length > 1) {
+    } else if (this.isSelected(row) && this.selected.length > 1) {
       // Maybe the start of a double-click (change the mission of all selected) → only then select just this row
       clearTimeout(this.pendingOnly)
       this.pendingOnly = setTimeout(() => this.selectOnly(row), 350)
@@ -74,6 +74,29 @@ export default class extends Controller {
   // Header: a click beside the „Alle auswählen“ checkbox counts as a click on it
   allCell(event) {
     if (event.target === event.currentTarget) this.allTarget.click()
+  }
+
+  // Click on a mission (or a month of „Ohne Einsatz“): mark all its flights – once more: unmark them;
+  // ⌘/Ctrl: add them to the selection or remove them from it
+  selectGroup(event) {
+    if (event.target.closest('.renamable')) return
+    const head = event.currentTarget
+    const rows = []
+    for (let tr = head.nextElementSibling; tr; tr = tr.nextElementSibling) {
+      if (tr.matches('.flightlogs__group-head') || (head.matches('.flightlogs__month') && tr.matches('.flightlogs__month'))) break
+      if (this.rowTargets.includes(tr)) rows.push(tr)
+    }
+    if (!rows.length) return
+    const all = rows.every((r) => this.isSelected(r))
+    if (event.metaKey || event.ctrlKey) {
+      rows.forEach((r) => this.mark(r, !all))
+    } else {
+      const exactly = all && this.selected.length === rows.length
+      this.rowTargets.forEach((r) => this.mark(r, !exactly && rows.includes(r)))
+    }
+    this.anchor = this.rowTargets.indexOf(rows[0])
+    window.getSelection()?.removeAllRanges()
+    this.updateSum()
   }
 
   selectOnly(row) {
@@ -145,8 +168,10 @@ export default class extends Controller {
     this.assignListTarget.scrollTop = 0
   }
 
-  // Double-click on the mission of a flight: change it – for all selected flights if it is one of them
+  // Double-click on a flight: change its mission – for all selected flights if it is one of them
+  // (not on a device name: that one is renamed by double-click)
   editMission(event) {
+    if (event.target.closest('.renamable')) return
     clearTimeout(this.pendingOnly)
     const row = event.currentTarget.closest('[data-flight-logs-target~="row"]')
     if (!this.isSelected(row)) this.rowTargets.forEach((r) => this.mark(r, r === row))

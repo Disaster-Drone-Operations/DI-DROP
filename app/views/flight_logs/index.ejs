@@ -63,31 +63,38 @@
             <th class="num">Landung</th>
             <th class="num">Flugdauer</th>
             <th class="num">Strecke</th>
+            <th>Drohne</th>
             <th>Akku</th>
-            <th>Einsatz</th>
           </tr>
         </thead>
         <% groups.forEach((group) => { -%>
           <tbody class="flightlogs__group">
-            <tr class="flightlogs__drone">
+            <% const m = group.mission -%>
+            <%# Click: select all flights of the mission (⌘/Ctrl: add to / remove from the selection) -%>
+            <tr class="flightlogs__group-head" data-action="click->flight-logs#selectGroup" title="Klicken: alle Flüge dieser Gruppe markieren">
               <td colspan="8">
-                <%- icon('drone', { size: 14 }) %>
-                <span class="flightlogs__model"><%= group.model %></span>
-                <% if (group.sn) { -%>
-                  <span class="renamable flightlogs__name <%= named('aircraft', group.sn) ? 'is-named' : '' %>" data-controller="device-name"
-                        data-device-name-kind-value="aircraft" data-device-name-serial-value="<%= group.sn %>"><%= named('aircraft', group.sn) ?? group.sn %></span>
+                <% if (m) { -%>
+                  <%- icon('pin', { size: 14 }) %>
+                  <span class="flightlogs__group-title"><%= m.title %></span>
+                  <span class="subtle"><%= formatDate(m.date, { weekday: false }) %></span>
+                <% } else { -%>
+                  <%- icon('protocol', { size: 14 }) %>
+                  <span class="flightlogs__group-title">Ohne Einsatz</span>
                 <% } -%>
                 <span class="subtle"><%= pluralize(group.logs.length, 'Flug', 'Flüge') %></span>
               </td>
             </tr>
+            <%# Months only where flights of different days come together (without a mission) -%>
             <% let month = null -%>
             <% group.logs.forEach((log) => { -%>
-              <% const m = localMonth(log.started_at) -%>
-              <% if (m !== month) { month = m -%>
-                <tr class="flightlogs__month"><td colspan="8"><%= m %></td></tr>
+              <% const logMonth = localMonth(log.started_at) -%>
+              <% if (!m && logMonth !== month) { month = logMonth -%>
+                <tr class="flightlogs__month" data-action="click->flight-logs#selectGroup" title="Klicken: alle Flüge dieses Monats markieren"><td colspan="8"><%= logMonth %></td></tr>
               <% } -%>
+              <%# Double-click on a flight: change its mission (of all selected flights) – later the flight details (TODO.md) -%>
               <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>" data-mission="<%= log.mission_id ?? '' %>"
-                  data-action="click->flight-logs#select">
+                  data-action="click->flight-logs#select dblclick->flight-logs#editMission"
+                  title="<%= m ? (log.mission_source === 'manual' ? 'Von Hand zugeordnet' : 'Automatisch zugeordnet (Bilder bzw. Zeit des Einsatzes)') : (log.mission_source === 'manual' ? 'Von Hand: kein Einsatz' : 'Keinem Einsatz zuzuordnen') %> – Doppelklick: Einsatz ändern">
                 <td class="flightlogs__check"><input type="checkbox" tabindex="-1" aria-label="Flug auswählen"></td>
                 <td title="<%= log.file_name %>"><%= localDate(log.started_at) %></td>
                 <td class="num"><%= localTime(log.started_at) %></td>
@@ -95,16 +102,16 @@
                 <td class="num"><%= formatFlightDuration(log.duration_s) %></td>
                 <td class="num"><%= formatDistance(log.distance_m) %></td>
                 <td>
+                  <% if (log.aircraft_sn) { -%>
+                    <span class="renamable flightlogs__name <%= named('aircraft', log.aircraft_sn) ? 'is-named' : '' %>" title="<%= log.aircraft_name ?? 'Drohne' %>" data-controller="device-name"
+                          data-device-name-kind-value="aircraft" data-device-name-serial-value="<%= log.aircraft_sn %>"><%= named('aircraft', log.aircraft_sn) ?? log.aircraft_sn %></span>
+                  <% } else { %><%= log.aircraft_name ?? '–' %><% } %>
+                </td>
+                <td>
                   <% if (log.battery_sn) { -%>
                     <span class="renamable flightlogs__battery <%= named('battery', log.battery_sn) ? 'is-named' : '' %>" data-controller="device-name"
                           data-device-name-kind-value="battery" data-device-name-serial-value="<%= log.battery_sn %>"><%= named('battery', log.battery_sn) ?? log.battery_sn %></span>
                   <% } else { %>–<% } %>
-                </td>
-                <%# Double-click: change the mission (of all selected flights) – a link to the mission comes with the flight details (TODO.md) -%>
-                <% const mission = log.mission_id && missions.get(log.mission_id) -%>
-                <td class="flightlogs__mission" data-action="dblclick->flight-logs#editMission"
-                    title="<%= mission ? (log.mission_source === 'manual' ? 'Von Hand zugeordnet' : 'Automatisch zugeordnet (Bilder bzw. Zeit des Einsatzes)') : (log.mission_source === 'manual' ? 'Von Hand: kein Einsatz' : 'Keinem Einsatz zuzuordnen') %> – Doppelklick zum Ändern">
-                  <% if (mission) { %><span class="truncate"><%= mission.title %></span><% } else { %><span class="subtle">–</span><% } %>
                 </td>
               </tr>
             <% }) -%>

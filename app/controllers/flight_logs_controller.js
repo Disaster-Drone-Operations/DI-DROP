@@ -19,12 +19,12 @@ export default class FlightLogsController extends ApplicationController {
     const logs = missionFilter === 'none' ? all.filter((l) => !l.mission_id)
       : missionFilter ? all.filter((l) => l.mission_id === Number(missionFilter)) : all
     const missions = new Map((await Mission.all({ order: 'date DESC, start_time DESC' })).map((m) => [m.id, m]))
-    // Grouped by drone (serial number), most recently flown first
+    // Grouped by mission (and „Ohne Einsatz“), the group with the most recent flight first
     const groups = []
     for (const log of logs) {
-      const sn = log.aircraft_sn ?? ''
-      let group = groups.find((g) => g.sn === sn)
-      if (!group) groups.push((group = { sn, model: log.aircraft_name ?? 'Drohne', logs: [] }))
+      const mission = (log.mission_id && missions.get(log.mission_id)) || null
+      let group = groups.find((g) => g.mission === mission)
+      if (!group) groups.push((group = { mission, logs: [] }))
       group.logs.push(log)
     }
     await this.render('flight_logs/index', {
