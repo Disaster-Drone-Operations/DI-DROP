@@ -1,4 +1,4 @@
-<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons -%>
+<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons, people -%>
 <% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
 <% const missionPath = `/missions/${mission.id}` /* „Erledigt“ → back to the mission: the assignment is done with */ -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
@@ -21,6 +21,37 @@
       <% if (timeline) { %><div class="meta meta--large"><span><%- icon('clock', { size: 14 }) %><%= timeRange(timeline.first, timeline.last) %></span><span><%- icon('images', { size: 14 }) %><%= pluralize(shotCount, 'Aufnahme', 'Aufnahmen') %></span></div><% } %>
       <% if (shotCount) { %><div class="assignment-provision" data-provision-assignment="<%= assignment.id %>" data-wide></div><% } %>
       <% if (assignment.notes) { %><p class="subtle"><%= assignment.notes %></p><% } %>
+
+      <%# Drone Operator: automatic from the mission's crew (at the first import, without images when done) or by hand -%>
+      <% const operator = people.find((p) => p.id === assignment.operator_id) -%>
+      <% const manual = assignment.operator_source === 'manual' -%>
+      <div data-controller="dialog" class="dialog-host assignment-operator">
+        <button type="button" class="assignment-operator__button" data-action="dialog#open" title="<%= roleLabel('operator') %> ändern">
+          <span class="subtle"><%= roleLabel('operator') %>:</span>
+          <% if (operator) { -%>
+            <span class="person-initials person-initials--small <%= manual ? 'is-manual' : '' %>"><%= operator.short %></span><span><%= operator.name %></span>
+          <% } else { -%>
+            <span class="subtle"><%= manual ? 'niemand' : shotCount || !assignment.isOpen ? '– laut Besetzung niemand –' : 'wird beim ersten Import festgelegt' %></span>
+          <% } -%>
+          <%- icon('chevron', { size: 12 }) %>
+        </button>
+        <dialog class="sheet" data-dialog-target="dialog">
+          <form action="#<%= path %>/operator" method="post" class="sheet__body" novalidate>
+            <input type="hidden" name="_method" value="patch">
+            <h2 class="dialog__title"><%= roleLabel('operator') %> – <%= assignment.title %></h2>
+            <div class="field">
+              <label class="field__label" for="assignment_operator">Wer hat diesen Auftrag ausgewertet?</label>
+              <%- include('people/_picker', { name: 'operator', inputId: 'assignment_operator', selected: manual ? (assignment.operator_id ?? '') : 'auto',
+                    extra: [['auto', 'Automatisch (Besetzung des Einsatzes)']] }) %>
+            </div>
+            <p class="hint">Automatisch: wer laut Besetzung des Einsatzes beim ersten Import der Bilder <%= roleLabel('operator') %> war – ohne Bilder beim Erledigen.</p>
+            <div class="dialog__actions">
+              <button type="button" class="button" data-action="dialog#close">Abbrechen</button>
+              <button type="submit" class="button button--primary">Übernehmen</button>
+            </div>
+          </form>
+        </dialog>
+      </div>
     </div>
     <div class="toolbar" data-controller="system-open">
       <% if (assignment.media_dir) { -%>

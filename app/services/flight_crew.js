@@ -1,8 +1,10 @@
-// Pilot and airspace observer of each flight (flight_logs.pilot_id / observer_id)
+// Roles derived from the crew of a mission (MissionCrew) – stored, so statistics can simply count them
 //
-// Automatic (source NULL/'auto'): who had the role in the crew of the flight's mission at the flight's start
-// time (MissionCrew – not the time of the import); flights without a mission: nobody.
-// By hand: setCrew(ids, role, personId | null) – kept by the automatic assignment; resetCrew → automatic again
+// Flights (flight_logs.pilot_id / observer_id): who had the role at the flight's start time (not the time of the
+//   import); flights without a mission: nobody. By hand: setCrew(ids, role, personId | null); resetCrew → automatic
+// Assignments (assignments.operator_id): who was Drone Operator when its first images were imported – without
+//   images: when it was done (open without images: not decided yet). By hand: setOperator(id, personId | null)
+// Automatic = source NULL/'auto'; 'manual' entries are kept.
 
 import { db } from '/lib/db.js'
 import { now as clockNow } from '/lib/clock.js'
@@ -12,15 +14,21 @@ export const FLIGHT_ROLES = ['pilot', 'observer']
 
 const placeholders = (ids) => ids.map(() => '?').join(',')
 
-// Bring all automatic entries up to date (after crew changes, new flights, other mission) → number of changes
-export async function assignCrew() {
-  const flights = await db.select('SELECT id, mission_id, started_at, pilot_id, pilot_source, observer_id, observer_source FROM flight_logs')
-  if (!flights.length) return 0
+// mission id → its crew entries (sorted)
+async function crewByMission() {
   const crew = new Map()
   for (const e of await db.select('SELECT mission_id, role, person_id, from_at FROM mission_crew ORDER BY from_at, id')) {
     if (!crew.has(e.mission_id)) crew.set(e.mission_id, [])
     crew.get(e.mission_id).push(e)
   }
+  return crew
+}
+
+// Flights: bring all automatic entries up to date (after crew changes, new flights, other mission) → number of changes
+export async function assignCrew() {
+  const flights = await db.select('SELECT id, mission_id, started_at, pilot_id, pilot_source, observer_id, observer_source FROM flight_logs')
+  if (!flights.length) return 0
+  const crew = await crewByMission()
   let changed = 0
   for (const flight of flights) {
     for (const role of FLIGHT_ROLES) {
@@ -48,3 +56,34 @@ export async function resetCrew(ids, role) {
   await db.execute(`UPDATE flight_logs SET ${role}_id = NULL, ${role}_source = NULL WHERE id IN (${placeholders(ids)})`, ids)
   await assignCrew()
 }
+
+// Drone Operator of the assignments (of one mission, or of all) → number of changes
+export async function assignOperators(missionId = null) {
+  const assignments = await db.select(
+    `SELECT a.id, a.mission_id, a.completed_at, a.operator_id, a.operator_source,
+            (SELECT MIN(f.created_at) FROM media_files f WHERE f.assignment_id = a.id) AS first_import
+       FROM assignments a WHERE ${missionId ? 'a.mission_id = ?' : '1 = 1'}`,
+    missionId ? [missionId] : [],
+  )
+  const crew = await crewByMission()
+  let changed = 0
+  for (const a of assignments) {
+    if (a.operator_source === 'manual') continue
+    const at = a.first_import ?? a.completed_at
+    const personId = at ? MissionCrew.at(crew.get(a.mission_id) ?? [], 'operator', new Date(at)) : null
+    if ((personId ?? null) === (a.operator_id ?? null)) continue
+    await db.execute('UPDATE assignments SET operator_id = ?, operator_source = ? WHERE id = ?', [personId, personId ? 'auto' : null, a.id])
+    changed++
+  }
+  return changed
+}
+
+// By hand – „auto“ goes back to the automatic one
+export async function setOperator(id, choice) {
+  if (choice === 'auto') {
+    await db.execute('UPDATE assignments SET operator_id = NULL, operator_source = NULL WHERE id = ?', [id])
+    return assignOperators()
+  }
+  await db.execute("UPDATE assignments SET operator_id = ?, operator_source = 'manual' WHERE id = ?", [choice, id])
+}
+

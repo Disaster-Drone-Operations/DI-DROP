@@ -9,6 +9,7 @@ import { hasDraft } from '/lib/drafts.js'
 import { assignmentStates, cardSteps, missionProgress } from '/app/services/next_step.js'
 import { missionSuggestion } from '/app/services/training.js'
 import { flightStats } from '/app/services/flight_missions.js'
+import { assignOperators } from '/app/services/flight_crew.js'
 import MissionCrew from '/app/models/mission_crew.js'
 import Person from '/app/models/person.js'
 
@@ -54,6 +55,7 @@ export default class MissionsController extends ApplicationController {
 
   // Also used by AssignmentsController (errors in the "Neuer Auftrag" dialog)
   async renderShow(mission, { newAssignment = null, newAssignmentParams = {} } = {}) {
+    await assignOperators(mission.id) // Drone Operator of the assignments follows the crew
     // Assign viewpoints and update file names (also for previously imported images)
     await Viewpoint.sync(mission.id)
     await syncFileNames(mission.id)

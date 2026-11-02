@@ -5,7 +5,7 @@ import Person from '/app/models/person.js'
 import { roleLabel } from '/app/helpers/mission_helper.js'
 import { crewTime, localNow } from '/app/helpers/crew_helper.js'
 import undo from '/lib/undo.js'
-import { assignCrew } from '/app/services/flight_crew.js'
+import { assignCrew, assignOperators } from '/app/services/flight_crew.js'
 
 // Crew of a mission (box „Besetzung“ on the mission page, missions/_crew.ejs)
 export default class CrewController extends ApplicationController {
@@ -19,18 +19,18 @@ export default class CrewController extends ApplicationController {
         : localNow()
 
     const { entry, previous, replaced } = await MissionCrew.change(mission.id, p.role, personId, fromAt)
-    await assignCrew() // pilot and airspace observer of the flights follow
+    await followCrew(mission.id)
     const person = personId ? await Person.find(personId) : null
     const label = `${roleLabel(p.role)} ab ${crewTime(fromAt, mission)}: ${person?.name ?? 'niemand'}`
     undo.record({
       label,
       undo: async () => {
         await (replaced ? entry.update({ person_id: previous }) : entry.destroy())
-        await assignCrew()
+        await followCrew(mission.id)
       },
       redo: async () => {
         await MissionCrew.change(mission.id, p.role, personId, fromAt)
-        await assignCrew()
+        await followCrew(mission.id)
       },
     })
     this.redirectTo(`/missions/${mission.id}`, { notice: `${label}.`, undo: true })
@@ -43,18 +43,24 @@ export default class CrewController extends ApplicationController {
     if (entry.mission_id !== mission.id) return this.redirectTo(`/missions/${mission.id}`)
     const { role, person_id: personId, from_at: fromAt } = entry
     await entry.destroy()
-    await assignCrew()
+    await followCrew(mission.id)
     undo.record({
       label: `Wechsel ${roleLabel(role)} (${crewTime(fromAt, mission)}) entfernt`,
       undo: async () => {
         await MissionCrew.change(mission.id, role, personId, fromAt)
-        await assignCrew()
+        await followCrew(mission.id)
       },
       redo: async () => {
         await (await MissionCrew.findBy('mission_id = ? AND role = ? AND from_at = ?', [mission.id, role, fromAt]))?.destroy()
-        await assignCrew()
+        await followCrew(mission.id)
       },
     })
     this.redirectTo(`/missions/${mission.id}`, { notice: `Wechsel ${roleLabel(role)} (${crewTime(fromAt, mission)}) entfernt.`, undo: true })
   }
+}
+
+// Flights (pilot, airspace observer) and assignments (Drone Operator) follow the crew
+async function followCrew(missionId) {
+  await assignCrew()
+  await assignOperators(missionId)
 }

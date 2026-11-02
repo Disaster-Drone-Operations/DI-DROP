@@ -20,6 +20,8 @@ export default class Assignment extends Record {
     completed_at: 'string',
     media_dir: 'string',
     notes: 'text',
+    operator_id: 'integer', // people – automatic from the mission's crew or by hand (app/services/flight_crew.js)
+    operator_source: 'string',
   }
 
   static KINDS = {

@@ -1435,3 +1435,10 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .flightlogs__crew { cursor: default; }
 .person-initials.is-manual { background: transparent; box-shadow: inset 0 0 0 1px var(--border-strong); }
 
+/* Assignment page: Drone Operator */
+.assignment-operator { display: block; margin-top: 6px; }
+.assignment-operator__button { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; margin-left: -8px; border: 0; border-radius: var(--radius-sm);
+  background: none; font: inherit; color: var(--text); cursor: default; }
+.assignment-operator__button:hover { background: var(--hover); }
+.assignment-operator__button .icon { color: var(--text-3); }
+

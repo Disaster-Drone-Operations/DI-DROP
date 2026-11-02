@@ -14,6 +14,9 @@ import { db } from '/lib/db.js'
 import { TARGETS } from '/app/services/upload_targets.js'
 import Comparison from '/app/models/comparison.js'
 import { assignmentStates } from '/app/services/next_step.js'
+import { assignOperators, setOperator } from '/app/services/flight_crew.js'
+import Person from '/app/models/person.js'
+import { roleLabel } from '/app/helpers/mission_helper.js'
 
 export default class AssignmentsController extends ApplicationController {
   async beforeAction() {
@@ -27,6 +30,7 @@ export default class AssignmentsController extends ApplicationController {
 
   // Assignment with its images, chronologically
   async show() {
+    if (await assignOperators(this.mission.id)) this.assignment = await Assignment.find(this.assignment.id)
     await Viewpoint.sync(this.mission.id)
     await syncFileNames(this.mission.id)
     const files = await MediaFile.where('assignment_id = ?', [this.assignment.id], { order: 'taken_at ASC, shot_key ASC, variant ASC' })
@@ -56,6 +60,7 @@ export default class AssignmentsController extends ApplicationController {
       canImport: platform.capabilities.media,
       completion: await completionOptions(this.assignment),
       provisions: await this.provisions(),
+      people: await Person.roster(),
       comparisons: comparisons.map((c) => ({ comparison: c, viewpointName: viewpointNames.get(c.viewpoint_id) ?? null })),
       comparisonGroups: groupComparisons(comparisons),
       needsComparisons: state.needsComparisons,
@@ -124,6 +129,23 @@ export default class AssignmentsController extends ApplicationController {
       redo: async () => (await Assignment.find(id)).reopen(),
     })
     this.redirectTo(this.returnTo, { notice: `„${this.assignment.title}“ ist wieder offen.`, undo: true })
+  }
+
+  // Drone Operator by hand: a person, "" (nobody) or "auto" (from the mission's crew again)
+  async operator() {
+    const choice = this.params.operator ?? 'auto'
+    const before = { operator_id: this.assignment.operator_id, operator_source: this.assignment.operator_source }
+    await setOperator(this.assignment.id, choice === 'auto' ? 'auto' : /^\d+$/.test(choice) ? Number(choice) : null)
+    const after = await Assignment.find(this.assignment.id)
+    const person = after.operator_id ? await Person.find(after.operator_id) : null
+    const id = this.assignment.id
+    const label = `${roleLabel('operator')} von „${this.assignment.title}“: ${person?.name ?? 'niemand'}${choice === 'auto' ? ' (automatisch)' : ''}`
+    undo.record({
+      label,
+      undo: async () => (await Assignment.find(id)).update(before),
+      redo: () => setOperator(id, choice === 'auto' ? 'auto' : /^\d+$/.test(choice) ? Number(choice) : null),
+    })
+    this.redirectTo(`/missions/${this.mission.id}/assignments/${id}`, { notice: `${label}.`, undo: true })
   }
 
   // Created assignment → undo deletes it again (as long as it has no images)

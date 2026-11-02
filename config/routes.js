@@ -5,6 +5,7 @@ export default (r) => {
     r.resources('assignments', { only: ['show', 'create', 'destroy'] })
     r.patch('/assignments/:id/complete', 'assignments#complete')
     r.patch('/assignments/:id/reopen', 'assignments#reopen')
+    r.patch('/assignments/:id/operator', 'assignments#operator')
     // Provisioning (Nextcloud, folder …)
     r.get('/assignments/:id/provide', 'provisions#new')
     r.post('/assignments/:id/provide', 'provisions#create')
