@@ -1413,3 +1413,20 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .people-inactive .list { margin-top: 8px; }
 .input-short { max-width: 120px; }
 
+/* Crew of a mission (missions/_crew.ejs) */
+.crew { margin-top: 14px; }
+.crew .section__title { margin-bottom: 6px; }
+.crew__list .dialog-host { display: block; }
+.crew__list .dialog-host + .dialog-host .crew-row { border-top: 1px solid var(--border); }
+.crew-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; width: 100%; padding: 8px 12px; border: 0; background: none;
+  font: inherit; color: var(--text); text-align: left; cursor: default; }
+.crew-row:hover { background: var(--hover); }
+.crew-row__role { font-size: 11px; color: var(--text-2); }
+.crew-row__person { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 500; }
+.crew-row__since { font-size: 11px; }
+.person-initials--small { min-width: 24px; height: 22px; padding: 0 5px; border-radius: 11px; font-size: 10.5px; }
+.crew__history { margin-top: 8px; }
+.crew-change { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 12px; }
+.person-picker { display: block; }
+.person-picker select { width: 100%; }
+

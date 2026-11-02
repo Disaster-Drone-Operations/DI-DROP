@@ -14,12 +14,10 @@ export default [
     key: 'general',
     title: 'Allgemein',
     icon: 'sliders',
-    description: 'Angaben zu deiner Einheit und zu dir als Drone Operator.',
+    description: 'Angaben zu deiner Einheit und wie eure Rollen heißen.',
     fields: [
       { key: 'unit_name', label: 'Einheit', type: 'text', default: 'Bergwacht Thüringen',
         hint: 'Erscheint in der Seitenleiste und später in Berichten.' },
-      { key: 'operator_name', label: 'Dein Name (Drone Operator)', type: 'text', default: '',
-        hint: 'Wird bei neuen Einsätzen automatisch als Drone Operator eingetragen.' },
       { key: 'default_mission_kind', label: 'Standard für neue Einträge', type: 'select', default: 'exercise',
         options: [['operation', 'Einsatz'], ['exercise', 'Übung']] },
       // Names of the four roles – other units call them differently (Mission.ROLES are the keys)

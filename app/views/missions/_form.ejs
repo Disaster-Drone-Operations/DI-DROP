@@ -1,7 +1,7 @@
-<%# locals: mission -%>
+<%# locals: mission, crew -%>
 <% const f = formFor(mission, 'mission') -%>
 <% const path = mission.isNewRecord ? '/missions' : `/missions/${mission.id}` -%>
-<% const moreFields = ['reference', 'requested_by', 'coordinates', 'group_leader', 'pilot', 'observer', 'operator', 'start_time', 'nextcloud_path', 'notes'] -%>
+<% const moreFields = ['reference', 'requested_by', 'coordinates', 'start_time', 'nextcloud_path', 'notes'] -%>
 <form action="#<%= path %>" method="post" class="form" novalidate data-shortcut="save"
       data-controller="mission-location" data-mission-location-configured-value="<%= relayConfigured() ? 'true' : 'false' %>">
   <% if (!mission.isNewRecord) { %><input type="hidden" name="_method" value="patch"><% } %>
@@ -21,7 +21,7 @@
 
   <%# Needed less often – collapsible, opens by itself on errors -%>
   <details class="disclosure disclosure--card" <%= moreFields.some((a) => mission.errors[a]) ? 'open' : '' %>>
-    <summary>Weitere Angaben <span class="disclosure__hint">– Alarmierung, Einsatznummer, Drohnen-Einheit, Nextcloud-Ordner, Notizen</span></summary>
+    <summary>Weitere Angaben <span class="disclosure__hint">– Alarmierung, Einsatznummer, <%= mission.isNewRecord ? 'Besetzung, ' : '' %>Nextcloud-Ordner, Notizen</span></summary>
     <div class="disclosure__body">
       <fieldset class="card">
         <legend class="card__title">Einsatz</legend>
@@ -34,12 +34,21 @@
         </div>
       </fieldset>
 
-      <fieldset class="card">
-        <legend class="card__title">Drohnen-Einheit</legend>
-        <div class="grid">
-          <% missionRoles().forEach(([attr, label]) => { %><%- f.field(attr, { label, placeholder: 'Name' }) %><% }) %>
-        </div>
-      </fieldset>
+      <% if (mission.isNewRecord) { -%>
+        <%# Crew from the start – changes later in the box „Besetzung“ on the mission page -%>
+        <fieldset class="card">
+          <legend class="card__title">Besetzung</legend>
+          <div class="grid">
+            <% missionRoles().forEach(([role, label]) => { -%>
+              <div class="field">
+                <label class="field__label" for="crew_<%= role %>"><%= label %></label>
+                <%- include('people/_picker', { name: `crew[${role}]`, inputId: `crew_${role}`, selected: crew?.[role] ?? '' }) %>
+              </div>
+            <% }) -%>
+          </div>
+          <p class="hint">Gilt ab Einsatzbeginn. Wechsel später auf der Einsatzseite unter „Besetzung“.</p>
+        </fieldset>
+      <% } -%>
 
       <fieldset class="card">
         <legend class="card__title">Bereitstellen</legend>

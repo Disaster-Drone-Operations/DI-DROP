@@ -2,14 +2,15 @@ import ApplicationController from '/app/controllers/application_controller.js'
 import Mission from '/app/models/mission.js'
 import Assignment from '/app/models/assignment.js'
 import Viewpoint from '/app/models/viewpoint.js'
-import Setting from '/app/models/setting.js'
-import platform, { trainingId } from '/lib/platform/index.js'
+import platform from '/lib/platform/index.js'
 import { syncFileNames } from '/app/services/file_namer.js'
 import { completionOptions } from '/app/services/control_planner.js'
 import { hasDraft } from '/lib/drafts.js'
 import { assignmentStates, cardSteps, missionProgress } from '/app/services/next_step.js'
 import { missionSuggestion } from '/app/services/training.js'
 import { flightStats } from '/app/services/flight_missions.js'
+import MissionCrew from '/app/models/mission_crew.js'
+import Person from '/app/models/person.js'
 
 export default class MissionsController extends ApplicationController {
   async beforeAction() {
@@ -44,7 +45,6 @@ export default class MissionsController extends ApplicationController {
       upcoming,
       status,
       steps,
-      needsSetup: !trainingId && !Setting.isSet('general.operator_name'), // training: own settings, no welcome
     }, { title: 'Einsätze' })
   }
 
@@ -83,21 +83,32 @@ export default class MissionsController extends ApplicationController {
       newAssignmentParams,
       showNewAssignment: !!newAssignment,
       flightStats: await flightStats(mission.id),
+      crew: await MissionCrew.forMission(mission.id),
+      people: await Person.roster(),
     }, { title: mission.title })
   }
 
+  // crew: who fills the roles from the start – chosen freely, nothing preset
   async new() {
-    await this.render('missions/new', { mission: new Mission(), suggestion: missionSuggestion() }, { title: 'Neuer Einsatz' })
+    await this.renderNew(new Mission(), {})
   }
 
   // Every mission starts with the "Lageerkundung" assignment
   async create() {
     const mission = new Mission(this.params.mission)
+    const crew = this.params.crew ?? {}
     if (await mission.save()) {
       await Assignment.create({ mission_id: mission.id, kind: 'initial', title: Assignment.KINDS.initial })
+      for (const role of Object.keys(Mission.ROLES)) {
+        if (/^\d+$/.test(crew[role] ?? '')) await MissionCrew.change(mission.id, role, Number(crew[role]), `${mission.date}T${mission.start_time ?? '00:00'}`)
+      }
       return this.redirectTo(`/missions/${mission.id}`, { notice: `${mission.kindLabel} „${mission.title}“ angelegt.` })
     }
-    await this.render('missions/new', { mission, suggestion: missionSuggestion() }, { title: 'Neuer Einsatz' })
+    await this.renderNew(mission, crew)
+  }
+
+  async renderNew(mission, crew) {
+    await this.render('missions/new', { mission, crew, people: await Person.roster(), suggestion: missionSuggestion() }, { title: 'Neuer Einsatz' })
   }
 
   async edit() {

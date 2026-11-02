@@ -10,6 +10,9 @@ export default (r) => {
     r.post('/assignments/:id/provide', 'provisions#create')
     r.resources('comparisons', { only: ['index'] })
     r.resources('viewpoints', { only: ['update'] })
+    // Crew: who fills which role from when on
+    r.post('/crew', 'crew#create')
+    r.delete('/crew/:entry', 'crew#destroy')
   })
 
   // Former module "Bilddaten" → redirects (images always belong to a mission)

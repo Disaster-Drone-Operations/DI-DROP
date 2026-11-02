@@ -1,4 +1,4 @@
-<%# locals: mission, open, done, history, timeline, counts, steps, nextStep, canImport, newAssignment, newAssignmentParams, showNewAssignment, flightStats -%>
+<%# locals: mission, open, done, history, timeline, counts, steps, nextStep, canImport, newAssignment, newAssignmentParams, showNewAssignment, flightStats, crew, people -%>
 <% const path = `/missions/${mission.id}` -%>
 <header class="page-header">
   <div>
@@ -52,12 +52,9 @@
     </section>
 
     <details class="disclosure disclosure--card section">
-      <summary>Einsatzdaten &amp; Einheit <span class="disclosure__hint">– <%= mission.location %><%= mission.operator ? ` · Drone Operator: ${mission.operator}` : '' %></span></summary>
+      <summary>Einsatzdaten <span class="disclosure__hint">– <%= mission.location %></span></summary>
       <div class="disclosure__body mission-details">
         <dl class="details">
-          <% missionRoles().forEach(([attr, label]) => { -%>
-            <dt><%= label %></dt><dd><%= mission[attr] || '–' %></dd>
-          <% }) -%>
           <dt>Ort</dt><dd><%= mission.location %></dd>
           <% if (mission.coordinates) { %><dt>Koordinaten</dt><dd class="mono selectable"><%= mission.coordinates %></dd><% } %>
           <% if (mission.requested_by) { %><dt>Angefordert</dt><dd><%= mission.requested_by %></dd><% } %>
@@ -101,6 +98,8 @@
 
     <%# Flights from the remote controller's logs (app/services/flight_missions.js) -%>
     <div data-controller="mission-flights" data-mission-flights-mission-value="<%= mission.id %>"><%- include('missions/_flights', { mission, flightStats }) %></div>
+
+    <%- include('missions/_crew', { mission, crew, people }) %>
   </aside>
 
 </div>

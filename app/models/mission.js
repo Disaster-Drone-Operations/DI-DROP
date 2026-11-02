@@ -17,10 +17,6 @@ export default class Mission extends Record {
     location: 'string',
     coordinates: 'string',
     requested_by: 'string',
-    group_leader: 'string',
-    pilot: 'string',
-    observer: 'string',
-    operator: 'string',
     control_interval_minutes: 'integer',
     status: 'string',
     notes: 'text',
@@ -31,7 +27,8 @@ export default class Mission extends Record {
   static KINDS = { operation: 'Einsatz', exercise: 'Übung' }
   static STATUSES = { active: 'Aktiv', closed: 'Abgeschlossen' }
 
-  // The four roles in the drone unit
+  // The four roles in the drone unit – who fills them: MissionCrew (names: roleLabel in mission_helper.js;
+  // the old text columns group_leader … operator are only kept for older backups)
   static ROLES = {
     group_leader: 'Gruppenführer',
     pilot: 'Pilot',
@@ -45,7 +42,6 @@ export default class Mission extends Record {
       date: toDate(),
       start_time: toTime(),
       status: 'active',
-      operator: Setting.get('general.operator_name'),
       control_interval_minutes: Setting.get('flights.control_interval_minutes'),
     }
   }
@@ -104,7 +100,7 @@ export default class Mission extends Record {
 
   async destroy() {
     // Image files on disk are kept
-    for (const table of ['comparisons', 'media_files', 'viewpoints', 'assignments', 'assignment_series', 'flights']) {
+    for (const table of ['comparisons', 'media_files', 'viewpoints', 'assignments', 'assignment_series', 'flights', 'mission_crew']) {
       await db.execute(`DELETE FROM ${table} WHERE mission_id = ?`, [this.id])
     }
     // Flight logs stay – they only lose the assignment (and may be assigned automatically again)

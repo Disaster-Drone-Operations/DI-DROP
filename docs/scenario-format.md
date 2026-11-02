@@ -24,7 +24,7 @@ flugprotokolle/DJIFlightRecord_….txt   echte Flugprotokolle (optional)
   "title": "Unterhain",
   "description": "Kurzbeschreibung für die Liste",
   "start": "2026-09-11T11:30",             // Startzeit der simulierten Uhr
-  "settings": { "general.operator_name": "Max Mustermann" },   // optional, beliebige Einstellungen
+  "settings": { "general.default_mission_kind": "exercise" },   // optional, beliebige Einstellungen
   "missionSuggestion": {                   // Vorschlag für „Neuer Einsatz“ – die Teilnehmer legen den Einsatz
     "kind": "exercise", "title": "Unterhain",  // selbst an („Übernehmen“ oder eigenes Stichwort)
     "location": "Unterhain", "coordinates": "50.63522, 11.12861"

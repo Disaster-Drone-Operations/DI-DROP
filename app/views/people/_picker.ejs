@@ -1,0 +1,28 @@
+<%# locals: name, inputId, selected, people -%>
+<%# Choose a person – or create a new one right here (person_picker_controller.js). Inactive people only
+    appear when they are the current choice. No <form> inside: the picker may sit in another form. -%>
+<% const current = String(selected ?? '') -%>
+<% const shown = people.filter((p) => p.active || String(p.id) === current) -%>
+<span class="person-picker" data-controller="person-picker">
+  <select id="<%= inputId %>" name="<%= name %>" data-person-picker-target="select" data-action="person-picker#changed">
+    <option value="">– niemand –</option>
+    <% shown.forEach((p) => { %><option value="<%= p.id %>" <%= String(p.id) === current ? 'selected' : '' %>><%= p.name %> (<%= p.short %>)</option><% }) %>
+    <option value="new">＋ Neue Person …</option>
+  </select>
+  <dialog class="sheet" data-person-picker-target="dialog">
+    <div class="sheet__body">
+      <h2 class="dialog__title">Neue Person</h2>
+      <label class="field">
+        <span class="field__label">Name</span>
+        <input type="text" data-person-picker-target="name" placeholder="Vor- und Nachname" autocomplete="off"
+               data-action="keydown.enter->person-picker#create:prevent">
+      </label>
+      <p class="field__error" data-person-picker-target="error" hidden></p>
+      <p class="hint">Das Kürzel entsteht automatisch – ändern lässt es sich unter „Einheit“.</p>
+      <div class="dialog__actions">
+        <button type="button" class="button" data-action="person-picker#cancel">Abbrechen</button>
+        <button type="button" class="button button--primary" data-action="person-picker#create">Anlegen</button>
+      </div>
+    </div>
+  </dialog>
+</span>

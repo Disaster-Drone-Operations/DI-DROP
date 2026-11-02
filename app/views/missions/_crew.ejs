@@ -1,0 +1,79 @@
+<%# locals: mission, crew, people -%>
+<%# Crew of the mission: who fills which role – a change applies from a point in time on (crew_controller.js).
+    Flights and assignments follow it by their time. -%>
+<% const byId = new Map(people.map((p) => [p.id, p])) -%>
+<% const moment = crewMoment(mission) -%>
+<% const path = `/missions/${mission.id}` -%>
+<% const start = `${mission.date}T${mission.start_time ?? '00:00'}` -%>
+<% const hints = {
+     group_leader: 'Zählt für die Erfahrung in dieser Rolle (Einsätze und Stunden).',
+     pilot: 'Flüge ab dann gehören zu dieser Person – entscheidend ist die Startzeit des Flugs, nicht der Import.',
+     observer: 'Flüge ab dann gehören zu dieser Person – entscheidend ist die Startzeit des Flugs, nicht der Import.',
+     operator: 'Gilt für Aufträge, deren Bilder ab dann importiert (oder die ab dann erledigt) werden.',
+   } -%>
+<section class="crew">
+  <h2 class="section__title">Besetzung</h2>
+  <div class="list crew__list">
+    <% missionRoles().forEach(([role, label]) => { -%>
+      <% const entry = crewEntryAt(crew, role, moment) -%>
+      <% const person = entry?.person_id ? byId.get(entry.person_id) : null -%>
+      <% const changed = entry && entry.from_at > start -%>
+      <% const upcoming = mission.isActive && crew.find((e) => e.role === role && parseLocalTime(e.from_at) > moment) -%>
+      <div data-controller="dialog" class="dialog-host">
+        <button type="button" class="crew-row" data-action="dialog#open" title="<%= label %> ändern">
+          <span class="crew-row__role"><%= label %></span>
+          <span class="crew-row__person">
+            <% if (person) { %><span class="person-initials person-initials--small" title="<%= person.name %>"><%= person.short %></span><span class="truncate"><%= person.name %></span><% } else { %><span class="subtle">– niemand –</span><% } %>
+          </span>
+          <% if (changed) { %><span class="crew-row__since subtle">seit <%= crewTime(entry.from_at, mission) %></span><% } %>
+          <% if (upcoming) { %><span class="crew-row__since subtle">ab <%= crewTime(upcoming.from_at, mission) %>: <%= upcoming.person_id ? byId.get(upcoming.person_id)?.name : 'niemand' %></span><% } %>
+        </button>
+        <dialog class="sheet" data-dialog-target="dialog">
+          <form action="#<%= path %>/crew" method="post" class="sheet__body" novalidate data-controller="choice">
+            <input type="hidden" name="crew[role]" value="<%= role %>">
+            <h2 class="dialog__title"><%= label %></h2>
+            <div class="field">
+              <label class="field__label" for="crew_<%= role %>_person">Wer?</label>
+              <%- include('people/_picker', { name: 'crew[person_id]', inputId: `crew_${role}_person`, selected: entry?.person_id ?? '' }) %>
+            </div>
+            <div class="field">
+              <span class="field__label">Gilt ab</span>
+              <div class="choices">
+                <% if (mission.isActive) { -%>
+                  <label class="choice"><input type="radio" name="crew[from]" value="now" checked><span class="choice__label">jetzt</span></label>
+                <% } -%>
+                <label class="choice"><input type="radio" name="crew[from]" value="start" <%= mission.isActive ? '' : 'checked' %>><span class="choice__label">Einsatzbeginn (<%= crewTime(start, mission) %>)</span></label>
+                <label class="choice">
+                  <input type="radio" id="crew_<%= role %>_at" name="crew[from]" value="at">
+                  <span class="choice__label">ab <input type="datetime-local" class="input-inline" name="crew[at]" value="<%= localNow() %>" data-choice="crew_<%= role %>_at"></span>
+                </label>
+              </div>
+              <p class="hint"><%= hints[role] %></p>
+            </div>
+            <div class="dialog__actions">
+              <button type="button" class="button" data-action="dialog#close">Abbrechen</button>
+              <button type="submit" class="button button--primary">Übernehmen</button>
+            </div>
+          </form>
+        </dialog>
+      </div>
+    <% }) -%>
+  </div>
+
+  <% const history = crew.filter((e) => e.from_at > start).reverse() -%>
+  <% if (history.length) { -%>
+    <details class="disclosure crew__history">
+      <summary>Wechsel <span class="count"><%= history.length %></span></summary>
+      <div class="disclosure__body">
+        <% history.forEach((e) => { const person = e.person_id ? byId.get(e.person_id) : null -%>
+          <div class="crew-change">
+            <span class="subtle"><%= crewTime(e.from_at, mission) %></span>
+            <span class="truncate"><%= roleLabel(e.role) %>: <strong><%= person?.name ?? 'niemand' %></strong></span>
+            <%- buttonTo('Entfernen', `${path}/crew/${e.id}`, { method: 'delete', icon: 'trash', class: 'button button--icon-quiet', title: 'Wechsel entfernen',
+                  confirm: `Wechsel „${roleLabel(e.role)}: ${person?.name ?? 'niemand'}“ (${crewTime(e.from_at, mission)}) entfernen?`, confirmButton: 'Entfernen' }) %>
+          </div>
+        <% }) -%>
+      </div>
+    </details>
+  <% } -%>
+</section>
