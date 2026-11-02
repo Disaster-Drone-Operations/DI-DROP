@@ -162,6 +162,11 @@
       "text": "Flug 1 gelandet – Karte einstecken: auch ein alter Testflug von gestern ist drauf"
     },
     {
+      "at": "13:22",
+      "action": "note",
+      "text": "Auf einem Wärmebild der Lageerkundung den Brandherd markieren: Bild groß öffnen → „Markieren“ – Kreis um die heiße Stelle, Pfeil zur Zufahrt, Text „Glutnest“ (Esc = Fertig). Mit M ein-/ausblenden. Das Original bleibt unverändert; daneben entsteht „…_markiert.JPG“, das beim Bereitstellen zuerst mitgeht und mit „An Telefon“ verschickt wird, solange die Markierungen eingeblendet sind."
+    },
+    {
       "at": "13:25",
       "action": "note",
       "text": "Ein Wärmebild der Lageerkundung per „An Telefon“ an die Einsatzleitung schicken, Lageerkundung als erledigt markieren. Falls die Karte nicht schon nach dem Import ausgeworfen wurde: in der Seitenleiste unter „SD-Karten“ auswerfen (⏏)."

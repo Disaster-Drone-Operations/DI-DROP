@@ -17,6 +17,7 @@ Einsatz (missions)
  ├─ Flüge (flights)             entstehen intern beim Import (für ein späteres Flugprotokoll);
  │                              in der Oberfläche nicht sichtbar – dort zählt nur der Auftrag
  ├─ Bilder (media_files)        gehören zu einem Auftrag; Duplikate werden pro Einsatz erkannt
+ │   └─ Markierungen (annotations)  je Bild oder Vergleichsbild; Kopie „…_markiert.JPG“ daneben
  ├─ Wegpunkte (viewpoints)      gleiche Kameraposition über mehrere Flüge → Vergleichsbilder
  ├─ Vergleichsbilder (comparisons)
  └─ Bereitstellungen (upload_batches → upload_items)
@@ -80,6 +81,21 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   Reihenfolge von Bild- und Protokoll-Import egal. Die internen `flights` bleiben (noch) daneben bestehen.
 - Drone Operator: Zeitpunkt = erster Import, höchstens „erledigt“ (`operatorMoment()`), sonst landen nachgetragene
   Einsätze in der Erfahrung im falschen Zeitraum.
+
+## Markierungen auf Bildern
+
+- Formen (Kreis, Rechteck, Pfeil, Text; Rand oder deckend gefüllt; 6 Farben) je Bild bzw. Vergleichsbild in `annotations`
+  (relative Koordinaten 0…1, `version` +1 je Änderung). Zeichnen für Editor, Vorschau und Export an einer Stelle:
+  `app/services/annotation_renderer.js` (auch `drawOnThumbnail` für Vorschaubilder mit `object-fit: cover`).
+- Editor in der Großansicht: `app/javascript/annotation_editor.js` (Canvas über dem Bild im `gallery__frame`, zoomt mit).
+  Esc = Fertig, ⌘Z über `annotations:undo` (shortcuts.js), M blendet ein/aus. Markierungen gelten je Bild, nicht je Aufnahme
+  (Sicht- und Wärmebild haben andere Ausschnitte).
+- Das Original wird nie verändert: Speichern schreibt `…_markiert.JPG` daneben (`app/services/annotations.js`), Rust
+  übernimmt EXIF/XMP ohne das alte Vorschaubild (`src-tauri/src/media/marked.rs`). Wandert beim Umbenennen mit
+  (`file_namer.js`), Import/Nachtragen überspringen `_markiert`-Dateien.
+- Bereitstellen: Kategorie „Markierte Bilder“ zuerst, zusätzlich zum Original; Schlüssel `a<id>:<version>` – geänderte
+  Markierung = fehlt wieder, kommt als neue Datei (`…_markiert_2`). Telefon/Öffnen/Finder nehmen die markierte Fassung,
+  solange sie eingeblendet ist.
 
 ## Tastenkürzel, Menü, Widerrufen
 
