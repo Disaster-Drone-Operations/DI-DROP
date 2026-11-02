@@ -1,4 +1,4 @@
-<%# locals: person, open, trigger -%>
+<%# locals: person, open, trigger, qualificationTypes, qualifications -%>
 <%# New person (person null, trigger "button") or a person that opens its edit dialog: trigger "row" (list row) or "name" -%>
 <% const isNew = !person || person.isNewRecord -%>
 <% const errors = person?.errors ?? {} -%>
@@ -36,6 +36,21 @@
         <% if (errors.initials) { %><p class="field__error">Kürzel <%= errors.initials.join(', ') %></p><% } %>
         <p class="hint">Leer lassen: automatisch aus dem ersten und letzten Namen (Max Mustermann → MM). Gibt es das schon, wird es länger (MMu).</p>
       </div>
+
+      <% if (qualificationTypes?.length) { -%>
+        <% const held = isNew ? null : qualifications?.get(person.id) -%>
+        <%# Typing a date ticks the qualification (choice_controller.js) -%>
+        <fieldset class="field person-qualifications" data-controller="choice" data-choice-on-value="input">
+          <legend class="field__label">Nachweise</legend>
+          <% qualificationTypes.forEach((t) => { const box = `person_${id}_q${t.id}` -%>
+            <div class="person-qualification">
+              <label class="checkbox"><input type="checkbox" id="<%= box %>" name="qualifications[<%= t.id %>][has]" value="1" <%= held?.has(t.id) ? 'checked' : '' %>> <%= t.name %></label>
+              <label class="person-qualification__until subtle">gültig bis
+                <input type="date" name="qualifications[<%= t.id %>][valid_until]" value="<%= held?.get(t.id) ?? '' %>" data-choice="<%= box %>"></label>
+            </div>
+          <% }) -%>
+        </fieldset>
+      <% } -%>
 
       <% if (!isNew) { -%>
         <input type="hidden" name="person[active]" value="0">

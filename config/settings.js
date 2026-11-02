@@ -6,7 +6,7 @@
 //
 // Field types: text, textarea, number, select, url, folder
 // partial: custom view instead of the default form (e.g. a setup assistant)
-// appendix: { partial, os } – extra view below the form, only on that platform ('windows' …)
+// appendix: { partial, os } – extra view below the form (with os: only on that platform, e.g. 'windows')
 //   folder opens the native folder dialog in the desktop app.
 
 export default [
@@ -27,6 +27,21 @@ export default [
       { key: 'role_operator', label: 'Rolle: wertet die Bilder aus', type: 'text', default: 'Drone Operator',
         hint: 'So heißen die Rollen überall in di-drop – bei anderen Einheiten oft anders.' },
     ],
+  },
+  {
+    key: 'unit',
+    title: 'Einheit',
+    icon: 'users',
+    description: 'Mindest-Flugpraxis und welche Nachweise ihr je Person erfasst. Die Personen selbst stehen unter „Einheit“ in der Seitenleiste.',
+    fields: [
+      { key: 'recency_days', label: 'Flugpraxis prüfen für die letzten', type: 'select', default: '90',
+        options: [['30', '30 Tage'], ['60', '60 Tage'], ['90', '90 Tage'], ['180', '180 Tage']] },
+      { key: 'min_flights', label: 'Mindestens … Flüge als Pilot', type: 'number', default: '3' },
+      { key: 'min_minutes', label: 'Mindestens … Minuten Flugzeit als Pilot', type: 'number', default: '60',
+        hint: 'Wer schon einmal geflogen ist und darunter liegt, bekommt unter „Einheit“ einen Hinweis. 0 = keine Mindestanzahl.' },
+    ],
+    // Kinds of qualifications (settings/_qualification_types.ejs)
+    appendix: { partial: 'settings/_qualification_types' },
   },
   {
     key: 'flights',

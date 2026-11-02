@@ -1,0 +1,19 @@
+<%# locals: person, flewEver, qualifications, qualificationTypes, practice -%>
+<%# Below the name: qualifications (expired / expiring soon highlighted) and – for pilots – a hint if the flight
+    practice of the last days is below the minimum (Settings → Einheit) -%>
+<% const held = qualifications.get(person.id) -%>
+<% const recent = practice.people.get(person.id) ?? { count: 0, seconds: 0 } -%>
+<% const belowFlights = practice.minFlights && recent.count < practice.minFlights -%>
+<% const belowMinutes = practice.minMinutes && recent.seconds < practice.minMinutes * 60 -%>
+<% const lowPractice = person.active && flewEver && (belowFlights || belowMinutes) -%>
+<% if (held?.size || lowPractice) { -%>
+  <div class="person-status">
+    <% qualificationTypes.filter((t) => held?.has(t.id)).forEach((t) => { const until = held.get(t.id), state = qualificationState(until) -%>
+      <span class="badge badge--tiny badge--qual-<%= state %>"
+            title="<%= t.name %><%= until ? ` – gültig bis ${formatDate(until, { weekday: false })}` : '' %><%= state === 'expired' ? ' (abgelaufen)' : state === 'soon' ? ' (läuft bald ab)' : '' %>"><%= t.name %><%= state === 'expired' ? ' abgelaufen' : '' %></span>
+    <% }) -%>
+    <% if (lowPractice) { -%>
+      <span class="badge badge--tiny badge--qual-soon" title="Als <%= roleLabel('pilot') %> in den letzten <%= practice.days %> Tagen: <%= pluralize(recent.count, 'Flug', 'Flüge') %>, <%= Math.round(recent.seconds / 60) %> min – gewünscht mindestens <%= [practice.minFlights && pluralize(practice.minFlights, 'Flug', 'Flüge'), practice.minMinutes && `${practice.minMinutes} min`].filter(Boolean).join(' und ') %> (Einstellungen → Einheit)">wenig Flugpraxis</span>
+    <% } -%>
+  </div>
+<% } -%>

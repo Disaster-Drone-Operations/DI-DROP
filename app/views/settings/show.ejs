@@ -1,4 +1,4 @@
-<%# locals: sections, section, values, errors -%>
+<%# locals: sections, section, values, errors, qualificationTypes -%>
 <header class="page-header">
   <div><h1>Einstellungen</h1></div>
 </header>
@@ -21,31 +21,34 @@
       <%- include(section.partial) %>
     </div>
   <% } else { -%>
-  <form class="card settings__panel" action="#/settings/<%= section.key %>" method="post" novalidate data-shortcut="save">
-    <input type="hidden" name="_method" value="patch">
-    <h2 class="settings__title"><%= section.title %></h2>
-    <p class="subtle"><%= section.description %></p>
+  <div class="card settings__panel">
+    <form action="#/settings/<%= section.key %>" method="post" novalidate data-shortcut="save">
+      <input type="hidden" name="_method" value="patch">
+      <h2 class="settings__title"><%= section.title %></h2>
+      <p class="subtle"><%= section.description %></p>
 
-    <div class="grid grid--single">
-      <% section.fields.forEach((fieldDef) => { -%>
-        <%- field({
-              id: `settings_${fieldDef.key}`,
-              name: `settings[${fieldDef.key}]`,
-              value: values[fieldDef.key],
-              errors: errors[fieldDef.key] ?? [],
-              label: fieldDef.label,
-              type: fieldDef.type,
-              options: fieldDef.options,
-              hint: fieldDef.hint,
-              placeholder: fieldDef.placeholder,
-            }) %>
-      <% }) -%>
-    </div>
+      <div class="grid grid--single">
+        <% section.fields.forEach((fieldDef) => { -%>
+          <%- field({
+                id: `settings_${fieldDef.key}`,
+                name: `settings[${fieldDef.key}]`,
+                value: values[fieldDef.key],
+                errors: errors[fieldDef.key] ?? [],
+                label: fieldDef.label,
+                type: fieldDef.type,
+                options: fieldDef.options,
+                hint: fieldDef.hint,
+                placeholder: fieldDef.placeholder,
+              }) %>
+        <% }) -%>
+      </div>
 
-    <div class="form-actions">
-      <button type="submit" class="button button--primary">Speichern</button>
-    </div>
-    <% if (section.appendix && platformName() === section.appendix.os) { %><%- include(section.appendix.partial) %><% } %>
-  </form>
+      <div class="form-actions">
+        <button type="submit" class="button button--primary">Speichern</button>
+      </div>
+    </form>
+    <%# Outside the form: the appendix may have forms of its own -%>
+    <% if (section.appendix && (!section.appendix.os || platformName() === section.appendix.os)) { %><%- include(section.appendix.partial) %><% } %>
+  </div>
   <% } -%>
 </div>

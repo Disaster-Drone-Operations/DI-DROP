@@ -1449,10 +1449,27 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .unit-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .unit-table tr:last-child td { border-bottom: 0; }
 .unit-table__person { min-width: 200px; }
-.unit-table__stat strong { display: block; font-weight: 600; }
+.unit-table__stat strong { display: block; font-weight: 600; white-space: nowrap; }
 .unit-table__stat .subtle, .unit-table__total { display: block; font-size: 12px; }
 .unit-table__total { color: var(--text-3); }
 .person-name { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 2px 6px 2px 0; border: 0; background: none; font: inherit; font-weight: 500; color: var(--text); cursor: default; text-align: left; }
 .person-name:hover .truncate { text-decoration: underline; }
 .unit .filterbar { margin-bottom: 12px; }
+
+/* Settings → Einheit: kinds of qualifications */
+.qualification-types { width: 100%; }
+.qualification-type { padding: 6px 8px 6px 12px; }
+.qualification-type__form { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.qualification-type__form input[type=text] { flex: 1; min-width: 0; }
+.qualification-type .qualification-type__form input[type=text]:not(:focus) { border-color: transparent; background: transparent; }
+.qualification-type__new { width: 100%; }
+
+/* Unit: qualifications and flight practice below the name */
+.person-status { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0 40px; }
+.badge--qual-valid { background: var(--selected); color: var(--text-2); }
+.badge--qual-soon { background: var(--warning-soft); color: var(--warning); }
+.badge--qual-expired { background: var(--danger-soft); color: var(--danger); }
+.person-qualifications { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.person-qualification { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.person-qualification__until { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
 

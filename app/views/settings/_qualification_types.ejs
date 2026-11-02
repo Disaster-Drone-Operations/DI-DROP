@@ -1,0 +1,23 @@
+<%# locals: qualificationTypes -%>
+<%# Settings → Einheit: kinds of qualifications the unit records (qualifications_controller.js) -%>
+<section class="settings__appendix">
+  <h3 class="settings__subtitle"><%- icon('check', { size: 15 }) %>Nachweise</h3>
+  <p class="subtle">Welche Nachweise ihr je Person erfasst – EU-Kompetenznachweise oder eigene Ausbildungen. Ob jemand einen hat und bis wann er gilt, steht bei der Person unter „Einheit“.</p>
+  <div class="list qualification-types">
+    <% qualificationTypes.forEach((t) => { -%>
+      <div class="list__row qualification-type">
+        <form action="#/unit/qualifications/<%= t.id %>" method="post" class="qualification-type__form">
+          <input type="hidden" name="_method" value="patch">
+          <input type="text" name="name" value="<%= t.name %>" aria-label="Name des Nachweises" autocomplete="off">
+          <button type="submit" class="button button--small button--quiet">Umbenennen</button>
+        </form>
+        <%- buttonTo('Entfernen', `/unit/qualifications/${t.id}`, { method: 'delete', icon: 'trash', class: 'button button--icon-quiet', title: 'Entfernen',
+              confirm: `Nachweis „${t.name}“ entfernen? Die Einträge bei den Personen gehen dabei verloren.`, confirmButton: 'Entfernen' }) %>
+      </div>
+    <% }) -%>
+  </div>
+  <form action="#/unit/qualifications" method="post" class="qualification-type__form qualification-type__new">
+    <input type="text" name="name" placeholder="Neuer Nachweis, z. B. Drohnenführer intern" autocomplete="off" required>
+    <button type="submit" class="button"><%- icon('plus') %><span>Hinzufügen</span></button>
+  </form>
+</section>

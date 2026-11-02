@@ -36,6 +36,9 @@ export default (r) => {
   r.get('/unit', 'people#index')
   r.post('/unit/people', 'people#create')
   r.patch('/unit/people/:id', 'people#update')
+  r.post('/unit/qualifications', 'qualifications#create')
+  r.patch('/unit/qualifications/:id', 'qualifications#update')
+  r.delete('/unit/qualifications/:id', 'qualifications#destroy')
 
   r.get('/uploads', 'uploads#index')
   r.get('/about', 'about#show')

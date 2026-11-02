@@ -1,6 +1,7 @@
 import { formatFlightDuration } from '/app/helpers/flight_log_helper.js'
 import { pluralize } from '/app/helpers/application_helper.js'
 import { KINDS, PERIODS } from '/app/services/experience.js'
+import { qualificationState as stateOf } from '/app/models/qualification.js'
 
 export const experiencePeriods = () => PERIODS
 
@@ -22,3 +23,7 @@ export function experienceText(role, stat) {
     .join(' · ')
   return { main, sub, title }
 }
+
+// Qualification: expired | soon | valid (for the badges below the name)
+export const qualificationState = (validUntil) => stateOf(validUntil)
+

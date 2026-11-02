@@ -1,4 +1,4 @@
-<%# locals: people, editing, period, stats -%>
+<%# locals: people, editing, period, stats, practice, qualificationTypes, qualifications -%>
 <% const active = people.filter((p) => p.active) -%>
 <% const inactive = people.filter((p) => !p.active) -%>
 <% const reopen = (p) => editing && (p ? editing.id === p.id : editing.isNewRecord) -%>
@@ -41,7 +41,10 @@
         <tbody>
           <% list.forEach((p) => { const s = stats.get(p.id) -%>
             <tr>
-              <td class="unit-table__person"><%- include('people/_dialog', { person: reopen(p) ? editing : p, open: reopen(p), trigger: 'name' }) %></td>
+              <td class="unit-table__person">
+                <%- include('people/_dialog', { person: reopen(p) ? editing : p, open: reopen(p), trigger: 'name' }) %>
+                <%- include('people/_status', { person: p, flewEver: !!s?.pilot.total.count }) %>
+              </td>
               <% roles.forEach((role) => { const cur = experienceText(role, s?.[role].period), all = experienceText(role, s?.[role].total) -%>
                 <td class="unit-table__stat" title="<%= period === 'all' ? all.title : [cur.title, all.title && `Gesamt – ${all.title}`].filter(Boolean).join('\n') %>">
                   <% if (cur.main) { %><strong><%= cur.main %></strong><span class="subtle"><%= cur.sub %></span><% } else { %><span class="subtle">–</span><% } %>

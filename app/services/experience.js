@@ -12,6 +12,7 @@ import { parseLocal } from '/lib/time.js'
 import { now as clockNow } from '/lib/clock.js'
 import { assignFlights } from '/app/services/flight_missions.js'
 import { assignOperators } from '/app/services/flight_crew.js'
+import Setting from '/app/models/setting.js'
 
 export const PERIODS = {
   '30d': { label: '30 Tage', days: 30 },
@@ -103,7 +104,25 @@ export async function experience(periodKey = DEFAULT_PERIOD) {
   // group leader: „count“ = number of missions
   for (const p of people.values()) for (const s of [p.group_leader.period, p.group_leader.total]) s.count = s.missions.size
 
-  return { period: periodKey, from, people }
+  return { period: periodKey, from, people, practice: await pilotPractice(now) }
+}
+
+// Flight practice as pilot in the last N days (Settings → Einheit) → { days, minFlights, minMinutes,
+//   people: Map(personId → { count, seconds }) } – who flew before and is below the minimum gets a hint
+async function pilotPractice(now) {
+  const days = Number(Setting.get('unit.recency_days')) || 90
+  const since = new Date(now)
+  since.setDate(since.getDate() - days)
+  const people = new Map()
+  for (const f of await db.select('SELECT pilot_id, started_at, duration_s FROM flight_logs WHERE pilot_id IS NOT NULL')) {
+    const at = new Date(f.started_at)
+    if (at < since || at > now) continue
+    const p = people.get(f.pilot_id) ?? { count: 0, seconds: 0 }
+    p.count++
+    p.seconds += f.duration_s ?? 0
+    people.set(f.pilot_id, p)
+  }
+  return { days, minFlights: Number(Setting.get('unit.min_flights')) || 0, minMinutes: Number(Setting.get('unit.min_minutes')) || 0, people }
 }
 
 // End of every mission (ms): closed → closed_at (older ones: last activity), active → now
