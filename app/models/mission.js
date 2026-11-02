@@ -1,5 +1,6 @@
 import Record from '/lib/record.js'
 import { db } from '/lib/db.js'
+import { now as clockNow } from '/lib/clock.js'
 import { toDate, toTime, parseLocal } from '/lib/time.js'
 import { dateFolder, sanitizeFolderName } from '/lib/folders.js'
 import Setting from '/app/models/setting.js'
@@ -22,6 +23,7 @@ export default class Mission extends Record {
     notes: 'text',
     media_dir: 'string',
     nextcloud_path: 'string',
+    closed_at: 'string', // UTC – set when closed, cleared when reopened
   }
 
   static KINDS = { operation: 'Einsatz', exercise: 'Übung' }
@@ -75,6 +77,11 @@ export default class Mission extends Record {
     if (this.coordinates && !/^-?\d{1,2}(\.\d+)?\s*[,;]\s*-?\d{1,3}(\.\d+)?$/.test(this.coordinates)) {
       this.addError('coordinates', 'bitte als "Breite, Länge" angeben, z. B. 50.6789, 10.9876')
     }
+  }
+
+  async beforeSave() {
+    if (this.status === 'closed') this.closed_at ??= clockNow().toISOString()
+    else this.closed_at = null
   }
 
   get isActive() {

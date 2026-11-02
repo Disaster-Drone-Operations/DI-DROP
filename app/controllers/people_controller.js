@@ -1,5 +1,6 @@
 import ApplicationController from '/app/controllers/application_controller.js'
 import Person from '/app/models/person.js'
+import { experience, PERIODS, DEFAULT_PERIOD } from '/app/services/experience.js'
 
 // Module "Einheit": the people of the drone unit (their roles follow per mission, flight and assignment)
 export default class PeopleController extends ApplicationController {
@@ -21,8 +22,10 @@ export default class PeopleController extends ApplicationController {
     await this.renderIndex({ editing: person })
   }
 
-  // editing: person whose dialog comes back with errors
+  // editing: person whose dialog comes back with errors; ?period=30d|3m|12m|all – experience in that period
   async renderIndex({ editing = null } = {}) {
-    await this.render('people/index', { people: await Person.roster(), editing }, { title: 'Einheit' })
+    const period = PERIODS[this.params.period] ? this.params.period : DEFAULT_PERIOD
+    const stats = await experience(period)
+    await this.render('people/index', { people: await Person.roster(), editing, period, stats: stats.people }, { title: 'Einheit' })
   }
 }

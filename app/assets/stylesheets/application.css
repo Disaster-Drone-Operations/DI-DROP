@@ -1442,3 +1442,17 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .assignment-operator__button:hover { background: var(--hover); }
 .assignment-operator__button .icon { color: var(--text-3); }
 
+/* Unit: experience table (people/index.ejs) */
+.unit-table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: auto; background: var(--surface); }
+.unit-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.unit-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--text-2); padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.unit-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.unit-table tr:last-child td { border-bottom: 0; }
+.unit-table__person { min-width: 200px; }
+.unit-table__stat strong { display: block; font-weight: 600; }
+.unit-table__stat .subtle, .unit-table__total { display: block; font-size: 12px; }
+.unit-table__total { color: var(--text-3); }
+.person-name { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 2px 6px 2px 0; border: 0; background: none; font: inherit; font-weight: 500; color: var(--text); cursor: default; text-align: left; }
+.person-name:hover .truncate { text-decoration: underline; }
+.unit .filterbar { margin-bottom: 12px; }
+

@@ -1,11 +1,16 @@
 <%# locals: person, open, trigger -%>
-<%# New person (person null, trigger "button") or one row of the list that opens its edit dialog -%>
+<%# New person (person null, trigger "button") or a person that opens its edit dialog: trigger "row" (list row) or "name" -%>
 <% const isNew = !person || person.isNewRecord -%>
 <% const errors = person?.errors ?? {} -%>
 <% const id = isNew ? 'new' : person.id -%>
 <div data-controller="dialog" data-dialog-open-value="<%= open ? 'true' : 'false' %>" class="dialog-host">
   <% if (trigger === 'button') { -%>
     <button type="button" class="button button--primary" data-action="dialog#open"><%- icon('plus') %><span>Neue Person</span></button>
+  <% } else if (trigger === 'name') { -%>
+    <button type="button" class="person-name" data-action="dialog#open" title="Bearbeiten">
+      <span class="person-initials"><%= person.short ?? '' %></span>
+      <span class="truncate"><%= person.name %></span>
+    </button>
   <% } else { -%>
     <button type="button" class="list__row person-row" data-action="dialog#open" title="Bearbeiten">
       <span class="person-initials"><%= person.short ?? '' %></span>

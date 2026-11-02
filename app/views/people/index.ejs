@@ -1,12 +1,13 @@
-<%# locals: people, editing -%>
+<%# locals: people, editing, period, stats -%>
 <% const active = people.filter((p) => p.active) -%>
 <% const inactive = people.filter((p) => !p.active) -%>
 <% const reopen = (p) => editing && (p ? editing.id === p.id : editing.isNewRecord) -%>
+<% const roles = ['pilot', 'observer', 'operator', 'group_leader'] -%>
 <div class="unit">
   <header class="page-header">
     <div>
       <h1>Einheit</h1>
-      <p class="subtle">Die Personen der Drohnengruppe – im Einsatz als <%= roleList() %>.</p>
+      <p class="subtle">Die Personen der Drohnengruppe und ihre Erfahrung – als <%= roleList() %>.</p>
     </div>
     <div class="toolbar">
       <%- include('people/_dialog', { person: reopen(null) ? editing : null, open: reopen(null), trigger: 'button' }) %>
@@ -20,19 +21,46 @@
       <p class="subtle">Leg die Piloten und Helfer deiner Einheit an – mit vollem Namen. Das Kürzel entsteht automatisch und lässt sich ändern.</p>
     </div>
   <% } else { -%>
-    <div class="list people-list">
-      <% active.forEach((p) => { -%>
-        <%- include('people/_dialog', { person: reopen(p) ? editing : p, open: reopen(p), trigger: 'row' }) %>
-      <% }) -%>
-    </div>
+    <nav class="filterbar" aria-label="Zeitraum">
+      <span class="subtle">Erfahrung:</span>
+      <div class="segmented segmented--links">
+        <% Object.entries(experiencePeriods()).forEach(([key, p]) => { -%>
+          <a href="#/unit<%= key === 'all' ? '?period=all' : `?period=${key}` %>" class="<%= key === period ? 'is-active' : '' %>"><%= key === 'all' ? p.label : `letzte ${p.label}` %></a>
+        <% }) -%>
+      </div>
+    </nav>
+
+    <% const table = (list) => { -%>
+      <table class="unit-table">
+        <thead>
+          <tr>
+            <th>Person</th>
+            <% roles.forEach((role) => { %><th lang="de"><%= roleLabel(role) %></th><% }) %>
+          </tr>
+        </thead>
+        <tbody>
+          <% list.forEach((p) => { const s = stats.get(p.id) -%>
+            <tr>
+              <td class="unit-table__person"><%- include('people/_dialog', { person: reopen(p) ? editing : p, open: reopen(p), trigger: 'name' }) %></td>
+              <% roles.forEach((role) => { const cur = experienceText(role, s?.[role].period), all = experienceText(role, s?.[role].total) -%>
+                <td class="unit-table__stat" title="<%= period === 'all' ? all.title : [cur.title, all.title && `Gesamt – ${all.title}`].filter(Boolean).join('\n') %>">
+                  <% if (cur.main) { %><strong><%= cur.main %></strong><span class="subtle"><%= cur.sub %></span><% } else { %><span class="subtle">–</span><% } %>
+                  <% if (period !== 'all' && all.main && (all.main !== cur.main || all.sub !== cur.sub)) { %><span class="unit-table__total">gesamt <%= all.main %></span><% } %>
+                </td>
+              <% }) -%>
+            </tr>
+          <% }) -%>
+        </tbody>
+      </table>
+    <% } -%>
+
+    <div class="unit-table-wrap"><% table(active) %></div>
+    <p class="hint">Flugzeit aus den Flugprotokollen (wer laut Besetzung zur Startzeit geflogen ist bzw. beobachtet hat), Aufträge als <%= roleLabel('operator') %>, Einsätze und Stunden als <%= roleLabel('group_leader') %> aus der Besetzung. Mit der Maus über einem Wert: aufgeteilt nach Einsatz, Übung und ohne Einsatz.</p>
+
     <% if (inactive.length) { -%>
       <details class="disclosure people-inactive" <%= inactive.some(reopen) ? 'open' : '' %>>
         <summary>Inaktiv <span class="disclosure__hint">– <%= pluralize(inactive.length, 'Person', 'Personen') %>, <%= inactive.length === 1 ? 'zählt' : 'zählen' %> weiter in der Statistik</span></summary>
-        <div class="list list--muted people-list">
-          <% inactive.forEach((p) => { -%>
-            <%- include('people/_dialog', { person: reopen(p) ? editing : p, open: reopen(p), trigger: 'row' }) %>
-          <% }) -%>
-        </div>
+        <div class="unit-table-wrap list--muted"><% table(inactive) %></div>
       </details>
     <% } -%>
   <% } -%>
