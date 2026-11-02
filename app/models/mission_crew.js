@@ -1,5 +1,6 @@
 import Record from '/lib/record.js'
 import { parseLocal } from '/lib/time.js'
+import { db } from '/lib/db.js'
 
 // Crew of a mission as a history: from from_at on, `role` is filled by `person_id` (null = nobody).
 //
@@ -13,6 +14,11 @@ export default class MissionCrew extends Record {
     role: 'string',
     person_id: 'integer',
     from_at: 'string', // local time "2026-06-20T14:05"
+  }
+
+  // Ids of the missions that have anyone in their crew
+  static async missionsWithCrew() {
+    return new Set((await db.select('SELECT DISTINCT mission_id FROM mission_crew WHERE person_id IS NOT NULL')).map((r) => Number(r.mission_id)))
   }
 
   static forMission(missionId) {

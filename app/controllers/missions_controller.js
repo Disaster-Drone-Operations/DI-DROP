@@ -46,6 +46,7 @@ export default class MissionsController extends ApplicationController {
       upcoming,
       status,
       steps,
+      crewed: await MissionCrew.missionsWithCrew(),
     }, { title: 'Einsätze' })
   }
 

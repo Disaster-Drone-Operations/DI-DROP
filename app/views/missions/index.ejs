@@ -1,4 +1,4 @@
-<%# locals: active, archived, upcoming, status, steps -%>
+<%# locals: active, archived, upcoming, status, steps, crewed -%>
 <header class="page-header">
   <div>
     <h1>Einsätze</h1>
@@ -17,7 +17,7 @@
     </div>
   <% } else { -%>
     <div class="list">
-      <% active.forEach((mission) => { %><%- include('missions/_card', { mission, status: status.get(mission.id) }) %><% }) %>
+      <% active.forEach((mission) => { %><%- include('missions/_card', { mission, status: status.get(mission.id), missing: null }) %><% }) %>
     </div>
   <% } -%>
 </section>
@@ -35,7 +35,7 @@
   <details class="disclosure section">
     <summary>Abgeschlossen <span class="count"><%= archived.length %></span></summary>
     <div class="disclosure__body list list--muted">
-      <% archived.forEach((mission) => { %><%- include('missions/_card', { mission, status: null }) %><% }) %>
+      <% archived.forEach((mission) => { %><%- include('missions/_card', { mission, status: null, missing: missingDetails(mission, crewed.has(mission.id)) }) %><% }) %>
     </div>
   </details>
 <% } -%>

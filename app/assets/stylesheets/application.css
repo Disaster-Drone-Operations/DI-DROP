@@ -1400,6 +1400,9 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 /* Mission card: provision status */
 .mission-row__status { font-size: 12px; }
 .mission-row__missing { color: var(--warning); }
+.mission-row__todo { color: var(--text-2); font-style: italic; }
+.mission-todo { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.mission-todo > span { flex: 1; }
 
 /* Unit: people (people/index.ejs) --------------------------------------------- */
 

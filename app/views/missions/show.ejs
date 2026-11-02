@@ -27,6 +27,13 @@
   </div>
 </header>
 
+<% const missing = missingDetails(mission, crew.some((e) => e.person_id)) -%>
+<% if (missing.length) { -%>
+  <div class="callout callout--subtle mission-todo">
+    <%- icon('pencil') %>
+    <span><strong>Noch nachzutragen:</strong> <%= missing.join(', ') %> – z. B. aus euren Einsatzprotokollen.<% if (missing.includes('Besetzung')) { %> Wer dabei war, unter „Besetzung“ ab Einsatzbeginn wählen – dann zählen Flüge und Erfahrung.<% } %><% if (missing.some((m) => m !== 'Besetzung')) { %> Nummer und Anforderung über „Bearbeiten“.<% } %></span>
+  </div>
+<% } -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>" data-media-import-return-path-value="<%= path %>">
 <div data-controller="next-step" data-next-step-mission-value="<%= mission.id %>" data-next-step-can-import-value="<%= canImport %>"><% if (nextStep) { %><%- include('missions/_next_step', { mission, step: nextStep, canImport }) %><% } %></div>
 <div class="columns">

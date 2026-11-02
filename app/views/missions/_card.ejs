@@ -1,5 +1,5 @@
-<%# locals: mission, status -%>
-<%# status (active missions): { open, next, missing } – where the mission stands -%>
+<%# locals: mission, status, missing -%>
+<%# status (active missions): { open, next, missing } – where the mission stands; missing (closed): details still to add -%>
 <% const d = mission.startsAt -%>
 <a class="list__row mission-row" href="#/missions/<%= mission.id %>">
   <div class="datebox <%= isToday(d) ? 'datebox--today' : '' %>">
@@ -15,6 +15,7 @@
       <span><%- icon('pin', { size: 13 }) %><%= mission.location %></span>
       <% if (mission.start_time) { %><span><%- icon('clock', { size: 13 }) %><%= mission.start_time %> Uhr</span><% } %>
       <% if (mission.reference) { %><span class="subtle">Nr. <%= mission.reference %></span><% } %>
+      <% if (missing?.length) { %><span class="mission-row__todo">fehlt: <%= missing.join(', ') %></span><% } %>
     </div>
     <% if (status) { -%>
       <div class="meta mission-row__status">

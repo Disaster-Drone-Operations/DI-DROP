@@ -19,6 +19,18 @@ export const intervalOptions = (current) => {
   return [['', 'kein festes Intervall'], ...options]
 }
 
+// What's still to be added to a closed mission (e.g. backfilled from old images) – from the unit's records.
+// hasCrew: anyone in the crew; Einsatznummer and "angefordert von" only for real operations
+export function missingDetails(mission, hasCrew) {
+  if (mission.isActive) return []
+  const missing = hasCrew ? [] : ['Besetzung']
+  if (mission.kind === 'operation') {
+    if (!mission.reference) missing.push('Einsatznummer')
+    if (!mission.requested_by) missing.push('angefordert von')
+  }
+  return missing
+}
+
 export function kindBadge(mission) {
   return `<span class="badge badge--${escapeHtml(mission.kind)}">${escapeHtml(mission.kindLabel)}</span>`
 }
