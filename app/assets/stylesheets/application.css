@@ -1506,5 +1506,6 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .history-table__place { min-width: 140px; }
 .history-table .hint { margin-top: 4px; font-size: 11px; }
 .history-table tr.has-overlap td { background: var(--surface-2); }
+.history-table tr.is-invalid td { background: color-mix(in srgb, var(--danger, #d33) 10%, transparent); }
 .history-rows__footer { position: sticky; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   margin-top: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }

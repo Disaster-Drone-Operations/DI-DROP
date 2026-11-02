@@ -57,6 +57,13 @@ export async function resetCrew(ids, role) {
   await assignCrew()
 }
 
+// When the Drone Operator of an assignment is decided: at the first image import – never after it was done
+// (backfilled missions: images imported long after the mission ended). Without images: when done.
+export function operatorMoment({ first_import: imported, completed_at: done }) {
+  if (imported && done) return Date.parse(imported) < Date.parse(done) ? imported : done
+  return imported ?? done ?? null
+}
+
 // Drone Operator of the assignments (of one mission, or of all) → number of changes
 export async function assignOperators(missionId = null) {
   const assignments = await db.select(
@@ -69,7 +76,7 @@ export async function assignOperators(missionId = null) {
   let changed = 0
   for (const a of assignments) {
     if (a.operator_source === 'manual') continue
-    const at = a.first_import ?? a.completed_at
+    const at = operatorMoment(a)
     const personId = at ? MissionCrew.at(crew.get(a.mission_id) ?? [], 'operator', new Date(at)) : null
     if ((personId ?? null) === (a.operator_id ?? null)) continue
     await db.execute('UPDATE assignments SET operator_id = ?, operator_source = ? WHERE id = ?', [personId, personId ? 'auto' : null, a.id])

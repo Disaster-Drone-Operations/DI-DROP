@@ -6,6 +6,20 @@ import { scanFolder } from '/app/services/history_import.js'
 export default class extends Controller {
   static targets = ['pick', 'progress']
 
+  // Creating the missions (history_controller#create) reports its progress here
+  connect() {
+    this.onProgress = ({ detail: { done, total, title } }) => {
+      this.progressTarget.hidden = false
+      this.showProgress(done, total, title ? `„${title}“: Bilder kopieren …` : null)
+      if (done === 0) this.progressTarget.scrollIntoView({ block: 'nearest' })
+    }
+    window.addEventListener('history:progress', this.onProgress)
+  }
+
+  disconnect() {
+    window.removeEventListener('history:progress', this.onProgress)
+  }
+
   async pick() {
     const root = await platform.pickFolder({ title: 'Ordner mit alten Drohnenbildern wählen (Unterordner werden mit durchsucht)' })
     if (!root) return
@@ -21,10 +35,11 @@ export default class extends Controller {
     }
   }
 
-  showProgress(done, total) {
+  showProgress(done, total, label = null) {
     const n = (v) => v.toLocaleString('de-DE')
-    this.progressTarget.innerHTML = `<progress class="progress" max="${total || 1}" value="${done}"></progress>
-      <p class="subtle">${total ? `${n(done)} von ${n(total)} Dateien durchsucht …` : 'Suche Bilder …'}</p>`
+    const text = label ? `${label} ${n(done)} von ${n(total)} Dateien` : total ? `${n(done)} von ${n(total)} Dateien durchsucht …` : 'Suche Bilder …'
+    this.progressTarget.innerHTML = `<progress class="progress" max="${total || 1}" value="${done}"></progress><p class="subtle"></p>`
+    this.progressTarget.querySelector('p').textContent = text
   }
 
   // Device checkboxes: regroup right away

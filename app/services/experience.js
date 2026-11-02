@@ -11,7 +11,7 @@ import { db } from '/lib/db.js'
 import { parseLocal } from '/lib/time.js'
 import { now as clockNow } from '/lib/clock.js'
 import { assignFlights } from '/app/services/flight_missions.js'
-import { assignOperators } from '/app/services/flight_crew.js'
+import { assignOperators, operatorMoment } from '/app/services/flight_crew.js'
 import Setting from '/app/models/setting.js'
 
 export const PERIODS = {
@@ -76,14 +76,14 @@ export async function experience(periodKey = DEFAULT_PERIOD) {
     if (f.observer_id) count(f.observer_id, 'observer', kindOf(f.mission_id), at, values)
   }
 
-  // Assignments: Drone Operator (moment: first import, otherwise done, otherwise created)
+  // Assignments: Drone Operator (moment: first import – at the latest done –, otherwise created)
   const assignments = await db.select(
     `SELECT a.mission_id, a.operator_id, a.completed_at, a.created_at,
             (SELECT MIN(f.created_at) FROM media_files f WHERE f.assignment_id = a.id) AS first_import
        FROM assignments a WHERE a.operator_id IS NOT NULL`,
   )
   for (const a of assignments) {
-    count(a.operator_id, 'operator', kindOf(a.mission_id), new Date(a.first_import ?? a.completed_at ?? a.created_at), { missionId: a.mission_id })
+    count(a.operator_id, 'operator', kindOf(a.mission_id), new Date(operatorMoment(a) ?? a.created_at), { missionId: a.mission_id })
   }
 
   // Group leader: periods from the crew history

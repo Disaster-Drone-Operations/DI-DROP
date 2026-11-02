@@ -1,4 +1,4 @@
-<%# locals: scan, devices, rows, undated, canPick -%>
+<%# locals: scan, devices, rows, undated, values, errors, canPick -%>
 <% const folderName = scan ? scan.root.split(/[\\/]/).filter(Boolean).pop() : null -%>
 <div class="history-import" data-controller="history-import">
   <header class="page-header">
@@ -59,22 +59,25 @@
             <tbody>
               <% rows.forEach((p, i) => { -%>
                 <% const name = `rows[${i}]` -%>
-                <tr class="<%= p.overlaps.length ? 'has-overlap' : '' %>">
+                <% const v = values[p.key] ?? {} -%>
+                <% const action = v.action ?? (p.overlaps.length ? (p.files.length ? `add:${p.overlaps[0].id}` : 'skip') : 'create') -%>
+                <% const kind = v.kind ?? p.kind -%>
+                <tr class="<%= p.overlaps.length ? 'has-overlap' : '' %> <%= errors.has(p.key) ? 'is-invalid' : '' %>">
                   <td class="history-table__date">
                     <input type="hidden" name="<%= name %>[key]" value="<%= p.key %>">
                     <strong><%= formatDate(p.date, { weekday: false }) %></strong><br><span class="subtle"><%= p.startTime %> Uhr</span>
                     <% if (i > 0) { -%>
                       <label class="history-table__merge" title="Mehrtägiger Einsatz: mit der Zeile darüber ein Einsatz">
-                        <input type="hidden" name="<%= name %>[merge]" value="0"><input type="checkbox" name="<%= name %>[merge]" value="1"> mit oben
+                        <input type="hidden" name="<%= name %>[merge]" value="0"><input type="checkbox" name="<%= name %>[merge]" value="1" <%= v.merge ? 'checked' : '' %>> mit oben
                       </label>
                     <% } -%>
                   </td>
-                  <td><input type="text" class="input" name="<%= name %>[title]" value="<%= p.titleHint ?? p.placeName ?? '' %>" placeholder="Stichwort" aria-label="Titel"></td>
+                  <td><input type="text" class="input" name="<%= name %>[title]" value="<%= v.title ?? p.titleHint ?? p.placeName ?? '' %>" placeholder="Stichwort" aria-label="Titel"></td>
                   <td>
                     <select class="input" name="<%= name %>[kind]" aria-label="Art">
-                      <option value="" <%= p.kind ? '' : 'selected' %>>– wählen –</option>
-                      <option value="operation" <%= p.kind === 'operation' ? 'selected' : '' %>>Einsatz</option>
-                      <option value="exercise" <%= p.kind === 'exercise' ? 'selected' : '' %>>Übung</option>
+                      <option value="" <%= kind ? '' : 'selected' %>>– wählen –</option>
+                      <option value="operation" <%= kind === 'operation' ? 'selected' : '' %>>Einsatz</option>
+                      <option value="exercise" <%= kind === 'exercise' ? 'selected' : '' %>>Übung</option>
                     </select>
                   </td>
                   <td class="history-table__place">
@@ -85,12 +88,12 @@
                   <td class="num"><%= p.shots || '–' %><% if (p.bytes) { %><br><span class="subtle"><%= formatBytes(p.bytes) %></span><% } %></td>
                   <td>
                     <select class="input" name="<%= name %>[action]" aria-label="Aktion">
-                      <option value="create" <%= p.overlaps.length ? '' : 'selected' %>>Anlegen</option>
-                      <% p.overlaps.forEach((m, k) => { -%>
-                        <option value="add:<%= m.id %>" <%= k === 0 && p.files.length ? 'selected' : '' %>>Zu „<%= m.title %>“ hinzufügen</option>
+                      <option value="create" <%= action === 'create' ? 'selected' : '' %>>Anlegen</option>
+                      <% p.overlaps.forEach((m) => { -%>
+                        <option value="add:<%= m.id %>" <%= action === `add:${m.id}` ? 'selected' : '' %>>Zu „<%= m.title %>“ hinzufügen</option>
                       <% }) -%>
-                      <% if (p.flightIds.length) { %><option value="none">Kein Einsatz</option><% } %>
-                      <option value="skip" <%= p.overlaps.length && !p.files.length ? 'selected' : '' %>>Überspringen</option>
+                      <% if (p.flightIds.length) { %><option value="none" <%= action === 'none' ? 'selected' : '' %>>Kein Einsatz</option><% } %>
+                      <option value="skip" <%= action === 'skip' ? 'selected' : '' %>>Überspringen</option>
                     </select>
                     <% if (p.overlaps.length) { -%>
                       <div class="hint">Überschneidet sich mit <%= p.overlaps.map((m) => `„${m.title}“ (${formatDate(m.date, { weekday: false })})`).join(', ') %></div>
