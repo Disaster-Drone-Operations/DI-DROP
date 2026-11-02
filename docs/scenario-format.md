@@ -35,6 +35,7 @@ flugprotokolle/DJIFlightRecord_….txt   echte Flugprotokolle (optional)
     "folders": ["/Documents", "/Einsätze/2026/2026_09_11_Unterhain/Fotos/Drohne"],   // werden angelegt (mit Elternordnern)
     "target": "/Einsätze/2026/2026_09_11_Unterhain/Fotos/Drohne"                      // dorthin gehören die Bilder
   },
+  "people": ["Max Mustermann", "Erika Musterfrau"],   // optional: (erfundene) Personen der Einheit
   "cards": [{ "id": "flug1", "label": "Flug 1 · 11:48" }],
   "remote": {
     "name": "DJI RC Plus 2 (Simulation)",
@@ -70,9 +71,14 @@ flugprotokolle/DJIFlightRecord_….txt   echte Flugprotokolle (optional)
 - **Nextcloud-Ordner:** `nextcloud.folders` legt di-drop bei jedem Start der Schulung an (vorhandene bleiben), damit
   die Teilnehmer den echten Klickpfad bis zum richtigen Ordner üben. `target` zeigt die Steuerung dem Ausbilder
   („Richtiger Ordner für die Bilder“); `build_scenario.mjs` nennt ihn auch im Drehbuch.
+- **Personen:** Beim Start einer Übung nimmt di-drop die echte Personenliste der Einheit mit (samt Nachweisen),
+  dazu die Namen aus `people` – bei jedem Start kommen neu angelegte dazu. Flüge und Aufträge der Übung zählen nie in
+  die echte Erfahrung (eigene Datenbank).
 - **Fertig angelegter Einsatz (Ausnahme):** Statt `missionSuggestion` legt `"mission": {…}` (dazu optional
   `"assignments": [{ "kind": "special", "title": "…", "due": "12:30" }, { "kind": "control", "interval": 30, "due": "12:45" }]`)
-  den Einsatz schon beim Start an – z. B. für Übungen, die mitten im Einsatz beginnen.
+  den Einsatz schon beim Start an – z. B. für Übungen, die mitten im Einsatz beginnen. Mit
+  `"crew": { "pilot": "Max Mustermann", "observer": "…", "group_leader": "…", "operator": "…" }` im `mission` ist auch
+  die Besetzung ab Einsatzbeginn gesetzt (Namen aus `people` bzw. der Einheit).
 
 ## Mitgelieferte Szenarien
 

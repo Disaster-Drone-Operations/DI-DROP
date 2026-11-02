@@ -6,13 +6,15 @@
 export default {
   id: 'alle-funktionen',
   title: 'Alle Funktionen: Großbrand Musterdorf',
-  description: 'Alles zum Ausprobieren: Einsatz anlegen mit Standort vom (simulierten) Telefon, Live-Standort, ältere Bilder auf der Karte, Kartierung mit RTK-Dateien, drei Kontrollflüge, Spezialauftrag, Fernsteuerung mit mehreren Akkus, Karte leeren, Nextcloud, An Telefon.',
+  description: 'Alles zum Ausprobieren: Einsatz anlegen mit Standort vom (simulierten) Telefon, Live-Standort, ältere Bilder auf der Karte, Kartierung mit RTK-Dateien, drei Kontrollflüge, Spezialauftrag, Fernsteuerung mit mehreren Akkus, Karte leeren, Nextcloud, An Telefon, Besetzung mit Pilotenwechsel und Erfahrung der Einheit.',
   start: '2026-06-20T13:00',
   seed: 815,
   center: { lat: 50.68412, lon: 10.91873 },
   groundAltitude: 452,
   // The participants create the mission themselves – the script only suggests it (other names are fine)
   missionSuggestion: { kind: 'exercise', title: 'Großbrand Musterdorf', location: 'Musterdorf, Scheune am Ortsrand' },
+  // Fictional people of the unit (in addition to the real ones carried over from the normal mode)
+  people: ['Max Mustermann', 'Erika Musterfrau', 'Jonas Beispiel', 'Lena Probe'],
   // Where the drone team stands (simulated phone for „Hier“ / „Mein Standort“)
   phone: { lat: 50.68305, lon: 10.91760, alt: 451, accuracy: 6 },
   // Simulated Nextcloud: a small folder structure; the images belong into "target" (the click path is practised)
@@ -58,7 +60,7 @@ export default {
       latitude: 50.68412, longitude: 10.91873, photos: 0 }],
   },
   script: [
-    { at: '13:01', action: 'note', text: 'Alarmierung Großbrand. Neuen Einsatz anlegen (Vorschlag: „Großbrand Musterdorf“), unter „Weitere Angaben“ Pilot, Luftraumbeobachter und Gruppenführer eintragen. Einsatzort mit „Hier“ – in der Steuerung „QR-Code scannen“ (oder „Verweigern“ ausprobieren).' },
+    { at: '13:01', action: 'note', text: 'Alarmierung Großbrand. Neuen Einsatz anlegen (Vorschlag: „Großbrand Musterdorf“), unter „Weitere Angaben“ die Besetzung wählen (z. B. Gruppenführer Erika Musterfrau, Pilot Max Mustermann, Luftraumbeobachter Lena Probe, Drone Operator: du selbst – fehlt jemand: „＋ Neue Person …“). Einsatzort mit „Hier“ – in der Steuerung „QR-Code scannen“ (oder „Verweigern“ ausprobieren).' },
     { at: '13:04', action: 'note', text: 'Einsatzleitung: Zufahrt für die Drehleiter bis 14:00 prüfen (Spezialauftrag anlegen), Kontrollflüge alle 30 Minuten. Auf „Mein Standort“ den Live-Standort starten und in der Steuerung scannen – später „Am Telefon beenden“.' },
     { at: '13:18', action: 'card.insert', card: 'flug1', text: 'Flug 1 gelandet – Karte einstecken: auch ein alter Testflug von gestern ist drauf' },
     { at: '13:25', action: 'note', text: 'Ein Wärmebild der Lageerkundung per „An Telefon“ an die Einsatzleitung schicken, Lageerkundung als erledigt markieren. Falls die Karte nicht schon nach dem Import ausgeworfen wurde: in der Seitenleiste unter „SD-Karten“ auswerfen (⏏).' },
@@ -67,6 +69,7 @@ export default {
     { at: '14:05', action: 'card.remove', card: 'flug2' },
     { at: '14:08', action: 'remote.connect', text: 'Fernsteuerung anschließen – Flugprotokolle, ein Akku lag lange im Lager' },
     { at: '14:09', action: 'remote.disconnect' },
+    { at: '14:00', action: 'note', text: 'Pilotenwechsel: Ab jetzt fliegt Jonas Beispiel – auf der Einsatzseite unter „Besetzung“ den Piloten „ab jetzt“ ändern. Die Flüge danach bekommen ihn automatisch.' },
     { at: '14:20', action: 'note', text: 'Kontrollflug 1 als erledigt markieren – di-drop plant Kontrollflug 2.' },
     { at: '14:22', action: 'card.insert', card: 'flug3', text: 'Flug 3 gelandet – Kontrollflug und Zufahrt (Spezialauftrag)' },
     { at: '14:30', action: 'card.remove', card: 'flug3' },
@@ -76,6 +79,7 @@ export default {
     { at: '14:55', action: 'note', text: 'Vergleichsbilder aus drei Kontrollflügen erstellen, dann je Auftrag „Bereitstellen …“ (simulierte Nextcloud, Ordner: Einsätze › 2026 › 2026_06_20_Großbrand_Musterdorf › Fotos › Drohne), Aufträge erledigen, Einsatz abschließen.' },
     { at: '15:00', action: 'remote.connect', text: 'Fernsteuerung erneut anschließen – nur die neuen Flüge' },
     { at: '15:02', action: 'remote.disconnect' },
+    { at: '15:05', action: 'note', text: 'In den Flugprotokollen stehen Pilot und Luftraumbeobachter je Flug – einen Flug per Doppelklick auf das Kürzel von Hand korrigieren. Unter „Einheit“ die Erfahrung der Personen ansehen (Zeitraum oben wählbar).' },
     { at: '15:10', action: 'note', text: 'Einsatzleitung: Einsatz beendet. Letzten Kontrollflug mit „Keine weiteren Kontrollflüge“ erledigen, alle Aufträge erledigen und den Einsatz abschließen.' },
   ],
 }

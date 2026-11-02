@@ -296,6 +296,8 @@ const scenario = {
   phone: spec.phone ?? { lat: spec.center.lat, lon: spec.center.lon, alt: spec.groundAltitude },
   // Folders in the simulated Nextcloud (+ where the images belong)
   ...(spec.nextcloud ? { nextcloud: spec.nextcloud } : {}),
+  // Fictional people of the unit (names)
+  ...(spec.people ? { people: spec.people } : {}),
   cards: spec.cards.map(({ id, label }) => ({ id, label })),
   remote: { name: spec.remote?.name ?? 'DJI RC Plus 2 (Simulation)', logs },
   script: spec.script,

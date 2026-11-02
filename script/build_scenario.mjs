@@ -129,6 +129,7 @@ const scenario = {
   ...(config.mission ? { mission: config.mission, assignments: config.assignments ?? [] } : {}),
   ...(config.phone ? { phone: config.phone } : {}),
   ...(config.nextcloud ? { nextcloud: config.nextcloud } : {}),
+  ...(config.people ? { people: config.people } : {}),
   cards: config.cards.map(({ id, label }) => ({ id, label })),
   remote,
   script,

@@ -14,6 +14,9 @@ import Mission from '/app/models/mission.js'
 import Assignment from '/app/models/assignment.js'
 import AssignmentSeries from '/app/models/assignment_series.js'
 import FlightLog from '/app/models/flight_log.js'
+import Person from '/app/models/person.js'
+import MissionCrew from '/app/models/mission_crew.js'
+import { QualificationType, PersonQualification } from '/app/models/qualification.js'
 import { ControlRelayClient } from '/lib/relay/control_client.js'
 import { relayBaseUrl, simulateLocation, simulatedPhone, currentLocation } from '/app/services/location_service.js'
 import { health, updateRelay, parseRelayUrl, isAvailable as canManageRelay } from '/app/services/cloudflare_deployer.js'
@@ -21,7 +24,9 @@ import { RELAY_BUNDLE_VERSION } from '/relay/bundle.js'
 
 export const isTraining = () => !!trainingId
 
-// Carried over from the normal mode when starting (the training database is separate)
+// Carried over from the normal mode when starting (the training database is separate): these settings and the
+// people of the unit with their qualifications – so trainees choose their own names. Flights and assignments of the
+// training never count in the real experience (own database).
 const CARRY_KEYS = ['relay.url', 'general.unit_name', 'nextcloud.base_path']
 const CARRY_STORAGE = 'di-drop:training-carry'
 // "Neu starten" from the settings: the training window deletes its data at startup
@@ -56,12 +61,56 @@ function reloadAs(url) {
 
 export async function startTraining(id) {
   try {
-    const carry = Object.fromEntries(CARRY_KEYS.map((k) => [k, Setting.get(k)]).filter(([, v]) => v))
-    sessionStorage.setItem(CARRY_STORAGE, JSON.stringify(carry))
+    const settings = Object.fromEntries(CARRY_KEYS.map((k) => [k, Setting.get(k)]).filter(([, v]) => v))
+    sessionStorage.setItem(CARRY_STORAGE, JSON.stringify({ settings, people: await peopleToCarry() }))
   } catch {
     // not important
   }
   reloadAs(urlFor(id))
+}
+
+// [{ name, initials, active, qualifications: [{ type, valid_until }] }]
+async function peopleToCarry() {
+  const types = new Map((await QualificationType.ordered()).map((t) => [t.id, t.name]))
+  const held = await PersonQualification.byPerson()
+  return (await Person.roster()).map((p) => ({
+    name: p.name,
+    initials: p.initials,
+    active: !!p.active, // stored as 0/1
+    qualifications: [...(held.get(p.id) ?? new Map())].map(([typeId, validUntil]) => ({ type: types.get(typeId), valid_until: validUntil })),
+  }))
+}
+
+function readCarry() {
+  try {
+    const carry = JSON.parse(sessionStorage.getItem(CARRY_STORAGE) ?? '{}')
+    return carry.settings ? carry : { settings: carry, people: [] } // older format: only the settings
+  } catch {
+    return { settings: {}, people: [] }
+  }
+}
+
+// At every start: the carried people and those of the scenario („people“: names) that the training doesn't know yet
+async function adoptPeople() {
+  const known = new Set((await Person.roster()).map((p) => p.name.toLocaleLowerCase('de')))
+  const types = new Map((await QualificationType.ordered()).map((t) => [t.name, t.id]))
+  const incoming = [...readCarry().people, ...(scenario.people ?? []).map((name) => ({ name, active: true }))]
+  for (const p of incoming) {
+    if (!p?.name || known.has(p.name.toLocaleLowerCase('de'))) continue
+    const person = new Person({ name: p.name, initials: p.initials, active: p.active == null || !!p.active })
+    if (!(await person.save())) continue
+    known.add(p.name.toLocaleLowerCase('de'))
+    const entries = {}
+    for (const q of p.qualifications ?? []) {
+      if (!q.type) continue
+      if (!types.has(q.type)) {
+        const type = new QualificationType({ name: q.type, position: types.size + 1 })
+        if (await type.save()) types.set(q.type, type.id)
+      }
+      if (types.has(q.type)) entries[types.get(q.type)] = { has: '1', valid_until: q.valid_until ?? '' }
+    }
+    if (Object.keys(entries).length) await PersonQualification.replace(person.id, entries)
+  }
 }
 
 export async function endTraining() {
@@ -101,13 +150,7 @@ function stepLabel(step) {
 
 // First start: settings, mission and assignments from the scenario, clock on the start time
 async function initialize() {
-  let carry = {}
-  try {
-    carry = JSON.parse(sessionStorage.getItem(CARRY_STORAGE) ?? '{}')
-  } catch {
-    // nothing carried over
-  }
-  for (const [key, value] of Object.entries({ ...carry, ...(scenario.settings ?? {}) })) await Setting.set(key, value)
+  for (const [key, value] of Object.entries({ ...readCarry().settings, ...(scenario.settings ?? {}) })) await Setting.set(key, value)
 
   const start = timeOf(scenario.start)
   if (scenario.mission) {
@@ -120,6 +163,12 @@ async function initialize() {
       status: 'active',
     })
     await Assignment.create({ mission_id: mission.id, kind: 'initial', title: Assignment.KINDS.initial })
+    // „crew“: { pilot: "Max Mustermann", … } – from the start of the mission
+    const people = await Person.roster()
+    for (const [role, name] of Object.entries(m.crew ?? {})) {
+      const person = people.find((p) => p.name.toLocaleLowerCase('de') === String(name).toLocaleLowerCase('de'))
+      if (person && Mission.ROLES[role]) await MissionCrew.change(mission.id, role, person.id, `${mission.date}T${mission.start_time ?? '00:00'}`)
+    }
     for (const a of scenario.assignments ?? []) {
       const dueAt = a.due ? new Date(timeOf(a.due)) : null
       if (a.kind === 'control') {
@@ -423,6 +472,7 @@ export async function startTrainingMode() {
   scenario = await platform.training.scenario(trainingId)
   simulateLocation(() => phonePosition()) // „Hier“ / „Mein Standort“: simulated phone instead of the relay
   steps = (scenario.script ?? []).map((s, index) => ({ ...s, index, at: timeOf(s.at), label: stepLabel(s) }))
+  await adoptPeople()
   if (!Setting.get('training.initialized')) {
     setClock({ at: timeOf(scenario.start), running: false }) // records get the time of the exercise
     await initialize()

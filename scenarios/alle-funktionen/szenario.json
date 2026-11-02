@@ -1,7 +1,7 @@
 {
   "id": "alle-funktionen",
   "title": "Alle Funktionen: Großbrand Musterdorf",
-  "description": "Alles zum Ausprobieren: Einsatz anlegen mit Standort vom (simulierten) Telefon, Live-Standort, ältere Bilder auf der Karte, Kartierung mit RTK-Dateien, drei Kontrollflüge, Spezialauftrag, Fernsteuerung mit mehreren Akkus, Karte leeren, Nextcloud, An Telefon.",
+  "description": "Alles zum Ausprobieren: Einsatz anlegen mit Standort vom (simulierten) Telefon, Live-Standort, ältere Bilder auf der Karte, Kartierung mit RTK-Dateien, drei Kontrollflüge, Spezialauftrag, Fernsteuerung mit mehreren Akkus, Karte leeren, Nextcloud, An Telefon, Besetzung mit Pilotenwechsel und Erfahrung der Einheit.",
   "start": "2026-06-20T13:00",
   "settings": {},
   "missionSuggestion": {
@@ -31,6 +31,12 @@
     ],
     "target": "/Einsätze/2026/2026_06_20_Großbrand_Musterdorf/Fotos/Drohne"
   },
+  "people": [
+    "Max Mustermann",
+    "Erika Musterfrau",
+    "Jonas Beispiel",
+    "Lena Probe"
+  ],
   "cards": [
     {
       "id": "flug1",
@@ -142,7 +148,7 @@
     {
       "at": "13:01",
       "action": "note",
-      "text": "Alarmierung Großbrand. Neuen Einsatz anlegen (Vorschlag: „Großbrand Musterdorf“), unter „Weitere Angaben“ Pilot, Luftraumbeobachter und Gruppenführer eintragen. Einsatzort mit „Hier“ – in der Steuerung „QR-Code scannen“ (oder „Verweigern“ ausprobieren)."
+      "text": "Alarmierung Großbrand. Neuen Einsatz anlegen (Vorschlag: „Großbrand Musterdorf“), unter „Weitere Angaben“ die Besetzung wählen (z. B. Gruppenführer Erika Musterfrau, Pilot Max Mustermann, Luftraumbeobachter Lena Probe, Drone Operator: du selbst – fehlt jemand: „＋ Neue Person …“). Einsatzort mit „Hier“ – in der Steuerung „QR-Code scannen“ (oder „Verweigern“ ausprobieren)."
     },
     {
       "at": "13:04",
@@ -184,6 +190,11 @@
     {
       "at": "14:09",
       "action": "remote.disconnect"
+    },
+    {
+      "at": "14:00",
+      "action": "note",
+      "text": "Pilotenwechsel: Ab jetzt fliegt Jonas Beispiel – auf der Einsatzseite unter „Besetzung“ den Piloten „ab jetzt“ ändern. Die Flüge danach bekommen ihn automatisch."
     },
     {
       "at": "14:20",
@@ -231,6 +242,11 @@
     {
       "at": "15:02",
       "action": "remote.disconnect"
+    },
+    {
+      "at": "15:05",
+      "action": "note",
+      "text": "In den Flugprotokollen stehen Pilot und Luftraumbeobachter je Flug – einen Flug per Doppelklick auf das Kürzel von Hand korrigieren. Unter „Einheit“ die Erfahrung der Personen ansehen (Zeitraum oben wählbar)."
     },
     {
       "at": "15:10",
