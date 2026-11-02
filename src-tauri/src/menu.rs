@@ -55,6 +55,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item("module_location", "Mein Standort", "CmdOrCtrl+2")?)
         .item(&item("module_flightlogs", "Flugprotokolle", "CmdOrCtrl+3")?)
         .item(&item("module_batteries", "Akkunutzung", "CmdOrCtrl+4")?)
+        .item(&item("module_unit", "Einheit", "CmdOrCtrl+5")?)
         .separator()
         .item(&item("uploads", "Bereitstellungen", "CmdOrCtrl+Alt+U")?)
         .separator()

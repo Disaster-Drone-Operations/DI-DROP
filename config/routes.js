@@ -27,6 +27,11 @@ export default (r) => {
   r.patch('/batteries/:serial/retire', 'batteries#retire')
   r.patch('/batteries/:serial/activate', 'batteries#activate')
 
+  // Module "Einheit": people of the drone unit
+  r.get('/unit', 'people#index')
+  r.post('/unit/people', 'people#create')
+  r.patch('/unit/people/:id', 'people#update')
+
   r.get('/uploads', 'uploads#index')
   r.get('/about', 'about#show')
 

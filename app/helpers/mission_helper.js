@@ -1,10 +1,17 @@
 import Mission from '/app/models/mission.js'
 import Assignment from '/app/models/assignment.js'
+import Setting from '/app/models/setting.js'
 import { escapeHtml, icon } from '/app/helpers/application_helper.js'
 import { addMinutes } from '/lib/time.js'
 
 export const missionKindOptions = () => Object.entries(Mission.KINDS)
-export const missionRoles = () => Object.entries(Mission.ROLES)
+// Role names as the unit calls them (Settings → Allgemein)
+export const roleLabel = (role) => Setting.get(`general.role_${role}`) || Mission.ROLES[role]
+export const missionRoles = () => Object.keys(Mission.ROLES).map((role) => [role, roleLabel(role)])
+export const roleList = () => {
+  const names = missionRoles().map(([, label]) => label)
+  return `${names.slice(0, -1).join(', ')} und ${names.at(-1)}`
+}
 
 export const intervalOptions = (current) => {
   const options = [15, 20, 30, 45, 60, 90, 120].map((m) => [String(m), m < 120 ? `alle ${m} Min.` : 'alle 2 Std.'])

@@ -1,0 +1,39 @@
+<%# locals: people, editing -%>
+<% const active = people.filter((p) => p.active) -%>
+<% const inactive = people.filter((p) => !p.active) -%>
+<% const reopen = (p) => editing && (p ? editing.id === p.id : editing.isNewRecord) -%>
+<div class="unit">
+  <header class="page-header">
+    <div>
+      <h1>Einheit</h1>
+      <p class="subtle">Die Personen der Drohnengruppe – im Einsatz als <%= roleList() %>.</p>
+    </div>
+    <div class="toolbar">
+      <%- include('people/_dialog', { person: reopen(null) ? editing : null, open: reopen(null), trigger: 'button' }) %>
+    </div>
+  </header>
+
+  <% if (!people.length) { -%>
+    <div class="empty">
+      <%- icon('users', { size: 40, class: 'empty__icon' }) %>
+      <p><strong>Noch keine Personen.</strong></p>
+      <p class="subtle">Leg die Piloten und Helfer deiner Einheit an – mit vollem Namen. Das Kürzel entsteht automatisch und lässt sich ändern.</p>
+    </div>
+  <% } else { -%>
+    <div class="list people-list">
+      <% active.forEach((p) => { -%>
+        <%- include('people/_dialog', { person: reopen(p) ? editing : p, open: reopen(p), trigger: 'row' }) %>
+      <% }) -%>
+    </div>
+    <% if (inactive.length) { -%>
+      <details class="disclosure people-inactive" <%= inactive.some(reopen) ? 'open' : '' %>>
+        <summary>Inaktiv <span class="disclosure__hint">– <%= pluralize(inactive.length, 'Person', 'Personen') %>, <%= inactive.length === 1 ? 'zählt' : 'zählen' %> weiter in der Statistik</span></summary>
+        <div class="list list--muted people-list">
+          <% inactive.forEach((p) => { -%>
+            <%- include('people/_dialog', { person: reopen(p) ? editing : p, open: reopen(p), trigger: 'row' }) %>
+          <% }) -%>
+        </div>
+      </details>
+    <% } -%>
+  <% } -%>
+</div>

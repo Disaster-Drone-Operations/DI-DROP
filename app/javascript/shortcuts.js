@@ -59,6 +59,7 @@ export const commands = {
   uploads: () => router().redirectTo('/uploads'),
   module_flightlogs: () => router().redirectTo('/flightlogs'),
   module_batteries: () => router().redirectTo('/batteries'),
+  module_unit: () => router().redirectTo('/unit'),
   check_updates: () => router().redirectTo('/settings/updates?check=1'),
   new_mission: () => router().redirectTo('/missions/new'),
 
@@ -120,7 +121,7 @@ function commandFor(event) {
   if (event.shiftKey && (key === '?' || key === '/' || key === 'ß')) return 'shortcuts'
   return {
     ',': 'settings', n: event.shiftKey ? 'new_mission' : 'new_assignment', o: 'import', s: 'save',
-    1: 'module_missions', 2: 'module_location', 3: 'module_flightlogs', 4: 'module_batteries', '[': 'back', ']': 'forward',
+    1: 'module_missions', 2: 'module_location', 3: 'module_flightlogs', 4: 'module_batteries', 5: 'module_unit', '[': 'back', ']': 'forward',
     z: event.shiftKey ? 'redo' : 'undo', y: 'redo',
   }[key] ?? null
 }

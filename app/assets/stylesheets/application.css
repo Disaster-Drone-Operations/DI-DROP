@@ -1400,3 +1400,16 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 /* Mission card: provision status */
 .mission-row__status { font-size: 12px; }
 .mission-row__missing { color: var(--warning); }
+
+/* Unit: people (people/index.ejs) --------------------------------------------- */
+
+.people-list .dialog-host { display: block; }
+.person-row { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: default; }
+.people-list .dialog-host + .dialog-host .person-row { border-top: 1px solid var(--border); }
+.person-row__name { flex: 1; font-weight: 500; }
+.person-initials { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 15px;
+  background: var(--selected); color: var(--text); font-size: 12px; font-weight: 600; letter-spacing: .02em; flex: none; }
+.people-inactive { margin-top: 18px; }
+.people-inactive .list { margin-top: 8px; }
+.input-short { max-width: 120px; }
+

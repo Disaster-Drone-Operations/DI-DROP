@@ -22,6 +22,12 @@ export default [
         hint: 'Wird bei neuen Einsätzen automatisch als Drone Operator eingetragen.' },
       { key: 'default_mission_kind', label: 'Standard für neue Einträge', type: 'select', default: 'exercise',
         options: [['operation', 'Einsatz'], ['exercise', 'Übung']] },
+      // Names of the four roles – other units call them differently (Mission.ROLES are the keys)
+      { key: 'role_group_leader', label: 'Rolle: Führung der Drohnengruppe', type: 'text', default: 'Gruppenführer' },
+      { key: 'role_pilot', label: 'Rolle: steuert die Drohne', type: 'text', default: 'Pilot' },
+      { key: 'role_observer', label: 'Rolle: beobachtet den Luftraum', type: 'text', default: 'Luftraumbeobachter' },
+      { key: 'role_operator', label: 'Rolle: wertet die Bilder aus', type: 'text', default: 'Drone Operator',
+        hint: 'So heißen die Rollen überall in di-drop – bei anderen Einheiten oft anders.' },
     ],
   },
   {

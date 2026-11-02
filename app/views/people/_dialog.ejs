@@ -1,0 +1,47 @@
+<%# locals: person, open, trigger -%>
+<%# New person (person null, trigger "button") or one row of the list that opens its edit dialog -%>
+<% const isNew = !person || person.isNewRecord -%>
+<% const errors = person?.errors ?? {} -%>
+<% const id = isNew ? 'new' : person.id -%>
+<div data-controller="dialog" data-dialog-open-value="<%= open ? 'true' : 'false' %>" class="dialog-host">
+  <% if (trigger === 'button') { -%>
+    <button type="button" class="button button--primary" data-action="dialog#open"><%- icon('plus') %><span>Neue Person</span></button>
+  <% } else { -%>
+    <button type="button" class="list__row person-row" data-action="dialog#open" title="Bearbeiten">
+      <span class="person-initials"><%= person.short ?? '' %></span>
+      <span class="person-row__name truncate"><%= person.name %></span>
+      <%- icon('chevron', { size: 14, class: 'icon list__chevron' }) %>
+    </button>
+  <% } -%>
+  <dialog class="sheet" data-dialog-target="dialog">
+    <form action="#/unit/people<%= isNew ? '' : `/${person.id}` %>" method="post" class="sheet__body" novalidate>
+      <% if (!isNew) { %><input type="hidden" name="_method" value="patch"><% } %>
+      <h2 class="dialog__title"><%= isNew ? 'Neue Person' : person.name %></h2>
+
+      <div class="field <%= errors.name ? 'field--invalid' : '' %>">
+        <label class="field__label" for="person_<%= id %>_name">Name</label>
+        <input type="text" id="person_<%= id %>_name" name="person[name]" value="<%= person?.name ?? '' %>" placeholder="Vor- und Nachname" autocomplete="off" autofocus>
+        <% if (errors.name) { %><p class="field__error">Name <%= errors.name.join(', ') %></p><% } %>
+      </div>
+
+      <div class="field <%= errors.initials ? 'field--invalid' : '' %>">
+        <label class="field__label" for="person_<%= id %>_initials">Kürzel</label>
+        <input type="text" id="person_<%= id %>_initials" name="person[initials]" value="<%= person?.initials ?? '' %>" size="6" maxlength="6"
+               placeholder="<%= isNew ? 'automatisch' : person.short %>" autocomplete="off" class="input-short">
+        <% if (errors.initials) { %><p class="field__error">Kürzel <%= errors.initials.join(', ') %></p><% } %>
+        <p class="hint">Leer lassen: automatisch aus dem ersten und letzten Namen (Max Mustermann → MM). Gibt es das schon, wird es länger (MMu).</p>
+      </div>
+
+      <% if (!isNew) { -%>
+        <input type="hidden" name="person[active]" value="0">
+        <label class="checkbox"><input type="checkbox" name="person[active]" value="1" <%= person.active ? 'checked' : '' %>> Aktiv – steht bei neuen Einsätzen zur Auswahl</label>
+        <p class="hint">Wer nicht mehr dabei ist, wird inaktiv gesetzt statt gelöscht – seine Flüge und Aufträge bleiben in der Statistik.</p>
+      <% } -%>
+
+      <div class="dialog__actions">
+        <button type="button" class="button" data-action="dialog#close">Abbrechen</button>
+        <button type="submit" class="button button--primary"><%= isNew ? 'Anlegen' : 'Speichern' %></button>
+      </div>
+    </form>
+  </dialog>
+</div>
