@@ -82,5 +82,6 @@ export default {
     { at: '15:02', action: 'remote.disconnect' },
     { at: '15:05', action: 'note', text: 'In den Flugprotokollen stehen Pilot und Luftraumbeobachter je Flug – einen Flug per Doppelklick auf das Kürzel von Hand korrigieren. Unter „Einheit“ die Erfahrung der Personen ansehen (Zeitraum oben wählbar).' },
     { at: '15:10', action: 'note', text: 'Einsatzleitung: Einsatz beendet. Letzten Kontrollflug mit „Keine weiteren Kontrollflüge“ erledigen, alle Aufträge erledigen und den Einsatz abschließen.' },
+    { at: '15:15', action: 'note', text: 'Zum Schluss: Einsätze → „Ältere Einsätze nachtragen …“. Die zwei alten Flüge ohne Einsatz (März, Juni) erscheinen als Vorschläge – einen als Übung anlegen, den anderen als „Kein Einsatz“ markieren. Mit „Ordner mit alten Bildern wählen …“ schlägt di-drop auch aus alten Drohnenbildern Einsätze vor (nach Zeit und Ort gruppiert, Handyfotos bleiben außen vor). Danach im angelegten Einsatz die Besetzung nachtragen.' },
   ],
 }

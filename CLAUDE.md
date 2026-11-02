@@ -67,6 +67,20 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   *Flug* nur für echte Flüge aus Flugprotokollen, Bildarten ausgeschrieben (*Sichtbild, Wärmebild, Weitwinkel, Zoom*).
 - Ist genau ein Einsatz aktiv, öffnet di-drop beim Start direkt diesen Einsatz.
 
+## Ältere Einsätze nachtragen
+
+- Seite `/missions/history` (Einsätze → „Ältere Einsätze nachtragen …“, Flugprotokolle → „Einsätze nachtragen …“).
+  Vorschläge aus freien Flugprotokollen und – nach Ordnerwahl – aus alten Bildern, egal wie tief verschachtelt
+  (`media::list` + Scan je Ordner). Logik: `app/services/history_import.js` (Scan, Anlegen),
+  rein und getestet: `app/services/history_grouping.js` (Drohne an DJI-XMP/Modell/Seriennummer, Gruppen bei > 4 h oder > 5 km,
+  Titel aus Ordnernamen – nur Hinweis, Sammelordner wie „Einsätze“/„2025“/„DCIM“ zählen nicht).
+- Angelegt wird abgeschlossen, alle Aufträge erledigt zum Einsatzende, nie eine Kontrollflug-Serie; Bilder über den
+  normalen `MediaImporter`, Flugprotokolle per `assign()` (gilt als von Hand). Fehlende Angaben zeigt `missingDetails()`.
+- Bilder ↔ Flüge: `media_files.flight_log_id` (`linkMedia()` in `flight_missions.js`, Regeln in `flight_matching.js`) –
+  Reihenfolge von Bild- und Protokoll-Import egal. Die internen `flights` bleiben (noch) daneben bestehen.
+- Drone Operator: Zeitpunkt = erster Import, höchstens „erledigt“ (`operatorMoment()`), sonst landen nachgetragene
+  Einsätze in der Erfahrung im falschen Zeitraum.
+
 ## Tastenkürzel, Menü, Widerrufen
 
 - Neue App-Befehle: in `app/javascript/shortcuts.js` (Befehl + Taste für Windows/Browser)
