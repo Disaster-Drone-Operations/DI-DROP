@@ -9,6 +9,7 @@ export default class MediaFile extends Record {
   static attributes = {
     mission_id: 'integer',
     flight_id: 'integer',
+    flight_log_id: 'integer', // real flight from the flight logs (linkMedia() in app/services/flight_missions.js)
     assignment_id: 'integer',
     kind: 'string',
     shot_key: 'string',
