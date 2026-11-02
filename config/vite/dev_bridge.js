@@ -2,6 +2,7 @@
 // (src-tauri/examples/didrop-dev.rs). Enabled with http://localhost:1420/?bridge
 //
 //   POST /__didrop/scan    ["/path", …]            → ScanResult
+//   POST /__didrop/list    "/folder"               → [{ dir, files }] (all media files below, by folder)
 //   POST /__didrop/import  [{ src, dest_dir, … }]  → ImportResult[]
 //   GET  /__didrop/file?path=…                     → image file (for thumbnails)
 //   POST /__didrop/write?path=…  (image data)      → { path }
@@ -98,6 +99,10 @@ export default function devBridge({ root }) {
           if (url.pathname === '/scan') {
             res.setHeader('Content-Type', 'application/json')
             return res.end(await run('scan', await body(req)))
+          }
+          if (url.pathname === '/list') {
+            res.setHeader('Content-Type', 'application/json')
+            return res.end(await run('list', await body(req)))
           }
           if (url.pathname === '/import') {
             res.setHeader('Content-Type', 'application/json')

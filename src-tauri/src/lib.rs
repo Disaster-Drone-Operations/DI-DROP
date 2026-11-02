@@ -27,6 +27,14 @@ async fn scan_media(paths: Vec<String>) -> Result<media::ScanResult, String> {
         .map_err(|e| e.to_string())
 }
 
+/// All images/videos below a folder, grouped by folder (names only – for scanning folder by folder)
+#[tauri::command]
+async fn list_media(root: String) -> Result<Vec<media::MediaDir>, String> {
+    tauri::async_runtime::spawn_blocking(move || media::list(&root))
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Copies files into their target folders and creates thumbnails
 #[tauri::command]
 async fn import_media(
@@ -416,7 +424,7 @@ pub fn run() {
             watch_sdcards(app.handle().clone());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![scan_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir, open_url,
+        .invoke_handler(tauri::generate_handler![scan_media, list_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir, open_url,
             cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
             geocode::reverse_geocode,
             make_thumbnail,

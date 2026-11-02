@@ -104,6 +104,10 @@ fn main() {
             let paths: Vec<String> = serde_json::from_str(&input).expect("JSON list of paths");
             serde_json::to_string(&media::scan(&paths))
         }
+        Some("list") => {
+            let root: String = serde_json::from_str(&input).expect("JSON string (folder)");
+            serde_json::to_string(&media::list(&root))
+        }
         Some("import") => {
             let req: ImportRequest = serde_json::from_str(&input).expect("import request");
             serde_json::to_string(&media::import(req.items, &req.thumbs_dir, |p| {

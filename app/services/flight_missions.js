@@ -6,21 +6,21 @@
 //      (alarm … last image + 3 h, without images: alarm + 12 h)
 // By hand: assign(ids, missionId | null) – also "Kein Einsatz"; reset(ids) → automatic again
 //
-// Images ↔ flights: media_files.flight_log_id – the flight an image was taken in (linkMedia, flightLogFor)
+// Images ↔ flights: media_files.flight_log_id – the flight an image was taken in (linkMedia; rules: flight_matching.js)
 
 import { db } from '/lib/db.js'
 import { parseLocal } from '/lib/time.js'
 import { now as clockNow } from '/lib/clock.js'
 import { assignCrew } from '/app/services/flight_crew.js'
+import { SLACK_MS, flightLogFor, flightIndex } from '/app/services/flight_matching.js'
 
-const SLACK_MS = 2 * 60_000
 const AFTER_LAST_IMAGE_MS = 3 * 3600_000
 const WITHOUT_IMAGES_MS = 12 * 3600_000
 
 const missionStart = (m) => parseLocal(`${m.date}T${m.start_time || '00:00'}`)?.getTime() ?? null
 
 // Time windows of all missions: [{ id, from, to }]
-async function missionWindows() {
+export async function missionWindows() {
   const missions = await db.select(
     `SELECT m.id, m.date, m.start_time, MAX(f.taken_at) AS last_image
        FROM missions m LEFT JOIN media_files f ON f.mission_id = m.id GROUP BY m.id`,
@@ -39,45 +39,6 @@ function decide(flight, imagesByFlight, windows) {
   if (counts?.length) return [...counts].sort((a, b) => b.count - a.count)[0].missionId
   const candidates = windows.filter((w) => Date.parse(flight.started_at) >= w.from && Date.parse(flight.started_at) <= w.to)
   return candidates.length === 1 ? candidates[0].id : null
-}
-
-// Serial numbers: the flight log stores 16 characters, the image (XMP DroneSerialNumber) all of them
-const sameSerial = (a, b) => !!a && !!b && (a.startsWith(b) || b.startsWith(a))
-
-// Flight an image was taken in: start − 2 min … landing + 2 min. Several candidates (two drones in the
-// air) → the one with the image's drone serial number, otherwise the one whose start is closest.
-//   at: time of the image in ms, serial: DroneSerialNumber or null
-//   logs: [{ id, started_at, landed_at, aircraft_sn }]  → id or null
-export function flightLogFor({ at, serial = null }, logs) {
-  if (at == null || Number.isNaN(at)) return null
-  const hits = logs.filter((l) => {
-    const start = Date.parse(l.started_at)
-    return at >= start - SLACK_MS && at <= Date.parse(l.landed_at ?? l.started_at) + SLACK_MS
-  })
-  if (hits.length <= 1) return hits[0]?.id ?? null
-  const bySerial = hits.filter((l) => sameSerial(serial, l.aircraft_sn))
-  const pool = bySerial.length ? bySerial : hits
-  return pool.sort((a, b) => Math.abs(at - Date.parse(a.started_at)) - Math.abs(at - Date.parse(b.started_at)))[0].id
-}
-
-// For many images: only the flights that may contain a point in time (sorted by start, binary search)
-//   const near = flightIndex(logs); flightLogFor({ at, serial }, near(at))
-export function flightIndex(logs) {
-  const sorted = logs.map((l) => ({ ...l, from: Date.parse(l.started_at) })).filter((l) => !Number.isNaN(l.from))
-    .sort((a, b) => a.from - b.from)
-  const longest = Math.max(0, ...sorted.map((l) => Date.parse(l.landed_at ?? l.started_at) - l.from))
-  return (at) => {
-    let lo = 0
-    let hi = sorted.length
-    while (lo < hi) { // first flight starting after at + slack
-      const mid = (lo + hi) >> 1
-      if (sorted[mid].from <= at + SLACK_MS) lo = mid + 1
-      else hi = mid
-    }
-    const near = []
-    for (let i = lo - 1; i >= 0 && sorted[i].from >= at - longest - SLACK_MS; i--) near.push(sorted[i])
-    return near
-  }
 }
 
 // Link all images to their flight (media_files.flight_log_id); returns the number of changed images

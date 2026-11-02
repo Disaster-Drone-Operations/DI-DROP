@@ -74,6 +74,33 @@ fn is_hidden(entry: &walkdir::DirEntry) -> bool {
     entry.depth() > 0 && entry.file_name().to_str().is_some_and(|n| n.starts_with('.') || n.starts_with('$'))
 }
 
+/// Media files of one folder (not its subfolders) – see `list`
+#[derive(Debug, Serialize, PartialEq)]
+pub struct MediaDir {
+    pub dir: String,
+    pub files: Vec<String>,
+}
+
+/// All media files below `root`, however deeply nested, grouped by folder (sorted) – only names, no
+/// metadata, so it's quick. The caller then scans folder by folder (`scan` with the file list), which keeps
+/// the files of one shot together and allows showing progress.
+pub fn list(root: &str) -> Vec<MediaDir> {
+    let mut dirs: std::collections::BTreeMap<String, Vec<String>> = Default::default();
+    for entry in WalkDir::new(root).follow_links(false).into_iter().filter_entry(|e| !is_hidden(e)).filter_map(Result::ok) {
+        if !entry.file_type().is_file() || media_kind(entry.path()).is_none() {
+            continue;
+        }
+        let dir = entry.path().parent().map(|p| p.display().to_string()).unwrap_or_default();
+        dirs.entry(dir).or_default().push(entry.path().display().to_string());
+    }
+    dirs.into_iter()
+        .map(|(dir, mut files)| {
+            files.sort();
+            MediaDir { dir, files }
+        })
+        .collect()
+}
+
 pub fn scan(paths: &[String]) -> ScanResult {
     let mut result = ScanResult::default();
     let mut candidates: Vec<PathBuf> = Vec::new();
@@ -389,6 +416,25 @@ fn copy_into(item: &ImportItem, name: &str) -> Result<PathBuf, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lists_media_files_by_folder_however_deep() {
+        let root = std::env::temp_dir().join(format!("didrop-list-{}", std::process::id()));
+        let deep = root.join("Einsatz/Suche Nord/DCIM/100MEDIA");
+        fs::create_dir_all(&deep).unwrap();
+        fs::create_dir_all(root.join(".hidden")).unwrap();
+        for p in [root.join("a.JPG"), deep.join("DJI_0001_T.JPG"), deep.join("DJI_0001_V.JPG"), deep.join("clip.MP4"),
+            root.join("Einsatz/notes.txt"), root.join(".hidden/x.jpg")] {
+            fs::write(p, b"x").unwrap();
+        }
+        let dirs = list(&root.display().to_string());
+        assert_eq!(dirs.len(), 2);
+        assert_eq!(dirs[0].dir, root.display().to_string());
+        assert_eq!(dirs[0].files, vec![root.join("a.JPG").display().to_string()]);
+        assert_eq!(dirs[1].dir, deep.display().to_string());
+        assert_eq!(dirs[1].files.len(), 3); // no .txt, nothing from hidden folders
+        fs::remove_dir_all(&root).unwrap();
+    }
 
     #[test]
     fn renames_without_overwriting() {
