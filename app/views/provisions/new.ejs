@@ -1,7 +1,7 @@
-<%# locals: mission, assignment, path, targets, target, status, base, folderRoot, assignmentFolder, shots, comparisons, provided, previous, lastKeys, selected, pending, speed, canPickFolder -%>
+<%# locals: mission, assignment, path, targets, target, status, base, folderRoot, assignmentFolder, shots, comparisons, marked, providedBefore, provided, previous, lastKeys, selected, pending, speed, canPickFolder -%>
 <% const rank = (f) => ({ T: 0 }[f.variant] ?? 1) -%>
 <% const categoryOf = (f) => (f.variant === 'T' ? 'thermal' : ['V', 'W', 'Z'].includes(f.variant) ? 'visible' : 'other') -%>
-<% const totalFiles = shots.reduce((n, s) => n + s.files.length, 0) + comparisons.length -%>
+<% const totalFiles = shots.reduce((n, s) => n + s.files.length, 0) + comparisons.length + marked.length -%>
 <header class="page-header">
   <div>
     <a class="backlink" href="#<%= path %>"><%= assignment.title %></a>
@@ -79,12 +79,39 @@
 
   <div class="toolbar provide__quick">
     <span class="subtle">Auswählen:</span>
+    <% if (marked.length) { %><button type="button" class="button button--small" data-action="provide#toggleKind" data-provide-kind-param="marked">Alle markierten</button><% } %>
     <button type="button" class="button button--small" data-action="provide#toggleKind" data-provide-kind-param="thermal">Alle Wärmebilder</button>
     <% if (comparisons.length) { %><button type="button" class="button button--small" data-action="provide#toggleKind" data-provide-kind-param="comparison">Alle Vergleichsbilder</button><% } %>
     <button type="button" class="button button--small" data-action="provide#toggleKind" data-provide-kind-param="visible">Alle Sichtbilder</button>
     <button type="button" class="button button--small button--quiet" data-action="provide#selectNone">Keine</button>
     <span class="hint provide__tip">Mehrere auf einmal: <kbd>⇧</kbd>-Klick wählt alles dazwischen – oder mit gedrückter Maustaste über die Bilder ziehen.</span>
   </div>
+
+  <% if (marked.length) { -%>
+    <%# Marked copies ("…_markiert.JPG") – uploaded first, in addition to the originals -%>
+    <h2 class="section__title">Markierte Bilder <span class="count"><%= marked.length %></span></h2>
+    <p class="hint">Zusätzlich zum Original, mit den eingezeichneten Markierungen. Wird eine Markierung später geändert, kommt die neue Fassung als weitere Datei dazu.</p>
+    <%# Comparison images in the wide grid like below, images in the normal one -%>
+    <% [marked.filter((m) => m.comparison), marked.filter((m) => !m.comparison)].filter((list) => list.length).forEach((list) => { -%>
+      <div class="provide-grid <%= list[0].comparison ? 'provide-grid--wide' : '' %>">
+        <% list.forEach(({ annotation, source, key, comparison }) => { -%>
+          <% const name = markedFileName(source.path) -%>
+          <% const done = provided.has(key) -%>
+          <% const changed = !done && providedBefore.has(key.split(':')[0]) -%>
+          <label class="provide-file <%= done ? 'is-provided' : '' %>" title="<%= name %>" data-range-item <%= done ? 'data-range-skip' : '' %>>
+            <span class="provide-file__thumb" data-controller="marked-thumb" data-marked-thumb-shapes-value="<%= JSON.stringify(annotation.list) %>">
+              <% if (source.thumb_path) { %><img src="<%= thumbUrl(source.thumb_path) %>" alt="" loading="lazy" draggable="false" data-marked-thumb-target="image" data-action="load->marked-thumb#draw"><canvas class="thumb-marks" data-marked-thumb-target="marks"></canvas><% } %>
+            </span>
+            <input type="checkbox" data-provide-target="item" data-key="<%= key %>" data-kind="marked" data-size="<%= annotation.marked_size ?? 0 %>" <%= selected.has(key) ? 'checked' : '' %>>
+            <span class="provide-file__label">
+              <span class="truncate"><%= comparison ? name : `${variantLabel(source.variant)} · ${formatBytes(annotation.marked_size ?? 0)}` %></span>
+              <% if (done) { %><span class="provide-badge provide-badge--done" title="Schon bereitgestellt">✓</span><% } else if (changed) { %><span class="provide-badge provide-badge--last" title="Schon bereitgestellt, seitdem geändert – kommt als neue Datei dazu">geändert</span><% } %>
+            </span>
+          </label>
+        <% }) -%>
+      </div>
+    <% }) -%>
+  <% } -%>
 
   <% if (comparisons.length) { -%>
     <h2 class="section__title">Vergleichsbilder</h2>

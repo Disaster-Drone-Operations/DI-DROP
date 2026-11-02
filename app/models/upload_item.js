@@ -11,6 +11,8 @@ export default class UploadItem extends Record {
     target: 'string',
     media_file_id: 'integer',
     comparison_id: 'integer',
+    annotation_id: 'integer', // marked copy of an image/comparison image (with annotation_version)
+    annotation_version: 'string',
     category: 'string',
     variant: 'string',
     viewpoint_id: 'integer',
@@ -25,9 +27,10 @@ export default class UploadItem extends Record {
     finished_at: 'datetime',
   }
 
-  // Upload order: thermal images are small and most important, visible images large
-  static CATEGORY_ORDER = ['thermal', 'comparison', 'visible', 'other']
-  static CATEGORY_LABELS = { thermal: 'Wärmebild', comparison: 'Vergleichsbild', visible: 'Sichtbild', other: 'Datei' }
+  // Upload order: marked images were marked for a reason, thermal images are small and most important,
+  // visible images large
+  static CATEGORY_ORDER = ['marked', 'thermal', 'comparison', 'visible', 'other']
+  static CATEGORY_LABELS = { marked: 'Markiertes Bild', thermal: 'Wärmebild', comparison: 'Vergleichsbild', visible: 'Sichtbild', other: 'Datei' }
   static ACTIVE = ['queued', 'running', 'paused', 'failed']
 
   static categoryOf(variant) {

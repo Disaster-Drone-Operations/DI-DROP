@@ -11,6 +11,7 @@ export default class Annotation extends Record {
     comparison_id: 'integer',
     shapes: 'text',
     marked_size: 'integer',
+    version: 'integer', // +1 per change (what was provided: upload_items.annotation_version)
   }
 
   get list() {

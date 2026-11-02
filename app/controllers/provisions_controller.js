@@ -9,7 +9,7 @@ import Setting from '/app/models/setting.js'
 import platform from '/lib/platform/index.js'
 import { TARGETS, availableTargets, assignmentFolderName } from '/app/services/upload_targets.js'
 import { enqueue, pendingBytes, rememberedSpeed } from '/app/services/upload_queue.js'
-import { chooseTarget, baseFor, resolveBase, entriesFor, providedKeys } from '/app/services/provisioning.js'
+import { chooseTarget, baseFor, resolveBase, entriesFor, providedKeys, markedFor } from '/app/services/provisioning.js'
 
 // Provisioning an assignment: select files and hand them to a target (Nextcloud, folder …).
 // One target per run; for a second target simply provision again.
@@ -39,6 +39,9 @@ export default class ProvisionsController extends ApplicationController {
     for (const c of comparisons) await Promise.all([c.ensureThumbnail(), c.ensureSize()])
     const provided = target ? await providedKeys([this.assignment.id], targetKey) : new Set()
     const previous = await this.previousProvision()
+    // Marked copies: provided in this version? An older version provided → "geändert"
+    const marked = await markedFor([this.assignment])
+    const providedBefore = new Set([...provided].filter((k) => k.startsWith('a')).map((k) => k.split(':')[0]))
 
     // Preselection: like the last control flight, otherwise everything – excluding already uploaded files
     const lastKey = (f) => `${f.viewpoint_id ?? ''}|${f.variant ?? ''}`
@@ -48,6 +51,7 @@ export default class ProvisionsController extends ApplicationController {
       if (!previous || previous.keys.has(lastKey(f))) selected.add(`m${f.id}`)
     }
     for (const c of comparisons) if (!provided.has(`c${c.id}`)) selected.add(`c${c.id}`)
+    for (const m of marked) if (!provided.has(m.key)) selected.add(m.key)
 
     await this.render('provisions/new', {
       mission: this.mission,
@@ -61,6 +65,8 @@ export default class ProvisionsController extends ApplicationController {
       assignmentFolder: assignmentFolderName(this.assignment),
       shots,
       comparisons,
+      marked,
+      providedBefore,
       provided,
       previous,
       lastKeys: previous?.keys ?? new Set(),
@@ -86,8 +92,10 @@ export default class ProvisionsController extends ApplicationController {
       : []
     const comparisonIds = new Set((selection.comparisons ?? []).map(Number))
     const comparisons = (await this.comparisons()).filter((c) => comparisonIds.has(c.id))
+    const markedIds = new Set((selection.marked ?? []).map(Number))
+    const marked = (await markedFor([this.assignment])).filter((m) => markedIds.has(m.annotation.id))
 
-    const entries = await entriesFor(files, comparisons)
+    const entries = await entriesFor(files, comparisons, marked)
     if (!entries.length) return this.redirectTo(`${this.path}/provide?target=${targetKey}`, { alert: 'Keine Dateien ausgewählt.' })
 
     await enqueue({

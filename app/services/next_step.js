@@ -9,7 +9,7 @@ import { db } from '/lib/db.js'
 import { nowMs } from '/lib/clock.js'
 import Assignment from '/app/models/assignment.js'
 import Comparison from '/app/models/comparison.js'
-import { providedKeys, pendingKeys } from '/app/services/provisioning.js'
+import { providedKeys, pendingKeys, markedFor } from '/app/services/provisioning.js'
 import { completionOptions } from '/app/services/control_planner.js'
 
 const DUE_SOON_MS = 5 * 60_000
@@ -23,7 +23,8 @@ const titles = (assignments, max = 2) => {
 
 // Map(id → { hasImages, comparisons, needsComparisons, missing, inProgress, provided, done })
 //   missing: images + comparison images neither provided nor on their way (to any target) – images only
-//   as long as nothing of the assignment was provided (the selection counts as made, e.g. only thermal images)
+//   as long as nothing of the assignment was provided (the selection counts as made, e.g. only thermal images);
+//   marked copies always count (also a changed marking after it was provided)
 export async function assignmentStates(assignments, counts) {
   const ids = assignments.map((a) => a.id)
   const [provided, pending] = await Promise.all([providedKeys(ids), pendingKeys(ids)])
@@ -32,10 +33,11 @@ export async function assignmentStates(assignments, counts) {
     const hasImages = !!counts.get(a.id)?.shots
     const comparisons = hasImages ? await Comparison.forAssignment(a) : []
     const fileKeys = hasImages ? (await db.select('SELECT id FROM media_files WHERE assignment_id = ?', [a.id])).map((f) => `m${f.id}`) : []
-    const keys = [...fileKeys, ...comparisons.map((c) => `c${c.id}`)]
+    const markedKeys = hasImages ? (await markedFor([a])).map((m) => m.key) : []
+    const keys = [...fileKeys, ...comparisons.map((c) => `c${c.id}`), ...markedKeys]
     const open = (k) => !provided.has(k) && !pending.has(k)
     const selectionMade = fileKeys.some((k) => !open(k))
-    const missing = (selectionMade ? 0 : fileKeys.length) + comparisons.filter((c) => open(`c${c.id}`)).length
+    const missing = (selectionMade ? 0 : fileKeys.length) + comparisons.filter((c) => open(`c${c.id}`)).length + markedKeys.filter(open).length
     // Comparison images only make sense once a viewpoint of this flight was also flown before
     const comparable = a.processing === 'comparison' && hasImages && !comparisons.length && (await db.select(
       `SELECT 1 FROM media_files m WHERE m.assignment_id = ? AND m.viewpoint_id IS NOT NULL AND EXISTS (

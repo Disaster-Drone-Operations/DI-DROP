@@ -52,6 +52,7 @@ export async function saveAnnotations(target, shapes) {
   const annotation = existing ?? new Annotation({ media_file_id: target.mediaFileId ?? null, comparison_id: target.comparisonId ?? null })
   annotation.shapes = JSON.stringify(clean)
   annotation.marked_size = blob.size
+  annotation.version = (annotation.version ?? 0) + 1
   await annotation.save()
   return annotation
 }

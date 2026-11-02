@@ -92,12 +92,13 @@ export async function enqueue({ mission, assignment, target, destination, label,
   const sorted = [...entries].sort((a, b) => rank(a.category) - rank(b.category))
   const stamp = now()
   // One statement for all files (faster than one by one)
-  const columns = ['batch_id', 'mission_id', 'assignment_id', 'target', 'media_file_id', 'comparison_id', 'category', 'variant',
-    'viewpoint_id', 'source_path', 'dest_path', 'size', 'position', 'status', 'created_at', 'updated_at']
+  const columns = ['batch_id', 'mission_id', 'assignment_id', 'target', 'media_file_id', 'comparison_id', 'annotation_id', 'annotation_version',
+    'category', 'variant', 'viewpoint_id', 'source_path', 'dest_path', 'size', 'position', 'status', 'created_at', 'updated_at']
   for (let start = 0; start < sorted.length; start += 50) {
     const chunk = sorted.slice(start, start + 50)
     const values = chunk.flatMap((e, i) => [
-      batch.id, mission.id, assignment?.id ?? null, target, e.media_file_id ?? null, e.comparison_id ?? null, e.category, e.variant ?? null,
+      batch.id, mission.id, assignment?.id ?? null, target, e.media_file_id ?? null, e.comparison_id ?? null,
+      e.annotation_id ?? null, e.annotation_version ?? null, e.category, e.variant ?? null,
       e.viewpoint_id ?? null, e.source_path, TARGETS[target].join(destination, e.file_name), e.size ?? 0,
       rank(e.category) * CATEGORY_BASE + t + (start + i) / 1000, 'queued', stamp, stamp,
     ])

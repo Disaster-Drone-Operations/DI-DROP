@@ -48,7 +48,7 @@ export default class extends Controller {
 
   selectLast() {
     this.itemTargets.forEach((i) => {
-      if (i.dataset.kind === 'comparison') return
+      if (i.dataset.kind === 'comparison' || i.dataset.kind === 'marked') return
       i.checked = i.dataset.last === '1' && !i.closest('.is-provided')
     })
     this.update()
@@ -63,8 +63,13 @@ export default class extends Controller {
     if (!this.selected.length || !this.baseValue()) return event.preventDefault()
     const files = []
     const comparisons = []
-    for (const i of this.selected) (i.dataset.key.startsWith('c') ? comparisons : files).push(Number(i.dataset.key.slice(1)))
-    this.selectionTarget.value = JSON.stringify({ files, comparisons })
+    const marked = [] // "a<annotation id>:<version>"
+    for (const i of this.selected) {
+      const kind = i.dataset.key[0]
+      const id = Number(i.dataset.key.slice(1).split(':')[0])
+      ;(kind === 'c' ? comparisons : kind === 'a' ? marked : files).push(id)
+    }
+    this.selectionTarget.value = JSON.stringify({ files, comparisons, marked })
   }
 
   // ── Destination ──────────────────────────────────────────────────────

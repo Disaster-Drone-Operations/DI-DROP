@@ -1,10 +1,16 @@
 import platform from '/lib/platform/index.js'
+import { markedPath } from '/app/services/annotations.js'
 import MediaFile from '/app/models/media_file.js'
 
 export const platformName = () => platform.os
 
 export function thumbUrl(path) {
   return platform.media?.thumbUrl(path) ?? ''
+}
+
+// "…/DJI_0001_T.JPG" → "DJI_0001_T_markiert.JPG" (marked copy next to the original)
+export function markedFileName(path) {
+  return markedPath(path).split(/[\\/]/).pop()
 }
 
 export function variantLabel(variant) {
