@@ -35,6 +35,7 @@
         <a href="#/flightlogs" class="<%= missionFilter ? '' : 'is-active' %>">Alle Flüge</a>
         <a href="#/flightlogs?mission=none" class="<%= missionFilter === 'none' ? 'is-active' : '' %>">Ohne Einsatz (<%= unassigned %>)</a>
       </div>
+      <% if (unassigned) { %><a class="button button--small button--quiet" href="#/missions/history" title="Aus den Flügen ohne Einsatz (und alten Bildern) Einsätze und Übungen anlegen">Einsätze nachtragen …</a><% } %>
     </nav>
   <% } -%>
 

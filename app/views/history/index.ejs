@@ -1,0 +1,111 @@
+<%# locals: scan, devices, rows, undated, canPick -%>
+<% const folderName = scan ? scan.root.split(/[\\/]/).filter(Boolean).pop() : null -%>
+<div class="history-import" data-controller="history-import">
+  <header class="page-header">
+    <div>
+      <a class="backlink" href="#/">Einsätze</a>
+      <h1>Ältere Einsätze nachtragen</h1>
+      <p class="subtle">di-drop sucht in einem Ordner alle Drohnenbilder – egal wie tief verschachtelt – und schlägt daraus und aus den Flugprotokollen ohne Einsatz Einsätze vor, nach Zeit und Ort gruppiert. Du legst je Zeile fest, ob Einsatz oder Übung. Besetzung und weitere Angaben trägst du danach im Einsatz nach.</p>
+    </div>
+    <% if (canPick) { -%>
+      <div class="toolbar">
+        <button type="button" class="button <%= scan || rows.length ? '' : 'button--primary' %>" data-action="history-import#pick" data-history-import-target="pick">
+          <%- icon('folder') %><span><%= scan ? 'Anderen Ordner wählen …' : 'Ordner mit alten Bildern wählen …' %></span>
+        </button>
+      </div>
+    <% } -%>
+  </header>
+
+  <div class="history-import__progress" data-history-import-target="progress" hidden></div>
+  <% if (!canPick) { -%>
+    <div class="callout callout--subtle"><%- icon('alert') %><span>Bilderordner lassen sich nur in der Desktop-App durchsuchen – hier erscheinen nur Flüge ohne Einsatz.</span></div>
+  <% } -%>
+
+  <% if (scan) { -%>
+    <section class="section">
+      <h2 class="section__title">Gefundene Kameras</h2>
+      <p class="subtle history-import__summary">
+        <%= pluralize(scan.files.length, 'neue Datei', 'neue Dateien') %> in „<%= folderName %>“<% if (scan.known) { %> · <%= scan.known %> schon in di-drop<% } %><% if (undated.length) { %> · <%= undated.length %> ohne Aufnahmezeit (werden nicht übernommen)<% } %><% if (scan.skipped.length) { %> · <%= scan.skipped.length %> nicht lesbar<% } %>
+      </p>
+      <% if (devices.length) { -%>
+        <form action="#/missions/history/devices" method="post" class="card history-devices" data-action="change->history-import#submit">
+          <input type="hidden" name="_method" value="patch">
+          <% devices.forEach((d, i) => { -%>
+            <label class="history-device">
+              <input type="hidden" name="devices[<%= i %>]" value="0">
+              <input type="checkbox" name="devices[<%= i %>]" value="<%= d.key %>" <%= d.selected ? 'checked' : '' %>>
+              <span class="history-device__name"><%= d.label %></span>
+              <span class="subtle"><%= pluralize(d.count, 'Datei', 'Dateien') %><% if (d.from) { %> · <%= formatDate(new Date(d.from), { weekday: false }) %><% if (d.to && formatDate(new Date(d.to), { weekday: false }) !== formatDate(new Date(d.from), { weekday: false })) { %> – <%= formatDate(new Date(d.to), { weekday: false }) %><% } %><% } %></span>
+            </label>
+          <% }) -%>
+          <p class="hint">Vorausgewählt sind eure Drohnen (Seriennummer aus den Flugprotokollen). Fotos von Handys oder Kameras und Bilder anderer Drohnen nur bei Bedarf dazunehmen.</p>
+        </form>
+      <% } -%>
+    </section>
+  <% } -%>
+
+  <section class="section">
+    <h2 class="section__title">Vorschläge <span class="count"><%= rows.length %></span></h2>
+    <% if (!rows.length) { -%>
+      <div class="empty empty--compact"><p class="subtle"><%= scan ? 'Keine neuen Bilder und keine Flüge ohne Einsatz gefunden.' : 'Keine Flüge ohne Einsatz. Oben einen Ordner mit alten Bildern wählen.' %></p></div>
+    <% } else { -%>
+      <form action="#/missions/history" method="post" class="history-rows"
+            data-confirm="Die Einsätze mit „Anlegen“ jetzt anlegen? Die Bilder werden in die Bildablage kopiert. Angelegte Einsätze lassen sich einzeln wieder löschen." data-confirm-button="Anlegen">
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr><th>Datum</th><th>Titel</th><th>Art</th><th>Ort</th><th>Flüge</th><th>Bilder</th><th>Aktion</th></tr>
+            </thead>
+            <tbody>
+              <% rows.forEach((p, i) => { -%>
+                <% const name = `rows[${i}]` -%>
+                <tr class="<%= p.overlaps.length ? 'has-overlap' : '' %>">
+                  <td class="history-table__date">
+                    <input type="hidden" name="<%= name %>[key]" value="<%= p.key %>">
+                    <strong><%= formatDate(p.date, { weekday: false }) %></strong><br><span class="subtle"><%= p.startTime %> Uhr</span>
+                    <% if (i > 0) { -%>
+                      <label class="history-table__merge" title="Mehrtägiger Einsatz: mit der Zeile darüber ein Einsatz">
+                        <input type="hidden" name="<%= name %>[merge]" value="0"><input type="checkbox" name="<%= name %>[merge]" value="1"> mit oben
+                      </label>
+                    <% } -%>
+                  </td>
+                  <td><input type="text" class="input" name="<%= name %>[title]" value="<%= p.titleHint ?? p.placeName ?? '' %>" placeholder="Stichwort" aria-label="Titel"></td>
+                  <td>
+                    <select class="input" name="<%= name %>[kind]" aria-label="Art">
+                      <option value="" <%= p.kind ? '' : 'selected' %>>– wählen –</option>
+                      <option value="operation" <%= p.kind === 'operation' ? 'selected' : '' %>>Einsatz</option>
+                      <option value="exercise" <%= p.kind === 'exercise' ? 'selected' : '' %>>Übung</option>
+                    </select>
+                  </td>
+                  <td class="history-table__place">
+                    <%= p.location ?? '–' %>
+                    <% if (p.posSource) { %><br><span class="subtle"><%= p.posSource === 'home' ? 'Startpunkt' : 'Bildposition' %></span><% } %>
+                  </td>
+                  <td class="num"><%= p.flightCount || '–' %><% if (p.flightSeconds) { %><br><span class="subtle"><%= formatHours(p.flightSeconds / 3600) %></span><% } %></td>
+                  <td class="num"><%= p.shots || '–' %><% if (p.bytes) { %><br><span class="subtle"><%= formatBytes(p.bytes) %></span><% } %></td>
+                  <td>
+                    <select class="input" name="<%= name %>[action]" aria-label="Aktion">
+                      <option value="create" <%= p.overlaps.length ? '' : 'selected' %>>Anlegen</option>
+                      <% p.overlaps.forEach((m, k) => { -%>
+                        <option value="add:<%= m.id %>" <%= k === 0 && p.files.length ? 'selected' : '' %>>Zu „<%= m.title %>“ hinzufügen</option>
+                      <% }) -%>
+                      <% if (p.flightIds.length) { %><option value="none">Kein Einsatz</option><% } %>
+                      <option value="skip" <%= p.overlaps.length && !p.files.length ? 'selected' : '' %>>Überspringen</option>
+                    </select>
+                    <% if (p.overlaps.length) { -%>
+                      <div class="hint">Überschneidet sich mit <%= p.overlaps.map((m) => `„${m.title}“ (${formatDate(m.date, { weekday: false })})`).join(', ') %></div>
+                    <% } -%>
+                  </td>
+                </tr>
+              <% }) -%>
+            </tbody>
+          </table>
+        </div>
+        <div class="history-rows__footer">
+          <span class="subtle">„Kein Einsatz“: Flüge ohne Einsatz (z. B. Testflüge) – sie werden nicht mehr vorgeschlagen.</span>
+          <button type="submit" class="button button--primary"><%- icon('plus') %><span>Einsätze anlegen</span></button>
+        </div>
+      </form>
+    <% } -%>
+  </section>
+</div>

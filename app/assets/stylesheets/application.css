@@ -1482,3 +1482,29 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .person-qualification { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .person-qualification__until { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
 
+
+/* Backfilling older missions (history/index.ejs) */
+.history-import__progress { margin: 0 0 18px; }
+.history-import__progress p { margin: 6px 0 0; }
+.history-import__summary { margin: 0 0 10px; }
+.history-devices { padding: 6px 0; }
+.history-device { display: flex; align-items: baseline; gap: 10px; padding: 7px 14px; }
+.history-device + .history-device { border-top: 1px solid var(--border); }
+.history-device__name { flex: 1; font-weight: 500; }
+.history-devices .hint { margin: 6px 14px 4px; }
+.history-rows .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+.history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.history-table th { position: sticky; top: 0; padding: 8px 10px; text-align: left; font-weight: 500; font-size: 12px; color: var(--text-2);
+  background: var(--surface-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.history-table td { padding: 8px 10px; vertical-align: top; border-bottom: 1px solid var(--border); }
+.history-table tr:last-child td { border-bottom: 0; }
+.history-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.history-table .input { width: 100%; min-width: 110px; }
+.history-table td:nth-child(2) .input { min-width: 180px; }
+.history-table__date { white-space: nowrap; }
+.history-table__merge { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; color: var(--text-2); }
+.history-table__place { min-width: 140px; }
+.history-table .hint { margin-top: 4px; font-size: 11px; }
+.history-table tr.has-overlap td { background: var(--surface-2); }
+.history-rows__footer { position: sticky; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  margin-top: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }

@@ -1,8 +1,9 @@
 // Backfilling older missions from image folders and flight logs ("Ältere Einsätze nachtragen").
 //
 //   await scanFolder(root, onProgress)   finds all images below root (however deeply nested), reads their metadata
-//   await deviceChoices()                drones/cameras found, own drones preselected
-//   await proposals(selectedKeys)        missions to create: grouped by time and place (history_grouping.js),
+//   await deviceChoices()                drones/cameras found – own drones preselected, later the chosen ones
+//   choose(keys)                         use the images of these devices
+//   await proposals()                    missions to create: grouped by time and place (history_grouping.js),
 //                                        with place name and overlapping missions – also without any folder
 //                                        (flight logs without mission)
 //
@@ -15,7 +16,7 @@ import { missionWindows } from '/app/services/flight_missions.js'
 import { nearPlace } from '/app/services/address_service.js'
 import { deviceList, groupHistory } from '/app/services/history_grouping.js'
 
-let scan = null // { root, files, known, skipped }
+let scan = null // { root, files, known, skipped, selected: Set of device keys | null (= preselection) }
 
 export const current = () => scan
 export const clear = () => { scan = null }
@@ -39,7 +40,7 @@ export async function scanFolder(root, onProgress = () => {}) {
   const known = await MediaFile.findByFingerprints(files.map((f) => f.fingerprint), null)
   const seen = new Set()
   const fresh = files.filter((f) => !known.has(f.fingerprint) && !seen.has(f.fingerprint) && seen.add(f.fingerprint))
-  scan = { root, files: fresh, known: files.length - fresh.length, skipped }
+  scan = { root, files: fresh, known: files.length - fresh.length, skipped, selected: null }
   return scan
 }
 
@@ -50,11 +51,18 @@ const allLogs = () => db.select(
 
 export async function deviceChoices() {
   const own = (await db.select('SELECT DISTINCT aircraft_sn FROM flight_logs WHERE aircraft_sn IS NOT NULL')).map((r) => r.aircraft_sn)
-  return deviceList(scan?.files ?? [], own)
+  const devices = deviceList(scan?.files ?? [], own)
+  if (scan?.selected) for (const d of devices) d.selected = scan.selected.has(d.key)
+  return devices
+}
+
+export function choose(keys) {
+  if (scan) scan.selected = new Set(keys)
 }
 
 // → { proposals, undated }; proposals with location (place name), coordinates and overlaps [{ id, title, date }]
-export async function proposals(selectedKeys) {
+export async function proposals() {
+  const selectedKeys = (await deviceChoices()).filter((d) => d.selected).map((d) => d.key)
   const [logs, windows, missions] = await Promise.all([
     allLogs(), missionWindows(), db.select('SELECT id, title, date, kind FROM missions'),
   ])

@@ -1,6 +1,11 @@
 export default (r) => {
   r.root('missions#index')
 
+  // Backfilling older missions from image folders and flight logs (before resources: not a mission id)
+  r.get('/missions/history', 'history#index')
+  r.patch('/missions/history/devices', 'history#devices')
+  r.post('/missions/history', 'history#create')
+
   r.resources('missions', () => {
     r.resources('assignments', { only: ['show', 'create', 'destroy'] })
     r.patch('/assignments/:id/complete', 'assignments#complete')
