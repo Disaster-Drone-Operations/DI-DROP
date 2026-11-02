@@ -9,6 +9,7 @@
 //! Which of them are new or already imported is decided by the frontend based on
 //! the database.
 
+pub mod marked;
 pub mod metadata;
 pub mod thumbnail;
 
@@ -87,7 +88,7 @@ pub struct MediaDir {
 pub fn list(root: &str) -> Vec<MediaDir> {
     let mut dirs: std::collections::BTreeMap<String, Vec<String>> = Default::default();
     for entry in WalkDir::new(root).follow_links(false).into_iter().filter_entry(|e| !is_hidden(e)).filter_map(Result::ok) {
-        if !entry.file_type().is_file() || media_kind(entry.path()).is_none() {
+        if !entry.file_type().is_file() || media_kind(entry.path()).is_none() || marked::is_marked(entry.path()) {
             continue;
         }
         let dir = entry.path().parent().map(|p| p.display().to_string()).unwrap_or_default();
@@ -108,7 +109,8 @@ pub fn scan(paths: &[String]) -> ScanResult {
     for path in paths {
         for entry in WalkDir::new(path).follow_links(false).into_iter().filter_entry(|e| !is_hidden(e)) {
             match entry {
-                Ok(e) if e.file_type().is_file() && media_kind(e.path()).is_some() => candidates.push(e.into_path()),
+                // marked copies ("…_markiert.JPG") belong to their original, never an image of their own
+                Ok(e) if e.file_type().is_file() && media_kind(e.path()).is_some() && !marked::is_marked(e.path()) => candidates.push(e.into_path()),
                 Ok(_) => {}
                 Err(err) => result.skipped.push(Skipped { path: path.clone(), reason: err.to_string() }),
             }
@@ -423,7 +425,7 @@ mod tests {
         let deep = root.join("Einsatz/Suche Nord/DCIM/100MEDIA");
         fs::create_dir_all(&deep).unwrap();
         fs::create_dir_all(root.join(".hidden")).unwrap();
-        for p in [root.join("a.JPG"), deep.join("DJI_0001_T.JPG"), deep.join("DJI_0001_V.JPG"), deep.join("clip.MP4"),
+        for p in [root.join("a.JPG"), deep.join("DJI_0001_T.JPG"), deep.join("DJI_0001_V.JPG"), deep.join("clip.MP4"), deep.join("DJI_0001_T_markiert.JPG"),
             root.join("Einsatz/notes.txt"), root.join(".hidden/x.jpg")] {
             fs::write(p, b"x").unwrap();
         }
@@ -432,7 +434,7 @@ mod tests {
         assert_eq!(dirs[0].dir, root.display().to_string());
         assert_eq!(dirs[0].files, vec![root.join("a.JPG").display().to_string()]);
         assert_eq!(dirs[1].dir, deep.display().to_string());
-        assert_eq!(dirs[1].files.len(), 3); // no .txt, nothing from hidden folders
+        assert_eq!(dirs[1].files.len(), 3); // no .txt, no marked copy, nothing from hidden folders
         fs::remove_dir_all(&root).unwrap();
     }
 

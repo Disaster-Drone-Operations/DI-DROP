@@ -6,6 +6,8 @@
 //   POST /__didrop/import  [{ src, dest_dir, … }]  → ImportResult[]
 //   GET  /__didrop/file?path=…                     → image file (for thumbnails)
 //   POST /__didrop/write?path=…  (image data)      → { path }
+//   POST /__didrop/write-marked?original=… (JPEG)   → path of "…_markiert.JPG" (or { error })
+//   POST /__didrop/remove-marked { original }       → null (or { error })
 //   POST /__didrop/open    { path, reveal }        → opens in Finder/default app
 //   POST /__didrop/nc      { action, … }           → Nextcloud management (credentials in tmp/dev-nextcloud.json)
 //   POST /__didrop/transfer?kind=copy|nc-upload&id=…  → NDJSON stream with progress, last line = result
@@ -126,6 +128,24 @@ export default function devBridge({ root }) {
             fs.writeFileSync(target, Buffer.concat(chunks))
             res.setHeader('Content-Type', 'application/json')
             return res.end(JSON.stringify({ path: target }))
+          }
+          if (url.pathname === '/write-marked') {
+            // Rendered image into a temporary file – the Rust helper adds the original's metadata
+            const chunks = []
+            for await (const chunk of req) chunks.push(chunk)
+            const rendered = path.join(root, 'tmp', `marked-${process.pid}-${Date.now()}.jpg`)
+            fs.mkdirSync(path.dirname(rendered), { recursive: true })
+            fs.writeFileSync(rendered, Buffer.concat(chunks))
+            try {
+              res.setHeader('Content-Type', 'application/json')
+              return res.end(await run('write_marked', { original: url.searchParams.get('original'), rendered }))
+            } finally {
+              fs.rmSync(rendered, { force: true })
+            }
+          }
+          if (url.pathname === '/remove-marked') {
+            res.setHeader('Content-Type', 'application/json')
+            return res.end(await run('remove_marked', (await body(req)).original))
           }
           if (url.pathname === '/rename') {
             const { from, to, dir } = await body(req)

@@ -18,6 +18,8 @@ import MediaFile from '/app/models/media_file.js'
 import Viewpoint from '/app/models/viewpoint.js'
 import Comparison from '/app/models/comparison.js'
 import Assignment from '/app/models/assignment.js'
+import Annotation from '/app/models/annotation.js'
+import { markedPath } from '/app/services/annotations.js'
 import Mission from '/app/models/mission.js'
 import { now as clockNow } from '/lib/clock.js'
 
@@ -147,6 +149,7 @@ export async function syncFileNames(missionId) {
   const names = new Map((await Viewpoint.forMission(missionId)).map((v) => [v.id, v.name]))
 
   const files = await MediaFile.where('mission_id = ?', [missionId], { order: 'id ASC' })
+  const marked = await Annotation.markedIds() // their "…_markiert" copy is renamed along
   const shotTimes = new Map()
   for (const f of files) {
     const key = `${f.flight_id}/${f.shot_key}`
@@ -160,6 +163,7 @@ export async function syncFileNames(missionId) {
     const to = await rename(file.path, `${dir}${sep}${wanted}`)
     if (!to) continue
     await db.execute('UPDATE media_files SET path = ?, updated_at = ? WHERE id = ?', [to, clockNow().toISOString(), file.id])
+    if (marked.mediaFiles.has(file.id)) await rename(markedPath(file.path), markedPath(to))
     changes.push({ from: file.path, to })
   }
 
@@ -174,6 +178,7 @@ export async function syncFileNames(missionId) {
     const to = await rename(comparison.path, `${dir}${sep}${wanted}`)
     if (!to) continue
     await comparison.update({ path: to })
+    if (marked.comparisons.has(comparison.id)) await rename(markedPath(comparison.path), markedPath(to))
     changes.push({ from: comparison.path, to })
   }
   return collapse(changes)

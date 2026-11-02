@@ -104,6 +104,15 @@ fn main() {
             let paths: Vec<String> = serde_json::from_str(&input).expect("JSON list of paths");
             serde_json::to_string(&media::scan(&paths))
         }
+        Some("write_marked") => {
+            let req: Value = serde_json::from_str(&input).expect("JSON");
+            let rendered = std::fs::read(req["rendered"].as_str().unwrap_or("")).expect("rendered image");
+            result(media::marked::write(req["original"].as_str().unwrap_or("").as_ref(), &rendered).map(|p| p.display().to_string()))
+        }
+        Some("remove_marked") => {
+            let original: String = serde_json::from_str(&input).expect("JSON string");
+            result(media::marked::remove(original.as_ref()))
+        }
         Some("list") => {
             let root: String = serde_json::from_str(&input).expect("JSON string (folder)");
             serde_json::to_string(&media::list(&root))

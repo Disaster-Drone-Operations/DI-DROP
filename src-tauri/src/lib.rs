@@ -342,6 +342,24 @@ fn write_image(request: tauri::ipc::Request<'_>) -> Result<String, String> {
     Ok(target.display().to_string())
 }
 
+/// Saves the marked copy of an image ("…_markiert.JPG" next to it, with the original's metadata).
+/// Original in the "x-original" header (URL-encoded), rendered JPEG as raw body → path of the copy
+#[tauri::command]
+fn write_marked(request: tauri::ipc::Request<'_>) -> Result<String, String> {
+    let header = request.headers().get("x-original").and_then(|h| h.to_str().ok()).ok_or("Pfad fehlt")?;
+    let original = PathBuf::from(percent_decode(header)?);
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("Bilddaten fehlen".into());
+    };
+    media::marked::write(&original, bytes).map(|p| p.display().to_string())
+}
+
+/// Removes the marked copy of an image (markings deleted)
+#[tauri::command]
+fn remove_marked(original: String) -> Result<(), String> {
+    media::marked::remove(Path::new(&original))
+}
+
 /// Renames an image/video file (stays in the same folder). If the target name is already taken
 /// by a *different* file, "_2", "_3" … is appended. Returns the actual path.
 #[tauri::command]
@@ -424,7 +442,7 @@ pub fn run() {
             watch_sdcards(app.handle().clone());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![scan_media, list_media, import_media, open_path, reveal_path, read_image, write_image, rename_file, rename_dir, open_url,
+        .invoke_handler(tauri::generate_handler![scan_media, list_media, import_media, open_path, reveal_path, read_image, write_image, write_marked, remove_marked, rename_file, rename_dir, open_url,
             cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
             geocode::reverse_geocode,
             make_thumbnail,
