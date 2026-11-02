@@ -11,7 +11,7 @@ import { sendImageToPhone } from '/app/services/image_share.js'
 import { relayBaseUrl } from '/app/services/location_service.js'
 import AnnotationEditor from '/app/javascript/annotation_editor.js'
 import Annotation from '/app/models/annotation.js'
-import { saveAnnotations } from '/app/services/annotations.js'
+import { saveAnnotations, markedPath } from '/app/services/annotations.js'
 
 // Gallery (almost full screen):
 //   ← / →  previous / next shot on the page (chronological)
@@ -432,6 +432,14 @@ export default class extends Controller {
     if (this.markTarget(this.current.files[this.variant])?.key !== mark.key) return // paged on meanwhile
     this.editor.show(shapes)
     this.updateMarkButtons(shapes)
+    // Markings belong to one image: point to the other image type if only that one is marked
+    const others = []
+    for (const [variant, other] of Object.entries(this.current.files)) {
+      const m = variant !== this.variant && this.markTarget(other)
+      if (m && (await this.shapesFor(m)).length) others.push(variantLabel(variant))
+    }
+    if (this.markTarget(this.current.files[this.variant])?.key !== mark.key) return
+    this.positionTarget.textContent = [`${this.index + 1} von ${this.items.length}`, !shapes.length && others.length ? `Markiert: ${others.join(', ')}` : null].filter(Boolean).join(' · ')
   }
 
   updateMarkButtons(shapes) {
@@ -481,18 +489,25 @@ export default class extends Controller {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
+  // The file as it is shown: the marked copy ("…_markiert.JPG") while markings are shown, otherwise the original
+  shownPath() {
+    const file = this.current.files[this.variant]
+    const shapes = this.annotations.get(this.markTarget(file)?.key)
+    return shapes?.length && this.editor.visible ? markedPath(file.path) : file.path
+  }
+
   openExternal() {
-    platform.openPath(this.current.files[this.variant].path).catch((e) => console.error(e))
+    platform.openPath(this.shownPath()).catch((e) => console.error(e))
   }
 
   reveal() {
-    platform.revealPath(this.current.files[this.variant].path).catch((e) => console.error(e))
+    platform.revealPath(this.shownPath()).catch((e) => console.error(e))
   }
 
-  // The variant shown (thermal/visible …) as original file
+  // The variant shown (thermal/visible …) as original file – with markings if they are shown
   sendToPhone() {
     const file = this.current.files[this.variant]
-    if (file && !file.video) sendImageToPhone(file.path)
+    if (file && !file.video) sendImageToPhone(this.shownPath())
   }
 }
 
