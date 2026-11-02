@@ -18,6 +18,7 @@ import { assignOperators, setOperator } from '/app/services/flight_crew.js'
 import Person from '/app/models/person.js'
 import FlightLog from '/app/models/flight_log.js'
 import DeviceName from '/app/models/device_name.js'
+import Annotation from '/app/models/annotation.js'
 import { roleLabel } from '/app/helpers/mission_helper.js'
 
 export default class AssignmentsController extends ApplicationController {
@@ -38,10 +39,15 @@ export default class AssignmentsController extends ApplicationController {
     const files = await MediaFile.where('assignment_id = ?', [this.assignment.id], { order: 'taken_at ASC, shot_key ASC, variant ASC' })
     const viewpointNames = new Map((await Viewpoint.forMission(this.mission.id)).map((v) => [v.id, v.name]))
     const variant = this.params.variant || null
+    const annotations = await Annotation.byMediaFiles(files.map((f) => f.id))
+    const marked = new Set(annotations.keys())
+    const shapes = new Map([...annotations].map(([id, a]) => [id, a.list]))
 
     const shots = groupShots(files)
       .map((shot) => ({
         ...shot,
+        marked,
+        shapes,
         forcedVariant: variant,
         viewpointName: viewpointNames.get(shot.files.find((f) => f.viewpoint_id)?.viewpoint_id),
       }))
@@ -67,6 +73,7 @@ export default class AssignmentsController extends ApplicationController {
       names: await DeviceName.all(),
       comparisons: comparisons.map((c) => ({ comparison: c, viewpointName: viewpointNames.get(c.viewpoint_id) ?? null })),
       comparisonGroups: groupComparisons(comparisons),
+      comparisonShapes: new Map([...(await Annotation.byComparisons(comparisons.map((c) => c.id)))].map(([id, a]) => [id, a.list])),
       needsComparisons: state.needsComparisons,
     }, { title: `${this.assignment.title} – ${this.mission.title}` })
   }

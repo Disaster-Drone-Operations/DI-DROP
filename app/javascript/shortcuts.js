@@ -107,6 +107,11 @@ export const commands = {
 
 export function run(command) {
   if (document.querySelector('dialog.gallery[open]') && !['undo', 'redo', 'fullscreen'].includes(command)) return
+  // Marking in the gallery: undo/redo the editor's steps (annotation_editor.js), not the app's last action
+  if (['undo', 'redo'].includes(command) && document.querySelector('.gallery__marks.is-editing') && !isTextField(document.activeElement)) {
+    window.dispatchEvent(new CustomEvent('annotations:undo', { detail: { redo: command === 'redo' } }))
+    return
+  }
   commands[command]?.()
 }
 

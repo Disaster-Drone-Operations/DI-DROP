@@ -1,4 +1,4 @@
-<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons, people, flights, names -%>
+<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons, people, flights, names, comparisonShapes -%>
 <% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
 <% const missionPath = `/missions/${mission.id}` /* „Erledigt“ → back to the mission: the assignment is done with */ -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
@@ -114,7 +114,7 @@
     <% const nameOf = new Map(comparisons.map(({ comparison: c, viewpointName }) => [c.id, viewpointName])) -%>
     <section class="section comparison-strip" data-controller="comparison-gallery" data-comparison-gallery-items-value="<%= JSON.stringify(comparisonGroups.groups.map((group) => ({
       key: `c${group[0].id}`, takenAt: group[0].created_at, viewpointName: nameOf.get(group[0].id), assignmentTitle: assignment.title,
-      files: Object.fromEntries(group.map((c) => [c.variant ?? 'other', { path: c.path, thumb: c.thumb_path ? thumbUrl(c.thumb_path) : null, name: c.fileName }])),
+      files: Object.fromEntries(group.map((c) => [c.variant ?? 'other', { path: c.path, thumb: c.thumb_path ? thumbUrl(c.thumb_path) : null, name: c.fileName, comparisonId: c.id }])),
       variant: group[0].variant ?? 'other',
     }))) %>">
       <h2 class="section__title">Vergleichsbilder <span class="count"><%= comparisons.length %></span></h2>
@@ -122,7 +122,12 @@
         <% comparisons.forEach(({ comparison: c, viewpointName }, i) => { -%>
           <button type="button" class="comparison-tile" data-action="comparison-gallery#open" data-comparison-gallery-index-param="<%= comparisonGroups.index.get(c.id) %>"
                   data-comparison-gallery-variant-param="<%= c.variant ?? 'other' %>" title="<%= c.fileName %>">
-            <% if (c.thumb_path) { %><img src="<%= thumbUrl(c.thumb_path) %>" alt="" loading="lazy"><% } else { %><span class="comparison-tile__empty"><%- icon('images', { size: 24 }) %></span><% } %>
+            <% if (c.thumb_path) { -%>
+              <span class="comparison-tile__thumb" data-controller="marked-thumb" data-marked-thumb-comparison-value="<%= c.id %>"
+                    data-marked-thumb-shapes-value="<%= JSON.stringify(comparisonShapes.get(c.id) ?? []) %>" data-action="annotations:changed@window->marked-thumb#changed">
+                <img src="<%= thumbUrl(c.thumb_path) %>" alt="" loading="lazy" data-marked-thumb-target="image" data-action="load->marked-thumb#draw"><canvas class="thumb-marks" data-marked-thumb-target="marks"></canvas>
+              </span>
+            <% } else { %><span class="comparison-tile__empty"><%- icon('images', { size: 24 }) %></span><% } -%>
             <span class="comparison-tile__label"><span class="truncate"><%= viewpointName ?? c.fileName %></span><span class="subtle"><%= variantLabel(c.variant) %></span></span>
           </button>
         <% }) -%>

@@ -59,7 +59,7 @@ export function defaultVariant(files) {
 export function shotData(shot, { assignmentTitle = '' } = {}) {
   const files = {}
   for (const f of shot.files) {
-    files[f.variant ?? 'other'] = { path: f.path, thumb: thumbUrl(f.thumb_path), name: f.original_name, video: f.kind === 'video' }
+    files[f.variant ?? 'other'] = { path: f.path, thumb: thumbUrl(f.thumb_path), name: f.original_name, video: f.kind === 'video', mediaFileId: f.id, shapes: shot.shapes?.get(f.id) ?? null }
   }
   return JSON.stringify({
     key: `${shot.files[0].flight_id}/${shot.key}`,

@@ -9,6 +9,9 @@ import { viewpointNameTag } from '/app/helpers/mission_helper.js'
 import { escapeHtml } from '/app/helpers/application_helper.js'
 import { sendImageToPhone } from '/app/services/image_share.js'
 import { relayBaseUrl } from '/app/services/location_service.js'
+import AnnotationEditor from '/app/javascript/annotation_editor.js'
+import Annotation from '/app/models/annotation.js'
+import { saveAnnotations } from '/app/services/annotations.js'
 
 // Gallery (almost full screen):
 //   ← / →  previous / next shot on the page (chronological)
@@ -16,10 +19,11 @@ import { relayBaseUrl } from '/app/services/location_service.js'
 //          zoom and crop are kept (for comparing)
 //   + / − / 0, trackpad gesture, Ctrl+mouse wheel (Windows/Linux: mouse wheel), double-click: zoom; drag: pan
 //   Space  visible ↔ thermal image
+//   M      show/hide markings; "Markieren" opens the editor (annotation_editor.js) – Esc/Fertig saves
 //   Esc    close
 // The preview image appears immediately, the original is loaded afterwards.
 export default class extends Controller {
-  static targets = ['stage', 'image', 'notice', 'prev', 'next', 'vertical', 'verticalLabel', 'earlier', 'later', 'caption', 'position', 'variants', 'zoomLevel', 'phone']
+  static targets = ['stage', 'frame', 'image', 'marks', 'tools', 'notice', 'prev', 'next', 'vertical', 'verticalLabel', 'earlier', 'later', 'caption', 'position', 'variants', 'zoomLevel', 'phone', 'markButton', 'marksToggle']
 
   static MAX_ZOOM = 8
   static DOUBLE_CLICK_ZOOM = 2.5
@@ -59,6 +63,15 @@ export default class extends Controller {
     this.stageTarget.addEventListener('gesturestart', this.gestureStart)
     this.stageTarget.addEventListener('gesturechange', this.gestureChange)
     this.view = { scale: 1, x: 0, y: 0 }
+
+    // Markings: shown over the image, edited in place
+    this.annotations = new Map() // "m<id>" / "c<id>" → shapes
+    this.editor = new AnnotationEditor({
+      canvas: this.marksTarget, image: this.imageTarget, toolbar: this.toolsTarget, overlay: this.stageTarget,
+      onDone: (shapes, changed) => this.marksDone(shapes, changed),
+    })
+    this.marksUndo = ({ detail }) => (detail.redo ? this.editor.redo() : this.editor.undo())
+    window.addEventListener('annotations:undo', this.marksUndo)
   }
 
   disconnect() {
@@ -67,6 +80,8 @@ export default class extends Controller {
     this.stageTarget.removeEventListener('gesturechange', this.gestureChange)
     window.removeEventListener('viewpoint:renamed', this.renamed)
     window.removeEventListener('media:renamed', this.moved)
+    window.removeEventListener('annotations:undo', this.marksUndo)
+    this.editor.destroy()
     this.releaseAll()
   }
 
@@ -89,7 +104,15 @@ export default class extends Controller {
   }
 
   closed() {
+    this.editor.finish()
     this.releaseAll()
+  }
+
+  // Esc while marking: finish marking instead of closing the gallery
+  cancel(event) {
+    if (!this.editor.editing) return
+    event.preventDefault()
+    this.editor.finish()
   }
 
   // Keys in the whole window while the gallery is open – regardless of where focus
@@ -98,6 +121,13 @@ export default class extends Controller {
   key(event) {
     if (!this.element.open || event.target.closest?.('input, textarea, select')) return
     if (document.querySelector('.location-dialog[open]')) return // e.g. "An Telefon senden" on top
+    if (this.editor.key(event)) return
+    if (this.editor.editing) return
+    if (event.key === 'm' || event.key === 'M') {
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      event.preventDefault()
+      return this.toggleMarks()
+    }
     if (isVariantSpace(event, { inDialog: true })) {
       event.preventDefault() // no click on a focused button, no scrolling
       return this.toggleVariant()
@@ -119,6 +149,7 @@ export default class extends Controller {
 
   // Left/right always steps through the page's shots – from where you were
   move(step) {
+    this.editor.finish()
     this.vertical = null
     const index = this.index + step
     if (index < 0 || index >= this.items.length) return
@@ -136,6 +167,7 @@ export default class extends Controller {
   }
 
   async moveVertical(step) {
+    this.editor.finish()
     if (!this.vertical) {
       const base = this.items[this.index]
       if (!base.viewpointId) return
@@ -160,6 +192,7 @@ export default class extends Controller {
 
   setVariant(variant) {
     if (variant === this.variant) return
+    this.editor.finish()
     if (this.variant !== 'T') this.lastVisible = this.variant
     this.variant = variant
     this.resetZoom() // thermal and visual cameras have different fields of view
@@ -184,13 +217,14 @@ export default class extends Controller {
   }
 
   toggleZoom(event) {
+    if (this.editor.editing) return
     if (this.view.scale > 1.01) return this.resetZoom()
     this.zoomAt(this.constructor.DOUBLE_CLICK_ZOOM, this.pointFromEvent(event))
   }
 
   // Point relative to the (unpanned) image center
   pointFromEvent(event) {
-    const img = this.imageTarget
+    const img = this.frameTarget
     const cx = img.offsetLeft + img.offsetWidth / 2
     const cy = img.offsetTop + img.offsetHeight / 2
     const stage = this.stageTarget.getBoundingClientRect()
@@ -224,9 +258,9 @@ export default class extends Controller {
   }
 
   panStart(event) {
-    if (this.view.scale <= 1 || event.button !== 0) return
+    if (this.view.scale <= 1 || event.button !== 0 || this.editor.editing) return
     event.preventDefault()
-    const img = this.imageTarget
+    const img = this.frameTarget
     const start = { px: event.clientX, py: event.clientY, x: this.view.x, y: this.view.y }
     img.setPointerCapture(event.pointerId)
     img.classList.add('is-panning')
@@ -248,8 +282,8 @@ export default class extends Controller {
 
   // Clamp the offset (image stays in view) and apply it
   applyView({ animate }) {
-    if (!this.hasImageTarget) return
-    const img = this.imageTarget
+    if (!this.hasFrameTarget) return
+    const img = this.frameTarget
     const { scale } = this.view
     const maxX = ((scale - 1) * img.offsetWidth) / 2
     const maxY = ((scale - 1) * img.offsetHeight) / 2
@@ -299,6 +333,9 @@ export default class extends Controller {
       .map((v) => `<button type="button" class="${v === this.variant ? 'is-active' : ''}" data-action="gallery#showVariant" data-gallery-variant-param="${v}">${variantLabel(v)}</button>`)
       .join('')
 
+    // Markings of this image (loaded once per gallery opening)
+    this.showMarks(file)
+
     // Image: preview first, then original
     this.noticeTarget.hidden = !file.video
     if (this.hasPhoneTarget) this.phoneTarget.hidden = file.video || !relayBaseUrl()
@@ -343,6 +380,7 @@ export default class extends Controller {
     for (const url of this.full?.values() ?? []) url.then((u) => URL.revokeObjectURL(u)).catch(() => {})
     this.full?.clear()
     this.viewpoints?.clear()
+    this.annotations?.clear()
   }
 
   // All shots of a viewpoint in the mission, chronological
@@ -357,13 +395,88 @@ export default class extends Controller {
           const key = `${f.flight_id}/${f.shot_key}`
           if (!shots.has(key)) shots.set(key, { key, files: {}, takenAt: f.taken_at, viewpointId, viewpointName, assignmentTitle: titles.get(f.assignment_id) ?? '' })
           shots.get(key).files[f.variant ?? 'other'] = {
-            path: f.path, thumb: platform.media?.thumbUrl(f.thumb_path) ?? null, name: f.original_name, video: f.kind === 'video',
+            path: f.path, thumb: platform.media?.thumbUrl(f.thumb_path) ?? null, name: f.original_name, video: f.kind === 'video', mediaFileId: f.id,
           }
         }
         return [...shots.values()]
       })())
     }
     return this.viewpoints.get(viewpointId)
+  }
+
+  // ── Markings ──────────────────────────────────────────────────────────────
+
+  // Image or comparison image the markings belong to → { key, target } or null (videos, unknown files)
+  markTarget(file) {
+    if (file?.video) return null
+    if (file?.mediaFileId) return { key: `m${file.mediaFileId}`, target: { mediaFileId: file.mediaFileId } }
+    if (file?.comparisonId) return { key: `c${file.comparisonId}`, target: { comparisonId: file.comparisonId } }
+    return null
+  }
+
+  async shapesFor(mark) {
+    if (!this.annotations.has(mark.key)) {
+      const a = mark.target.mediaFileId ? await Annotation.forMediaFile(mark.target.mediaFileId) : await Annotation.forComparison(mark.target.comparisonId)
+      this.annotations.set(mark.key, a?.list ?? [])
+    }
+    return this.annotations.get(mark.key)
+  }
+
+  async showMarks(file) {
+    const mark = this.markTarget(file)
+    this.markButtonTarget.hidden = !mark
+    this.marksToggleTarget.hidden = true
+    this.editor.show([])
+    if (!mark) return
+    const shapes = await this.shapesFor(mark)
+    if (this.markTarget(this.current.files[this.variant])?.key !== mark.key) return // paged on meanwhile
+    this.editor.show(shapes)
+    this.updateMarkButtons(shapes)
+  }
+
+  updateMarkButtons(shapes) {
+    this.marksToggleTarget.hidden = !shapes.length
+    this.marksToggleTarget.classList.toggle('is-active', this.editor.visible)
+    this.marksToggleTarget.title = this.editor.visible ? 'Markierungen ausblenden (M)' : 'Markierungen einblenden (M)'
+    this.markButtonTarget.querySelector('span').textContent = shapes.length ? 'Bearbeiten' : 'Markieren'
+  }
+
+  toggleMarks() {
+    this.editor.visible = !this.editor.visible
+    this.updateMarkButtons(this.annotations.get(this.markTarget(this.current.files[this.variant])?.key) ?? [])
+  }
+
+  async editMarks() {
+    const mark = this.markTarget(this.current.files[this.variant])
+    if (!mark) return
+    this.markKey = mark
+    this.editor.edit(await this.shapesFor(mark))
+    this.markButtonTarget.hidden = true
+  }
+
+  // Fertig: save (writes the marked copy "…_markiert.JPG" next to the original)
+  async marksDone(shapes, changed) {
+    const mark = this.markKey
+    this.markKey = null
+    this.markButtonTarget.hidden = false
+    this.updateMarkButtons(shapes)
+    if (!mark || !changed) return
+    this.annotations.set(mark.key, shapes)
+    try {
+      await saveAnnotations(mark.target, shapes)
+      this.flashNotice(shapes.length ? 'Markierung gespeichert' : 'Markierungen entfernt')
+      window.dispatchEvent(new CustomEvent('annotations:changed', { detail: { ...mark.target, marked: shapes.length > 0, shapes } }))
+    } catch (error) {
+      console.error(error)
+      this.flashNotice(`Markierung nicht gespeichert: ${error?.message ?? error}`)
+    }
+  }
+
+  flashNotice(text) {
+    clearTimeout(this.noticeTimer)
+    this.noticeTarget.textContent = text
+    this.noticeTarget.hidden = false
+    this.noticeTimer = setTimeout(() => { this.noticeTarget.hidden = true }, 2500)
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────

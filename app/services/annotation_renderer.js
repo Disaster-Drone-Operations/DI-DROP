@@ -27,7 +27,7 @@ const haloOf = (shape) => (shape.color === 'black' ? 'rgba(255,255,255,.75)' : '
 const textOn = (shape) => (LIGHT.has(shape.color) ? '#1c1c1e' : '#ffffff')
 
 // Line width in pixels for an image of this size (about 0.8 % of the shorter side)
-export const strokeWidth = (width, height) => Math.max(2, Math.round(Math.min(width, height) * 0.008))
+export const strokeWidth = (width, height, min = 2) => Math.max(min, Math.round(Math.min(width, height) * 0.008))
 
 // Only known shapes with sensible values (data from the editor or the database)
 export function cleanShapes(shapes) {
@@ -145,10 +145,31 @@ function drawShape(ctx, shape, width, height, line) {
   }
 }
 
-// Draws all shapes onto ctx for an image of width × height pixels (the image itself is already drawn)
-export function drawShapes(ctx, shapes, width, height) {
-  const line = strokeWidth(width, height)
+// Draws all shapes onto ctx for an image of width × height pixels (the image itself is already drawn);
+// minLine: thinnest line in pixels (thumbnails: a bit more, so markings stay visible)
+export function drawShapes(ctx, shapes, width, height, { minLine = 2 } = {}) {
+  const line = strokeWidth(width, height, minLine)
   ctx.save()
   for (const shape of shapes) drawShape(ctx, shape, width, height, line)
+  ctx.restore()
+}
+
+// Thumbnails: markings over an <img> shown with "object-fit: cover" (cropped to its box)
+//   drawOnThumbnail(canvas, img, shapes)  – canvas lies exactly over the image box
+export function drawOnThumbnail(canvas, img, shapes) {
+  const dpr = window.devicePixelRatio || 1
+  const boxW = img.clientWidth
+  const boxH = img.clientHeight
+  canvas.width = Math.round(boxW * dpr)
+  canvas.height = Math.round(boxH * dpr)
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  if (!shapes?.length || !img.naturalWidth || !boxW) return
+  const scale = Math.max(boxW / img.naturalWidth, boxH / img.naturalHeight) * dpr
+  const w = img.naturalWidth * scale
+  const h = img.naturalHeight * scale
+  ctx.save()
+  ctx.translate((canvas.width - w) / 2, (canvas.height - h) / 2)
+  drawShapes(ctx, shapes, w, h, { minLine: 2 * dpr })
   ctx.restore()
 }

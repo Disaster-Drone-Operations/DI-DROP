@@ -2,11 +2,13 @@
 <% const viewpointId = shot.files.find((f) => f.viewpoint_id)?.viewpoint_id -%>
 <% const variant = shot.forcedVariant ?? defaultVariant(shot.files) -%>
 <% const file = shot.files.find((f) => (f.variant ?? 'other') === variant) ?? shot.files[0] -%>
-<figure class="shot" title="<%= shotTooltip(file) %>" data-controller="shot" data-action="keydown@window->shot#key"
+<% const markedLabels = shot.files.filter((f) => shot.marked?.has(f.id)).map((f) => f.variantLabel) -%>
+<figure class="shot" title="<%= shotTooltip(file) %>" data-controller="shot" data-action="keydown@window->shot#key annotations:changed@window->shot#marked"
         data-shot-data-value="<%= shotData(shot, { assignmentTitle: assignmentTitle ?? '' }) %>" data-shot-variant-value="<%= variant %>">
   <button type="button" class="shot__image" data-action="shot#open" title="Groß anzeigen">
     <% if (file.thumb_path) { -%>
-      <img src="<%= thumbUrl(file.thumb_path) %>" alt="<%= file.original_name %>" loading="lazy" draggable="false" data-shot-target="image">
+      <img src="<%= thumbUrl(file.thumb_path) %>" alt="<%= file.original_name %>" loading="lazy" draggable="false" data-shot-target="image" data-action="load->shot#drawMarks">
+      <canvas class="thumb-marks" data-shot-target="marks"></canvas>
     <% } else { -%>
       <span class="shot__placeholder"><%- icon(file.isVideo ? 'video' : 'images', { size: 28 }) %></span>
     <% } -%>
@@ -17,6 +19,8 @@
       <% }) -%>
     </span>
     <% if (file.isVideo) { %><span class="shot__video-badge"><%- icon('video', { size: 12 }) %></span><% } %>
+    <%# Marked (one of its images) – updated live after marking in the gallery -%>
+    <span class="shot__marked-badge" data-shot-target="marked" title="Markiert: <%= markedLabels.join(', ') %>" <%= markedLabels.length ? '' : 'hidden' %>><%- icon('markup', { size: 12 }) %></span>
   </button>
   <figcaption class="shot__caption">
     <span class="shot__time"><%= file.takenAt ? formatTime(file.takenAt) : file.original_name %><% if (shot.viewpointName) { %> · <%- viewpointNameTag(viewpointId, shot.viewpointName, 'shot__viewpoint') %><% } %></span>

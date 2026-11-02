@@ -569,9 +569,13 @@ details.disclosure:has(> .add-assignment) { border-top: 1px solid var(--border);
   overflow: hidden; cursor: default;
 }
 .shot__image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Markings over thumbnails (drawOnThumbnail in annotation_renderer.js) */
+.thumb-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .shot__image:hover { border-color: var(--border-strong); }
 .shot__image:focus-visible { outline: none; box-shadow: var(--focus); }
 .shot__placeholder { display: grid; place-items: center; height: 100%; color: var(--text-3); }
+.shot__marked-badge { position: absolute; left: 6px; top: 6px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: rgba(0, 0, 0, .6); color: #ffd60a; }
+.shot__marked-badge[hidden] { display: none; }
 .shot__video-badge { position: absolute; left: 6px; bottom: 6px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: rgba(0, 0, 0, .55); color: #fff; }
 .shot__caption { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 2px 0; }
 .shot__time { font-variant-numeric: tabular-nums; color: var(--text-2); font-size: 12px; }
@@ -883,6 +887,9 @@ input[type=number].input-inline { width: 64px !important; }
 .comparison-tile img, .comparison-tile__empty { width: 100%; aspect-ratio: 16 / 7; object-fit: cover; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
 .comparison-tile__empty { display: grid; place-items: center; color: var(--text-3); }
 .comparison-tile:hover img { border-color: var(--accent); }
+.comparison-tile__thumb { position: relative; display: block; }
+.comparison-tile__thumb img { display: block; }
+.comparison-tile__thumb .thumb-marks { inset: 1px; width: calc(100% - 2px); height: calc(100% - 2px); border-radius: var(--radius); }
 .comparison-tile__label { display: flex; gap: 8px; align-items: baseline; font-size: 13px; min-width: 0; }
 
 /* Assignment history ------------------------------------------------------------- */
@@ -924,9 +931,28 @@ input[type=number].input-inline { width: 64px !important; }
 .gallery::backdrop { background: #000; }
 .gallery:focus, .gallery:focus-visible { outline: none; }
 .gallery__stage { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: calc(var(--titlebar-h) + 8px) 72px 8px; }
-.gallery__image { max-width: 100%; max-height: calc(100vh - var(--titlebar-h) - 96px); object-fit: contain; border-radius: 4px; user-select: none; transform-origin: center center; will-change: transform; }
-.gallery__image.is-zoomed { cursor: grab; border-radius: 0; }
-.gallery__image.is-panning { cursor: grabbing; }
+.gallery__frame { position: relative; display: flex; max-width: 100%; max-height: 100%; transform-origin: center center; will-change: transform; }
+.gallery__image { display: block; max-width: 100%; max-height: calc(100vh - var(--titlebar-h) - 96px); object-fit: contain; border-radius: 4px; user-select: none; }
+.gallery__frame.is-zoomed { cursor: grab; }
+.gallery__frame.is-zoomed .gallery__image { border-radius: 0; }
+.gallery__frame.is-panning { cursor: grabbing; }
+/* Markings over the image (annotation_editor.js) – only takes the mouse while editing */
+.gallery__marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.gallery__marks.is-editing { pointer-events: auto; cursor: crosshair; }
+.annot-tools { position: absolute; top: calc(var(--titlebar-h) + 8px); left: 50%; transform: translateX(-50%); z-index: 3;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 24px);
+  padding: 6px 8px; border-radius: 10px; background: rgba(28, 28, 30, .92); box-shadow: 0 4px 18px rgba(0, 0, 0, .4); }
+.annot-tools[hidden] { display: none; }
+.annot-tools .segmented button { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; }
+.annot-tools .segmented.is-disabled { opacity: .35; }
+.annot-tools .segmented button:disabled { cursor: default; }
+.annot-tools__spacer { width: 4px; }
+.annot-colors { display: flex; gap: 6px; }
+.annot-color { width: 20px; height: 20px; padding: 0; border: 2px solid rgba(255, 255, 255, .25); border-radius: 50%; background: var(--swatch); cursor: default; }
+.annot-color.is-active { border-color: #fff; box-shadow: 0 0 0 2px rgba(10, 132, 255, .9); }
+.annot-text { position: absolute; z-index: 4; min-width: 4em; margin: 0; padding: 0; border: 1px dashed rgba(255, 255, 255, .8); background: rgba(0, 0, 0, .25);
+  font: 600 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.2; resize: none; overflow: hidden;
+  outline: none; text-shadow: 0 0 3px rgba(0, 0, 0, .8); field-sizing: content; }
 .gallery__zoom { display: flex; gap: 2px; }
 .gallery__zoom .button { min-width: 32px; padding: 0 8px; }
 .gallery__zoom-level { min-width: 64px !important; font-variant-numeric: tabular-nums; }

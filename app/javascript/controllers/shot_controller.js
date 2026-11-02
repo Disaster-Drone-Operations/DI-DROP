@@ -2,11 +2,12 @@ import { Controller } from '@hotwired/stimulus'
 import platform from '/lib/platform/index.js'
 import { isVariantSpace } from '/lib/keys.js'
 import { toggledVariant } from '/app/helpers/media_helper.js'
+import { drawOnThumbnail } from '/app/services/annotation_renderer.js'
 
 // Preview card of a shot: toggle thermal/visual (chips, or space for all images of the page),
 // clicking the image opens the gallery with all shots on the page (in the order they are displayed).
 export default class extends Controller {
-  static targets = ['image', 'chip']
+  static targets = ['image', 'chip', 'marked', 'marks']
   static values = { data: Object, variant: String }
 
   connect() {
@@ -22,11 +23,38 @@ export default class extends Controller {
       this.dataValue = { ...this.dataValue, files }
     }
     window.addEventListener('media:renamed', this.moved)
+    // Markings drawn over the thumbnail – redrawn when the card changes size
+    if (this.hasMarksTarget) {
+      this.resize = new ResizeObserver(() => this.drawMarks())
+      this.resize.observe(this.imageTarget)
+      if (this.imageTarget.complete) requestAnimationFrame(() => this.drawMarks()) // loaded before connecting: no load event
+    }
   }
 
   disconnect() {
     window.removeEventListener('viewpoint:renamed', this.renamed)
     window.removeEventListener('media:renamed', this.moved)
+    this.resize?.disconnect()
+  }
+
+  drawMarks() {
+    if (!this.hasMarksTarget || !this.hasImageTarget) return
+    drawOnThumbnail(this.marksTarget, this.imageTarget, this.dataValue.files[this.variantValue]?.shapes)
+  }
+
+  // Marked in the gallery (annotations:changed) → badge on the card
+  marked({ detail }) {
+    if (!this.hasMarkedTarget || !detail.mediaFileId) return
+    const entry = Object.entries(this.dataValue.files).find(([, f]) => f.mediaFileId === detail.mediaFileId)
+    if (!entry) return
+    const [variant, file] = entry
+    this.dataValue = { ...this.dataValue, files: { ...this.dataValue.files, [variant]: { ...file, shapes: detail.shapes } } }
+    this.drawMarks()
+    this.markedIds ??= new Set(this.markedTarget.hidden ? [] : [detail.mediaFileId])
+    if (detail.marked) this.markedIds.add(detail.mediaFileId)
+    else this.markedIds.delete(detail.mediaFileId)
+    this.markedTarget.hidden = !this.markedIds.size
+    this.markedTarget.title = 'Markiert'
   }
 
   show({ params }) {
@@ -34,7 +62,8 @@ export default class extends Controller {
     if (!file) return
     if (this.variantValue !== 'T') this.lastVisible = this.variantValue
     this.variantValue = params.variant
-    if (this.hasImageTarget && file.thumb) this.imageTarget.src = file.thumb
+    if (this.hasImageTarget && file.thumb) this.imageTarget.src = file.thumb // load → drawMarks
+    this.drawMarks()
     this.chipTargets.forEach((c) => c.classList.toggle('is-active', c.dataset.variant === params.variant))
   }
 
