@@ -1,0 +1,24 @@
+<%# locals: flights, names, people -%>
+<%# Real flights (flight logs) in which this assignment's images were taken – refreshed when new flight logs arrive (assignment_flights_controller.js) -%>
+<% if (flights.length) { -%>
+  <% const person = (id) => people.find((p) => p.id === id) -%>
+  <ul class="assignment-flights">
+    <% flights.forEach((f) => { -%>
+      <% const pilot = person(f.pilot_id), observer = person(f.observer_id) -%>
+      <% const battery = f.battery_sn ? names.get(`battery:${f.battery_sn}`) ?? f.battery_sn : null -%>
+      <li>
+        <a href="#/flightlogs?mission=<%= f.mission_id ?? '' %>" title="Im Flugprotokoll ansehen">
+          <%- icon('protocol', { size: 14 }) %>
+          <span><strong>Flug <%= localTime(f.started_at) %>–<%= localTime(f.landed_at) %> Uhr</strong>
+            <span class="subtle">· <%= formatHours(f.duration_s / 3600) %><% if (battery) { %> · Akku <%= battery %><% } %> · <%= pluralize(f.shots, 'Aufnahme', 'Aufnahmen') %></span></span>
+          <% if (pilot || observer) { -%>
+            <span class="assignment-flights__crew">
+              <% if (pilot) { %><span class="person-initials person-initials--small" title="<%= roleLabel('pilot') %>: <%= pilot.name %>"><%= pilot.short %></span><% } %>
+              <% if (observer) { %><span class="person-initials person-initials--small" title="<%= roleLabel('observer') %>: <%= observer.name %>"><%= observer.short %></span><% } %>
+            </span>
+          <% } -%>
+        </a>
+      </li>
+    <% }) -%>
+  </ul>
+<% } -%>

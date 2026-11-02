@@ -36,6 +36,16 @@ export default class FlightLog extends Record {
     notes: 'text',
   }
 
+  // Flights in which images of an assignment were taken (media_files.flight_log_id), oldest first;
+  // shots: number of the assignment's shots in that flight
+  static async forAssignment(assignmentId) {
+    const rows = await db.select(
+      `SELECT l.*, COUNT(DISTINCT f.flight_id || '/' || f.shot_key) AS shots
+         FROM flight_logs l JOIN media_files f ON f.flight_log_id = l.id
+        WHERE f.assignment_id = ? GROUP BY l.id ORDER BY l.started_at`, [assignmentId])
+    return rows.map((r) => ({ ...r, shots: Number(r.shots) }))
+  }
+
   static async knownFileNames() {
     return (await db.select('SELECT file_name FROM flight_logs')).map((r) => r.file_name)
   }

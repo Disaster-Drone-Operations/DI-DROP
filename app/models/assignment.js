@@ -92,7 +92,8 @@ export default class Assignment extends Record {
 
   // History: per assignment the time span, number of shots and a few thumbnails (thermal preferred;
   // the visible image too, for switching with the space bar)
-  // → Map(id → { first, last, shots, thumbs: [{ T, visible }] })
+  // from/to: the time span including the real flights the images were taken in (start … landing, flight logs)
+  // → Map(id → { first, last, from, to, shots, thumbs: [{ T, visible }] })
   static async timeline(missionId, { thumbs = 6 } = {}) {
     const rows = await db.select(
       `SELECT assignment_id, flight_id, shot_key, variant, thumb_path, taken_at
@@ -110,7 +111,20 @@ export default class Assignment extends Record {
       if (r.variant === 'T') shot.T = r.thumb_path
       else if (r.variant === 'V' || !shot.visible) shot.visible = r.thumb_path // the visible image beats wide/zoom
     }
+    const flown = await db.select(
+      `SELECT f.assignment_id, MIN(l.started_at) AS started, MAX(l.landed_at) AS landed
+         FROM media_files f JOIN flight_logs l ON l.id = f.flight_log_id WHERE f.mission_id = ? GROUP BY f.assignment_id`, [missionId])
+    for (const r of flown) {
+      const entry = map.get(Number(r.assignment_id))
+      if (entry) Object.assign(entry, { started: new Date(r.started), landed: r.landed ? new Date(r.landed) : null })
+    }
     for (const entry of map.values()) {
+      const first = parseLocal(entry.first)
+      const last = parseLocal(entry.last)
+      entry.from = entry.started && (!first || entry.started < first) ? entry.started : first
+      entry.to = entry.landed && (!last || entry.landed > last) ? entry.landed : last
+      delete entry.started
+      delete entry.landed
       entry.shots = entry.shotKeys.size
       entry.thumbs = [...entry.shotKeys.values()].filter((t) => t.T || t.visible).slice(0, thumbs)
       delete entry.shotKeys

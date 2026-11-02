@@ -1,4 +1,4 @@
-<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons, people -%>
+<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons, people, flights, names -%>
 <% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
 <% const missionPath = `/missions/${mission.id}` /* „Erledigt“ → back to the mission: the assignment is done with */ -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
@@ -18,7 +18,8 @@
         <% } -%>
       </div>
       <h1><%= assignment.title %></h1>
-      <% if (timeline) { %><div class="meta meta--large"><span><%- icon('clock', { size: 14 }) %><%= timeRange(timeline.first, timeline.last) %></span><span><%- icon('images', { size: 14 }) %><%= pluralize(shotCount, 'Aufnahme', 'Aufnahmen') %></span></div><% } %>
+      <% if (timeline) { %><div class="meta meta--large"><span><%- icon('clock', { size: 14 }) %><%= timeRange(timeline.from, timeline.to) %></span><span><%- icon('images', { size: 14 }) %><%= pluralize(shotCount, 'Aufnahme', 'Aufnahmen') %></span></div><% } %>
+      <div data-controller="assignment-flights" data-assignment-flights-assignment-value="<%= assignment.id %>"><%- include('assignments/_flights', { flights, names, people }) %></div>
       <% if (shotCount) { %><div class="assignment-provision" data-provision-assignment="<%= assignment.id %>" data-wide></div><% } %>
       <% if (assignment.notes) { %><p class="subtle"><%= assignment.notes %></p><% } %>
 

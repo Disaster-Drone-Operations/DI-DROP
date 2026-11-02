@@ -16,6 +16,8 @@ import Comparison from '/app/models/comparison.js'
 import { assignmentStates } from '/app/services/next_step.js'
 import { assignOperators, setOperator } from '/app/services/flight_crew.js'
 import Person from '/app/models/person.js'
+import FlightLog from '/app/models/flight_log.js'
+import DeviceName from '/app/models/device_name.js'
 import { roleLabel } from '/app/helpers/mission_helper.js'
 
 export default class AssignmentsController extends ApplicationController {
@@ -61,6 +63,8 @@ export default class AssignmentsController extends ApplicationController {
       completion: await completionOptions(this.assignment),
       provisions: await this.provisions(),
       people: await Person.roster(),
+      flights: await FlightLog.forAssignment(this.assignment.id),
+      names: await DeviceName.all(),
       comparisons: comparisons.map((c) => ({ comparison: c, viewpointName: viewpointNames.get(c.viewpoint_id) ?? null })),
       comparisonGroups: groupComparisons(comparisons),
       needsComparisons: state.needsComparisons,

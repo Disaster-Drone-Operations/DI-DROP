@@ -3,7 +3,7 @@
   <div class="history-item__head">
     <%- assignmentBadge(assignment) %>
     <strong class="truncate"><%= assignment.title %></strong>
-    <span class="subtle history-item__time"><%= timeRange(entry.first, entry.last) %></span>
+    <span class="subtle history-item__time"><%= timeRange(entry.from, entry.to) %></span>
     <span class="history-item__count subtle"><%= pluralize(entry.shots, 'Aufnahme', 'Aufnahmen') %></span>
     <span class="history-item__provision" data-provision-assignment="<%= assignment.id %>"></span>
     <% if (!assignment.isOpen) { %><span class="history-item__done" title="Erledigt"><%- icon('check', { size: 14 }) %></span><% } %>

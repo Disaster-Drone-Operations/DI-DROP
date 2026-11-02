@@ -69,6 +69,7 @@ export default {
     { at: '14:05', action: 'card.remove', card: 'flug2' },
     { at: '14:08', action: 'remote.connect', text: 'Fernsteuerung anschließen – Flugprotokolle, ein Akku lag lange im Lager' },
     { at: '14:09', action: 'remote.disconnect' },
+    { at: '14:10', action: 'note', text: 'Einen Auftrag mit Bildern öffnen: Unter dem Titel stehen jetzt die echten Flüge aus dem Flugprotokoll – Start und Landung, Dauer, Akku, Pilot und Luftraumbeobachter. Egal, ob zuerst die Bilder oder zuerst die Flugprotokolle kamen.' },
     { at: '14:00', action: 'note', text: 'Pilotenwechsel: Ab jetzt fliegt Jonas Beispiel – auf der Einsatzseite unter „Besetzung“ den Piloten „ab jetzt“ ändern. Die Flüge danach bekommen ihn automatisch.' },
     { at: '14:20', action: 'note', text: 'Kontrollflug 1 als erledigt markieren – di-drop plant Kontrollflug 2.' },
     { at: '14:22', action: 'card.insert', card: 'flug3', text: 'Flug 3 gelandet – Kontrollflug und Zufahrt (Spezialauftrag)' },

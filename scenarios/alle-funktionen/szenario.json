@@ -192,6 +192,11 @@
       "action": "remote.disconnect"
     },
     {
+      "at": "14:10",
+      "action": "note",
+      "text": "Einen Auftrag mit Bildern öffnen: Unter dem Titel stehen jetzt die echten Flüge aus dem Flugprotokoll – Start und Landung, Dauer, Akku, Pilot und Luftraumbeobachter. Egal, ob zuerst die Bilder oder zuerst die Flugprotokolle kamen."
+    },
+    {
       "at": "14:00",
       "action": "note",
       "text": "Pilotenwechsel: Ab jetzt fliegt Jonas Beispiel – auf der Einsatzseite unter „Besetzung“ den Piloten „ab jetzt“ ändern. Die Flüge danach bekommen ihn automatisch."
