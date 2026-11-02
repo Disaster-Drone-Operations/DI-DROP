@@ -5,6 +5,9 @@ import Mission from '/app/models/mission.js'
 import platform from '/lib/platform/index.js'
 import { flightLogDir, syncLocal, isAvailable } from '/app/services/flightlog_importer.js'
 import { assignFlights, assign, reset } from '/app/services/flight_missions.js'
+import { FLIGHT_ROLES, setCrew, resetCrew } from '/app/services/flight_crew.js'
+import Person from '/app/models/person.js'
+import { roleLabel } from '/app/helpers/mission_helper.js'
 
 // Module "Flugprotokolle": all flights from the remote controller's logs
 export default class FlightLogsController extends ApplicationController {
@@ -48,6 +51,7 @@ export default class FlightLogsController extends ApplicationController {
       available: isAvailable(),
       dir: isAvailable() ? await flightLogDir() : null,
       canPickFolder: platform.capabilities.folders,
+      people: await Person.roster(),
     }, { title: 'Flugprotokolle' })
   }
 
@@ -69,5 +73,24 @@ export default class FlightLogsController extends ApplicationController {
     const mission = await Mission.find(Number(choice))
     await assign(ids, mission.id)
     this.redirectTo(back, { notice: `${flights} „${mission.title}“ zugeordnet.` })
+  }
+
+  // „Besetzung ändern …“: pilot and airspace observer of the selected flights –
+  // per role "keep" (unchanged), "auto" (from the mission's crew again), "" (nobody) or a person's id
+  async crew() {
+    const ids = String(this.params.ids ?? '').split(',').map(Number).filter(Boolean)
+    const back = this.params.return_to?.startsWith('/flightlogs') ? this.params.return_to : '/flightlogs'
+    if (!ids.length) return this.redirectTo(back, { alert: 'Keine Flüge ausgewählt.' })
+    const changes = []
+    for (const role of FLIGHT_ROLES) {
+      const choice = this.params[role] ?? 'keep'
+      if (choice === 'keep' || choice === 'new') continue
+      if (choice === 'auto') await resetCrew(ids, role)
+      else await setCrew(ids, role, /^\d+$/.test(choice) ? Number(choice) : null)
+      const person = /^\d+$/.test(choice) ? await Person.find(Number(choice)) : null
+      changes.push(`${roleLabel(role)}: ${choice === 'auto' ? 'automatisch' : person?.name ?? 'niemand'}`)
+    }
+    const flights = ids.length === 1 ? '1 Flug' : `${ids.length} Flüge`
+    this.redirectTo(back, { notice: changes.length ? `${flights} – ${changes.join(', ')}.` : 'Nichts geändert.' })
   }
 }

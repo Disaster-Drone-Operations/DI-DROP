@@ -29,6 +29,10 @@ export default class FlightLog extends Record {
     app_version: 'string',
     mission_id: 'integer',
     mission_source: 'string', // auto | manual (app/services/flight_missions.js)
+    pilot_id: 'integer', // people – automatic from the mission's crew or by hand (app/services/flight_crew.js)
+    pilot_source: 'string',
+    observer_id: 'integer',
+    observer_source: 'string',
     notes: 'text',
   }
 

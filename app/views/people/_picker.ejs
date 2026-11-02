@@ -1,10 +1,12 @@
-<%# locals: name, inputId, selected, people -%>
+<%# locals: name, inputId, selected, people, extra -%>
 <%# Choose a person – or create a new one right here (person_picker_controller.js). Inactive people only
-    appear when they are the current choice. No <form> inside: the picker may sit in another form. -%>
+    appear when they are the current choice. No <form> inside: the picker may sit in another form.
+    extra: further options on top, e.g. [['auto', 'automatisch']] -%>
 <% const current = String(selected ?? '') -%>
 <% const shown = people.filter((p) => p.active || String(p.id) === current) -%>
 <span class="person-picker" data-controller="person-picker">
   <select id="<%= inputId %>" name="<%= name %>" data-person-picker-target="select" data-action="person-picker#changed">
+    <% (extra ?? []).forEach(([value, label]) => { %><option value="<%= value %>" <%= value === current ? 'selected' : '' %>><%= label %></option><% }) %>
     <option value="">– niemand –</option>
     <% shown.forEach((p) => { %><option value="<%= p.id %>" <%= String(p.id) === current ? 'selected' : '' %>><%= p.name %> (<%= p.short %>)</option><% }) %>
     <option value="new">＋ Neue Person …</option>

@@ -1430,3 +1430,8 @@ html.control-window #app { height: 100vh; overflow-y: auto; }
 .person-picker { display: block; }
 .person-picker select { width: 100%; }
 
+/* Flight logs: pilot / airspace observer (initials; set by hand = outlined) */
+.flightlogs__table th.flightlogs__crew-head { white-space: normal; hyphens: auto; min-width: 96px; line-height: 1.2; } /* long role names: two lines */
+.flightlogs__crew { cursor: default; }
+.person-initials.is-manual { background: transparent; box-shadow: inset 0 0 0 1px var(--border-strong); }
+

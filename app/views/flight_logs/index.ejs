@@ -1,5 +1,6 @@
-<%# locals: logs, groups, names, battery, missions, missionFilter, filterMission, unassigned, available, dir, canPickFolder -%>
+<%# locals: logs, groups, names, battery, missions, missionFilter, filterMission, unassigned, available, dir, canPickFolder, people -%>
 <% const named = (kind, sn) => names.get(`${kind}:${sn}`) -%>
+<% const personOf = new Map(people.map((p) => [p.id, p])) -%>
 <% const path = `/flightlogs${missionFilter ? `?mission=${missionFilter}` : battery ? `?battery=${encodeURIComponent(battery)}` : ''}` -%>
 <div class="flightlogs" data-controller="flight-logs">
   <header class="page-header">
@@ -66,6 +67,8 @@
             <th class="num">Landung</th>
             <th class="num">Flugdauer</th>
             <th class="num">Strecke</th>
+            <th class="flightlogs__crew-head" lang="de" title="<%= roleLabel('pilot') %>"><%= roleLabel('pilot') %></th>
+            <th class="flightlogs__crew-head" lang="de" title="<%= roleLabel('observer') %>"><%= roleLabel('observer') %></th>
             <th>Drohne</th>
             <th>Akku</th>
           </tr>
@@ -76,7 +79,7 @@
             <%# Click: select all flights of the mission – all of its parts (⌘/Ctrl: add to / remove from the selection) -%>
             <tr class="flightlogs__group-head" data-action="click->flight-logs#selectGroup" data-group="<%= group.key %>"
                 title="Klicken: <%= m ? 'alle Flüge dieses Einsatzes' : 'alle Flüge dieses Blocks' %> markieren">
-              <td colspan="8">
+              <td colspan="10">
                 <% if (m) { -%>
                   <%- kindBadge(m) %>
                   <span class="flightlogs__group-title"><%= m.title %></span>
@@ -94,6 +97,7 @@
             <% group.logs.forEach((log) => { -%>
               <%# Double-click on a flight: change its mission (of all selected flights) – later the flight details (TODO.md) -%>
               <tr class="flightlogs__row" data-flight-logs-target="row" data-id="<%= log.id %>" data-duration="<%= log.duration_s ?? 0 %>" data-distance="<%= log.distance_m ?? 0 %>" data-mission="<%= log.mission_id ?? '' %>" data-group="<%= group.key %>"
+                  data-pilot="<%= log.pilot_id ?? '' %>" data-pilot-source="<%= log.pilot_source ?? '' %>" data-observer="<%= log.observer_id ?? '' %>" data-observer-source="<%= log.observer_source ?? '' %>"
                   data-action="click->flight-logs#select dblclick->flight-logs#editMission"
                   title="<%= m ? (log.mission_source === 'manual' ? 'Von Hand zugeordnet' : 'Automatisch zugeordnet (Bilder bzw. Zeit des Einsatzes)') : (log.mission_source === 'manual' ? 'Von Hand: kein Einsatz' : 'Kein passender Einsatz gefunden') %> – Doppelklick: <%= m ? 'Einsatz ändern' : 'Einsatz zuordnen' %>">
                 <td class="flightlogs__check"><input type="checkbox" tabindex="-1" aria-label="Flug auswählen"></td>
@@ -102,6 +106,12 @@
                 <td class="num"><%= localTime(log.landed_at) %></td>
                 <td class="num"><%= formatFlightDuration(log.duration_s) %></td>
                 <td class="num"><%= formatDistance(log.distance_m) %></td>
+                <% ['pilot', 'observer'].forEach((role) => { const person = personOf.get(log[`${role}_id`]) -%>
+                  <%# Double-click here: change pilot / airspace observer (instead of the mission) -%>
+                  <td class="flightlogs__crew" data-crew-cell title="<%= roleLabel(role) %>: <%= person?.name ?? 'niemand' %> – <%= log[`${role}_source`] === 'manual' ? 'von Hand' : log.mission_id ? 'aus der Besetzung des Einsatzes' : 'ohne Einsatz von Hand eintragen' %> · Doppelklick: ändern">
+                    <% if (person) { %><span class="person-initials person-initials--small <%= log[`${role}_source`] === 'manual' ? 'is-manual' : '' %>"><%= person.short %></span><% } else { %><span class="subtle">–</span><% } %>
+                  </td>
+                <% }) -%>
                 <td>
                   <% if (log.aircraft_sn) { -%>
                     <span class="renamable flightlogs__name <%= named('aircraft', log.aircraft_sn) ? 'is-named' : '' %>" title="<%= log.aircraft_name ?? 'Drohne' %>" data-controller="device-name"
@@ -148,6 +158,28 @@
         <div class="dialog__actions">
           <button type="button" class="button" data-action="flight-logs#closeAssign">Abbrechen</button>
           <button type="submit" class="button button--primary">Zuordnen</button>
+        </div>
+      </form>
+    </dialog>
+
+    <%# „Besetzung ändern …“: pilot and airspace observer of the selected flights (flight_logs_controller.js) -%>
+    <dialog class="sheet" data-flight-logs-target="crewDialog">
+      <form class="sheet__body" action="#/flightlogs/crew" method="post" data-action="submit->flight-logs#crewSubmit">
+        <input type="hidden" name="_method" value="patch">
+        <input type="hidden" name="ids" data-flight-logs-target="crewIds">
+        <input type="hidden" name="return_to" value="<%= path %>">
+        <h2 class="dialog__title" data-flight-logs-target="crewTitle">Besetzung ändern</h2>
+        <% ['pilot', 'observer'].forEach((role) => { -%>
+          <div class="field">
+            <label class="field__label" for="flight_<%= role %>"><%= roleLabel(role) %></label>
+            <%- include('people/_picker', { name: role, inputId: `flight_${role}`, selected: '',
+                  extra: [['keep', '– wie bisher –'], ['auto', 'Automatisch (Besetzung des Einsatzes)']] }) %>
+          </div>
+        <% }) -%>
+        <p class="hint">Automatisch: wer laut Besetzung des Einsatzes zur Startzeit des Flugs <%= roleLabel('pilot') %> bzw. <%= roleLabel('observer') %> war. Von Hand Eingetragenes bleibt, auch wenn sich die Besetzung ändert.</p>
+        <div class="dialog__actions">
+          <button type="button" class="button" data-action="flight-logs#closeCrew">Abbrechen</button>
+          <button type="submit" class="button button--primary">Übernehmen</button>
         </div>
       </form>
     </dialog>

@@ -8,7 +8,7 @@ import { suggestedMissions } from '/app/services/flight_missions.js'
 // a totals bar at the bottom like in Numbers (count, total duration, total distance); selected flights
 // can be assigned to a mission („Einsatz zuordnen …“)
 export default class extends Controller {
-  static targets = ['row', 'all', 'sum', 'deviceButton', 'table', 'assignDialog', 'assignIds', 'assignTitle', 'assignList']
+  static targets = ['row', 'all', 'sum', 'deviceButton', 'table', 'assignDialog', 'assignIds', 'assignTitle', 'assignList', 'crewDialog', 'crewIds', 'crewTitle']
 
   async connect() {
     this.anchor = null
@@ -130,7 +130,8 @@ export default class extends Controller {
       <span class="flightlogs__sum-value"><span>Anzahl</span><strong>${rows.length}</strong></span>
       <span class="flightlogs__sum-value"><span>Flugdauer</span><strong>${formatFlightDuration(duration)}</strong></span>
       <span class="flightlogs__sum-value"><span>Strecke</span><strong>${formatDistance(distance)}</strong></span>
-      ${selected.length && this.hasAssignDialogTarget ? '<button type="button" class="button button--small" data-action="flight-logs#openAssign">Einsatz zuordnen …</button>' : ''}`
+      ${selected.length && this.hasAssignDialogTarget ? '<button type="button" class="button button--small" data-action="flight-logs#openAssign">Einsatz zuordnen …</button>' : ''}
+      ${selected.length && this.hasCrewDialogTarget ? '<button type="button" class="button button--small" data-action="flight-logs#openCrew">Besetzung ändern …</button>' : ''}`
     if (this.hasAllTarget) {
       this.allTarget.checked = selected.length > 0 && selected.length === this.rowTargets.length
       this.allTarget.indeterminate = selected.length > 0 && selected.length < this.rowTargets.length
@@ -163,17 +164,44 @@ export default class extends Controller {
 
   // Double-click on a flight: change its mission – for all selected flights if it is one of them
   // (not on a device name: that one is renamed by double-click)
+  // – on pilot / airspace observer: change those instead
   editMission(event) {
     if (event.target.closest('.renamable')) return
     clearTimeout(this.pendingOnly)
     const row = event.currentTarget.closest('[data-flight-logs-target~="row"]')
     if (!this.isSelected(row)) this.rowTargets.forEach((r) => this.mark(r, r === row))
     this.updateSum()
-    this.openAssign()
+    if (event.target.closest('[data-crew-cell]')) this.openCrew()
+    else this.openAssign()
   }
 
   closeAssign() {
     this.assignDialogTarget.close()
+  }
+
+  // ── Pilot / airspace observer ────────────────────────────────────────
+
+  // Preselection per role: the same for all selected flights → that (automatic or the person), otherwise „wie bisher“
+  openCrew() {
+    const rows = this.selected
+    this.crewIdsTarget.value = rows.map((r) => r.dataset.id).join(',')
+    this.crewTitleTarget.textContent = rows.length === 1 ? 'Besetzung des Flugs' : `Besetzung von ${rows.length} Flügen`
+    for (const role of ['pilot', 'observer']) {
+      const values = new Set(rows.map((r) => (r.dataset[`${role}Source`] === 'manual' ? r.dataset[role] : 'auto')))
+      const select = this.crewDialogTarget.querySelector(`select[name="${role}"]`)
+      select.value = values.size === 1 ? [...values][0] : 'keep'
+      select.dataset.initial = select.value
+    }
+    this.crewDialogTarget.showModal()
+  }
+
+  // Unchanged roles are not sent (= keep) – only what was changed appears in the message
+  crewSubmit() {
+    for (const select of this.crewDialogTarget.querySelectorAll('select')) select.disabled = select.value === select.dataset.initial
+  }
+
+  closeCrew() {
+    this.crewDialogTarget.close()
   }
 
   // ── Import ───────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@
 import { db } from '/lib/db.js'
 import { parseLocal } from '/lib/time.js'
 import { now as clockNow } from '/lib/clock.js'
+import { assignCrew } from '/app/services/flight_crew.js'
 
 const SLACK_MS = 2 * 60_000
 const AFTER_LAST_IMAGE_MS = 3 * 3600_000
@@ -45,8 +46,15 @@ function decide(flight, images, windows) {
   return candidates.length === 1 ? candidates[0].id : null
 }
 
-// Assign all flights that weren't assigned by hand; returns the number of changed flights
+// Assign all flights that weren't assigned by hand; returns the number of changed flights.
+// Pilot and airspace observer follow (their mission's crew at the start time).
 export async function assignFlights() {
+  const changed = await assignMissions()
+  await assignCrew()
+  return changed
+}
+
+async function assignMissions() {
   const flights = await db.select(
     `SELECT id, started_at, landed_at, mission_id FROM flight_logs WHERE mission_source IS NULL OR mission_source = 'auto'`,
   )
@@ -71,6 +79,7 @@ export async function assign(ids, missionId) {
   if (!ids.length) return
   await db.execute(`UPDATE flight_logs SET mission_id = ?, mission_source = 'manual', updated_at = ? WHERE id IN (${ids.map(() => '?').join(',')})`,
     [missionId, clockNow().toISOString(), ...ids])
+  await assignCrew()
 }
 
 // Back to the automatic assignment
