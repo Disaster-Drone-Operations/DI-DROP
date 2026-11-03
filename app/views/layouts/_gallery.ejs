@@ -9,6 +9,19 @@
       <div class="gallery__compass-handle" data-gallery-target="compassHandle" data-action="pointerdown->gallery#compassDrag" title="Kompass verschieben" hidden></div>
     </div>
     <div class="annot-tools" data-gallery-target="tools" role="toolbar" aria-label="Markieren" hidden></div>
+    <%# Mini map: where the shot was taken and which part of the ground it shows (app/services/footprint.js) -%>
+    <div class="gallery__map" data-gallery-target="mapPanel" hidden>
+      <div class="gallery__map-canvas" data-gallery-target="map"></div>
+      <p class="gallery__map-note" data-gallery-target="mapNote" hidden></p>
+      <div class="segmented segmented--dark gallery__map-kind" data-gallery-target="mapKinds">
+        <button type="button" data-action="gallery#mapKind" data-gallery-kind-param="map">Karte</button>
+        <button type="button" data-action="gallery#mapKind" data-gallery-kind-param="aerial">Luftbild</button>
+      </div>
+      <button type="button" class="gallery__map-close" data-action="gallery#toggleMap" title="Karte schließen (L)" aria-label="Karte schließen"><%- icon('x', { size: 14 }) %></button>
+    </div>
+    <%# Closed: the map icon in its place opens it again -%>
+    <button type="button" class="gallery__map-open" data-gallery-target="mapOpenButton" data-action="gallery#toggleMap"
+            title="Karte: wo die Aufnahme entstand und welchen Bereich sie zeigt (L)" aria-label="Karte öffnen" hidden><%- icon('map', { size: 18 }) %></button>
     <p class="gallery__notice" data-gallery-target="notice" hidden></p>
     <button type="button" class="gallery__nav gallery__nav--prev" data-gallery-target="prev" data-action="gallery#prev" title="Vorherige Aufnahme (←)"><%- icon('chevron', { size: 28, class: 'icon icon--flip' }) %></button>
     <button type="button" class="gallery__nav gallery__nav--next" data-gallery-target="next" data-action="gallery#next" title="Nächste Aufnahme (→)"><%- icon('chevron', { size: 28 }) %></button>

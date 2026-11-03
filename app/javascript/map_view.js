@@ -5,21 +5,34 @@
 //   view.showFootprints([{ id, footprint, highlight }])   // footprint.js results
 //   view.destroy()
 
-import { Map as MapLibreMap, LngLatBounds, setWorkerUrl } from 'maplibre-gl'
+import { Map as MapLibreMap, LngLatBounds, setWorkerUrl, prewarm } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 // MapLibre's worker is self-contained – loaded unchanged as a blob (Vite's processing of worker files breaks it;
 // the CSP allows workers from blob:)
 import workerSource from 'maplibre-gl/dist/maplibre-gl-worker.mjs?raw'
 
 setWorkerUrl(URL.createObjectURL(new Blob([workerSource], { type: 'text/javascript' })))
+// Start the worker now – the first map created while it was still starting up never finished loading its style
+prewarm()
 import { mapStyle, ATTRIBUTION } from '/app/services/map_sources.js'
 
 const EMPTY = { type: 'FeatureCollection', features: [] }
 
-// Footprints as GeoJSON: area, drone → centre line, drone point, centre point
+// Footprints as GeoJSON: area, drone → centre line, drone point, centre point. Without an area (no focal
+// length …): position: { lat, lon, heading } → drone point and a short line in the viewing direction
 function features(items) {
   const out = []
-  for (const { id, footprint: fp, highlight = false } of items) {
+  for (const { id, footprint: fp, position, highlight = false } of items) {
+    if (!fp && position) {
+      const props = { id, highlight }
+      out.push({ type: 'Feature', properties: { ...props, kind: 'drone' }, geometry: { type: 'Point', coordinates: [position.lon, position.lat] } })
+      if (position.heading != null) {
+        const a = (position.heading * Math.PI) / 180
+        const end = [position.lon + (40 * Math.sin(a)) / (111_320 * Math.cos((position.lat * Math.PI) / 180)), position.lat + (40 * Math.cos(a)) / 111_320]
+        out.push({ type: 'Feature', properties: { ...props, kind: 'ray' }, geometry: { type: 'LineString', coordinates: [[position.lon, position.lat], end] } })
+      }
+      continue
+    }
     if (!fp) continue
     const ring = fp.polygon.map((p) => [p.lon, p.lat])
     ring.push(ring[0])
@@ -56,6 +69,8 @@ export function createMapView(container, { kind = 'map', interactive = true } = 
     fadeDuration: 0,
   })
   map.on('style.load', () => addLayers(map, data))
+  // Attribution collapsed to its "i" on small maps (it would cover a third of them) – one click shows it
+  map.once('load', () => container.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'))
 
   return {
     map,
@@ -74,7 +89,7 @@ export function createMapView(container, { kind = 'map', interactive = true } = 
         const coords = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.type === 'LineString' ? f.geometry.coordinates : [f.geometry.coordinates]
         for (const c of coords) bounds.extend(c)
       }
-      map.fitBounds(bounds, { padding: 24, maxZoom: 19, duration: 0 })
+      map.fitBounds(bounds, { padding: { top: 40, right: 24, bottom: 28, left: 24 }, maxZoom: 19, duration: 0 }) // top: room for the map/aerial switch
     },
     resize: () => map.resize(),
     destroy: () => map.remove(),

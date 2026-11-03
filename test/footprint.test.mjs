@@ -2,7 +2,7 @@
 //   node --import ./test/support/app_paths.mjs --test test/footprint.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { fieldOfView, footprint, toLocal, MAX_DISTANCE, imageParams } from '../app/services/footprint.js'
+import { fieldOfView, footprint, toLocal, MAX_DISTANCE, imageParams, hasView } from '../app/services/footprint.js'
 
 const deg = (t) => (2 * Math.atan(t) * 180) / Math.PI
 const near = (a, b, tolerance, label) => assert.ok(Math.abs(a - b) <= tolerance, `${label}: ${a} ≉ ${b}`)
@@ -76,5 +76,6 @@ test('parameters from an imported image (media_files row)', () => {
   assert.equal(footprint(params).measured, true)
   // no laser distance (LRF out of range): LRFTargetAlt "0.000" must not count
   assert.equal(imageParams({ ...row, target_distance: null }).target, null)
-  assert.equal(imageParams({ ...row, gimbal_yaw: null }), null)
+  assert.equal(hasView(imageParams({ ...row, gimbal_yaw: null })), false) // position only
+  assert.equal(imageParams({ ...row, lat: null }), null)
 })

@@ -14,6 +14,9 @@ import Annotation from '/app/models/annotation.js'
 import { saveAnnotations, markedPath } from '/app/services/annotations.js'
 import { compassOf, setShotCompass, providedPath } from '/app/services/compass.js'
 import { compassCenter, drawCompass } from '/app/services/annotation_renderer.js'
+import { footprint, imageParams, hasView } from '/app/services/footprint.js'
+import { groundAround } from '/app/services/terrain.js'
+import { insideAerial } from '/app/services/map_sources.js'
 
 // Gallery (almost full screen):
 //   ← / →  previous / next shot on the page (chronological)
@@ -23,10 +26,11 @@ import { compassCenter, drawCompass } from '/app/services/annotation_renderer.js
 //   Space  visible ↔ thermal image
 //   M      show/hide markings; "Markieren" opens the editor (annotation_editor.js) – Esc/Fertig saves
 //   K      compass on/off for this shot (drag it to move it) – app/services/compass.js
+//   L      mini map on/off: drone position, view direction and the part of the ground the image shows
 //   Esc    close
 // The preview image appears immediately, the original is loaded afterwards.
 export default class extends Controller {
-  static targets = ['stage', 'frame', 'image', 'marks', 'tools', 'notice', 'prev', 'next', 'vertical', 'verticalLabel', 'earlier', 'later', 'caption', 'position', 'variants', 'zoomLevel', 'phone', 'markButton', 'marksToggle', 'compass', 'compassHandle', 'compassButton']
+  static targets = ['stage', 'frame', 'image', 'marks', 'tools', 'notice', 'prev', 'next', 'vertical', 'verticalLabel', 'earlier', 'later', 'caption', 'position', 'variants', 'zoomLevel', 'phone', 'markButton', 'marksToggle', 'compass', 'compassHandle', 'compassButton', 'mapPanel', 'map', 'mapNote', 'mapKinds', 'mapOpenButton']
 
   static MAX_ZOOM = 8
   static DOUBLE_CLICK_ZOOM = 2.5
@@ -88,6 +92,7 @@ export default class extends Controller {
     window.removeEventListener('media:renamed', this.moved)
     window.removeEventListener('annotations:undo', this.marksUndo)
     this.compassResize.disconnect()
+    this.mapView?.destroy()
     this.editor.destroy()
     this.releaseAll()
   }
@@ -138,6 +143,10 @@ export default class extends Controller {
     if ((event.key === 'k' || event.key === 'K') && !event.metaKey && !event.ctrlKey && !event.altKey) {
       event.preventDefault()
       return this.toggleCompass()
+    }
+    if ((event.key === 'l' || event.key === 'L') && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      event.preventDefault()
+      return this.toggleMap()
     }
     if (isVariantSpace(event, { inDialog: true })) {
       event.preventDefault() // no click on a focused button, no scrolling
@@ -347,6 +356,7 @@ export default class extends Controller {
     // Markings of this image (loaded once per gallery opening) and the compass
     this.showMarks(file)
     this.drawCompassLayer()
+    this.showMap()
 
     // Image: preview first, then original
     this.noticeTarget.hidden = !file.video
@@ -499,6 +509,81 @@ export default class extends Controller {
     this.noticeTarget.textContent = text
     this.noticeTarget.hidden = false
     this.noticeTimer = setTimeout(() => { this.noticeTarget.hidden = true }, 2500)
+  }
+
+  // ── Mini map ──────────────────────────────────────────────────────────────
+  // Open/closed and map/aerial are remembered per viewer (localStorage – only a convenience)
+
+  get mapOpen() {
+    try {
+      return localStorage.getItem('didrop.gallery.map') !== 'closed'
+    } catch {
+      return true
+    }
+  }
+
+  toggleMap() {
+    try {
+      localStorage.setItem('didrop.gallery.map', this.mapOpen ? 'closed' : 'open')
+    } catch { /* stays as it is */ }
+    this.showMap()
+  }
+
+  mapKind({ params: { kind } }) {
+    try {
+      localStorage.setItem('didrop.gallery.mapkind', kind)
+    } catch { /* only this time */ }
+    this.mapKindChosen = kind
+    this.mapView?.setKind(kind)
+    this.markMapKind(kind)
+  }
+
+  markMapKind(kind) {
+    for (const b of this.mapKindsTarget.querySelectorAll('button')) b.classList.toggle('is-active', b.dataset.galleryKindParam === kind)
+  }
+
+  // The images of the shot with position data → footprints (current image highlighted)
+  async showMap() {
+    const token = (this.mapToken = (this.mapToken ?? 0) + 1)
+    const open = this.mapOpen
+    const files = Object.entries(this.current.files).filter(([, f]) => f.mediaFileId && !f.video)
+    // closed: the map icon in its place
+    this.mapOpenButtonTarget.hidden = open || !files.length
+    if (!open || !files.length) {
+      this.mapPanelTarget.hidden = true
+      return
+    }
+    const rows = await Promise.all(files.map(([, f]) => MediaFile.find(f.mediaFileId).catch(() => null)))
+    const params = rows.map((r) => (r ? imageParams(r) : null))
+    const first = params.find(Boolean)
+    if (token !== this.mapToken) return
+    this.mapPanelTarget.hidden = false
+    this.mapNoteTarget.hidden = !!first
+    this.mapNoteTarget.textContent = first ? '' : 'Keine Positionsdaten in diesem Bild.'
+    if (!first) return this.mapView?.showFootprints([], { fit: false })
+
+    if (!this.mapView) {
+      const { createMapView } = await import('/app/javascript/map_view.js') // MapLibre only when needed
+      let kind = null
+      try {
+        kind = localStorage.getItem('didrop.gallery.mapkind')
+      } catch { /* default */ }
+      this.mapKindChosen = kind ?? (insideAerial(first.lon, first.lat) ? 'aerial' : 'map')
+      this.mapView = createMapView(this.mapTarget, { kind: this.mapKindChosen })
+      this.markMapKind(this.mapKindChosen)
+    }
+    const ground = await groundAround(first.lat, first.lon).catch(() => null) // offline: flat ground
+    if (token !== this.mapToken) return
+    const items = files.map(([variant], i) => ({
+      id: variant,
+      footprint: hasView(params[i]) ? footprint({ ...params[i], ground }) : null,
+      position: params[i] ? { lat: params[i].lat, lon: params[i].lon, heading: params[i].yaw } : null,
+      highlight: variant === this.variant,
+    }))
+    // the highlighted one last – drawn on top
+    items.sort((a, b) => a.highlight - b.highlight)
+    this.mapView.resize()
+    this.mapView.showFootprints(items)
   }
 
   // ── Compass ───────────────────────────────────────────────────────────────

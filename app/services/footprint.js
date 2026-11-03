@@ -130,7 +130,7 @@ export function footprint(params) {
   }
 }
 
-// footprint() parameters from a media_files row (DJI EXIF/XMP) – null without position/orientation
+// footprint() parameters from a media_files row (DJI EXIF/XMP) – null without position (hasView: enough for an area)
 export function imageParams(file) {
   let dji = {}
   try {
@@ -152,5 +152,8 @@ export function imageParams(file) {
     aspect: file.width && file.height ? file.width / file.height : 4 / 3,
     target: laser ? { lat: num(file.target_lat), lon: num(file.target_lon), relAlt: num(dji.LRFTargetAlt), distance: num(file.target_distance) } : null,
   }
-  return [params.lat, params.lon, params.relAlt, params.yaw, params.pitch, params.focal35].some((v) => v == null) ? null : params
+  return [params.lat, params.lon].some((v) => v == null) ? null : params
 }
+
+// Can footprint() compute an area from these parameters? (otherwise only position + direction)
+export const hasView = (params) => params != null && [params.relAlt, params.yaw, params.pitch, params.focal35].every((v) => v != null)
