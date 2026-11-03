@@ -1,13 +1,14 @@
 // Display of flight data: duration, distance, time of day (computer's local time)
 
-// 754 s → "12:34 min", 3900 s → "1:05 h"
+// Hours and minutes, rounded up to full minutes (seconds say nothing here):
+// 754 s → "13 min", 3900 s → "1 h 5 min", 55 920 s → "15 h 32 min", 7200 s → "2 h"
 export function formatFlightDuration(seconds) {
   if (seconds == null) return ''
-  const total = Math.round(seconds)
-  const h = Math.floor(total / 3600)
-  const m = Math.floor((total % 3600) / 60)
-  const s = total % 60
-  return h ? `${h}:${String(m).padStart(2, '0')} h` : `${m}:${String(s).padStart(2, '0')} min`
+  const minutes = Math.ceil(Math.max(0, seconds) / 60)
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (!h) return `${m} min`
+  return m ? `${h} h ${m} min` : `${h} h`
 }
 
 // 830 → "830 m", 1832 → "1,83 km", 12345 → "12,3 km"
