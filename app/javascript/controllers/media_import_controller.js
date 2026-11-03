@@ -82,8 +82,9 @@ export default class extends Controller {
   }
 
   // Memory card waiting for this mission (inserted card, see sdcard_watcher.js)
+  // The message "Speicherkarte wurde entfernt" (or another error) doesn't block it – the card is back
   async startPendingCard() {
-    if (this.state || !this.hasDialogTarget) return
+    if ((this.state && this.state !== 'error') || !this.hasDialogTarget) return
     const pending = takePendingCard(this.missionIdValue)
     if (!pending) return
     this.card = pending.card
@@ -212,6 +213,7 @@ export default class extends Controller {
 
   show(state, locals = {}) {
     this.state = state
+    this.dialogTarget.dataset.state = state // an error message doesn't block a newly inserted card (sdcard_watcher.js)
     this.dialogTarget.innerHTML = render('media/_import_dialog', { state, review: null, progress: null, error: null, cleanup: null, eject: false, ...locals })
     if (!this.dialogTarget.open) this.dialogTarget.showModal()
   }

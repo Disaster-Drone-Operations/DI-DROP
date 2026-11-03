@@ -107,8 +107,9 @@ function currentMissionId() {
 }
 
 // atStartup: card was already there when di-drop started → only speak up if there is something new
+// An open import dialog blocks it – unless it only shows an error (e.g. "Speicherkarte wurde entfernt")
 async function cardInserted(card, { atStartup = false } = {}) {
-  if (checking || document.querySelector('.import-dialog[open]')) return
+  if (checking || document.querySelector('.import-dialog[open]:not([data-state="error"])')) return
   checking = true
   try {
     const scanned = await platform.media.scan([card.dcim])
