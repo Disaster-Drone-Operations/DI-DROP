@@ -302,6 +302,12 @@ export async function cancelBatch(batchId) {
   for (const item of [...items.values()].filter((i) => i.batch_id === Number(batchId) && isActive(i))) await cancel(item.id)
 }
 
+// Items removed from the database (imported images removed again, media_removal.js) – out of the list too
+export function forget(ids) {
+  for (const id of ids) items.delete(id)
+  emit({ immediate: true })
+}
+
 // Remove finished ones from the list (they stay in the database – for „zuletzt bereitgestellt“)
 export async function clearFinished() {
   for (const [id, item] of items) if (!isActive(item)) items.delete(id)

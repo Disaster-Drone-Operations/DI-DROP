@@ -11,6 +11,8 @@ export default (r) => {
     r.patch('/assignments/:id/complete', 'assignments#complete')
     r.patch('/assignments/:id/reopen', 'assignments#reopen')
     r.patch('/assignments/:id/operator', 'assignments#operator')
+    // Remove the imported images again (e.g. to try the same import once more)
+    r.delete('/assignments/:id/media', 'assignments#removeMedia')
     // Provisioning (Nextcloud, folder …)
     r.get('/assignments/:id/provide', 'provisions#new')
     r.post('/assignments/:id/provide', 'provisions#create')

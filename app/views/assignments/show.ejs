@@ -1,4 +1,4 @@
-<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons, people, flights, names, comparisonShapes -%>
+<%# locals: mission, assignment, shots, variant, variants, shotCount, timeline, canImport, completion, provisions, comparisons, comparisonGroups, needsComparisons, people, flights, names, comparisonShapes, removal -%>
 <% const path = `/missions/${mission.id}/assignments/${assignment.id}` -%>
 <% const missionPath = `/missions/${mission.id}` /* „Erledigt“ → back to the mission: the assignment is done with */ -%>
 <div data-controller="media-import" data-media-import-mission-id-value="<%= mission.id %>"
@@ -141,6 +141,26 @@
     <p class="hint gallery-hint">Klick auf ein Bild öffnet die große Ansicht – dort mit ← → blättern, mit ↑ ↓ dieselbe Stelle zu anderen Zeiten.</p>
     <div class="shot-grid">
       <% shots.forEach((shot) => { %><%- include('media/_shot', { shot, assignmentTitle: assignment.title }) %><% }) %>
+    </div>
+  <% } -%>
+
+  <% if (removal) { -%>
+    <%# Rarely needed (e.g. to try an import again) – at the very bottom, with a clear question -%>
+    <div class="danger-zone assignment-removal">
+      <% if (removal.active) { -%>
+        <span class="subtle">Bilder entfernen geht erst, wenn die laufende Bereitstellung fertig ist.</span>
+      <% } else { -%>
+        <%- buttonTo('Importierte Bilder entfernen …', `${path}/media`, { method: 'delete', icon: 'trash', class: 'button button--danger-quiet',
+              title: 'Alle Bilder dieses Auftrags aus di-drop entfernen – z. B. um denselben Import noch einmal zu machen',
+              confirm: [
+                `Alle ${pluralize(removal.shots, 'Aufnahme', 'Aufnahmen')} (${pluralize(removal.files, 'Datei', 'Dateien')}) von „${assignment.title}“ aus di-drop entfernen?`,
+                'Die Kopien in der Bildablage kommen in den Papierkorb, Markierungen gehen verloren.',
+                removal.comparisons ? `${pluralize(removal.comparisons, 'Vergleichsbild', 'Vergleichsbilder')} mit diesen Bildern ${removal.comparisons === 1 ? 'wird' : 'werden'} ebenfalls entfernt.` : null,
+                removal.provided ? 'Schon Bereitgestelltes bleibt in der Nextcloud bzw. auf dem USB-Stick – nur der Verlauf in di-drop wird gelöscht.' : null,
+                'Die Originale auf der SD-Karte sind davon nicht betroffen; dieselben Bilder lassen sich danach neu importieren.',
+              ].filter(Boolean).join('\n\n'),
+              confirmButton: 'Entfernen' }) %>
+      <% } -%>
     </div>
   <% } -%>
 

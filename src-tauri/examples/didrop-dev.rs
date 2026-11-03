@@ -113,6 +113,11 @@ fn main() {
             let original: String = serde_json::from_str(&input).expect("JSON string");
             result(media::marked::remove(original.as_ref()))
         }
+        Some("trash") => {
+            let req: Value = serde_json::from_str(&input).expect("JSON");
+            let strings = |v: &Value| v.as_array().map(|a| a.iter().filter_map(|s| s.as_str().map(String::from)).collect::<Vec<_>>()).unwrap_or_default();
+            serde_json::to_string(&media::trash_files(&strings(&req["paths"]), &strings(&req["dirs"])))
+        }
         Some("list") => {
             let root: String = serde_json::from_str(&input).expect("JSON string (folder)");
             serde_json::to_string(&media::list(&root))

@@ -36,6 +36,14 @@ async fn list_media(root: String) -> Result<Vec<media::MediaDir>, String> {
         .map_err(|e| e.to_string())
 }
 
+/// Moves imported copies to the trash and removes folders that became empty (removing imported images)
+#[tauri::command]
+async fn trash_media(paths: Vec<String>, dirs: Vec<String>) -> Result<media::TrashReport, String> {
+    tauri::async_runtime::spawn_blocking(move || media::trash_files(&paths, &dirs))
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Copies files into their target folders and creates thumbnails
 #[tauri::command]
 async fn import_media(
@@ -443,7 +451,7 @@ pub fn run() {
             watch_sdcards(app.handle().clone());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![scan_media, list_media, import_media, open_path, reveal_path, read_image, write_image, write_marked, remove_marked, rename_file, rename_dir, open_url,
+        .invoke_handler(tauri::generate_handler![scan_media, list_media, trash_media, import_media, open_path, reveal_path, read_image, write_image, write_marked, remove_marked, rename_file, rename_dir, open_url,
             cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
             geocode::reverse_geocode,
             make_thumbnail,

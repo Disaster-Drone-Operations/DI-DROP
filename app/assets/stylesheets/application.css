@@ -809,6 +809,7 @@ a.stepper__step:hover { background: var(--hover); text-decoration: none; color: 
 .mission-details { display: flex; flex-direction: column; gap: 12px; }
 .mission-details .details { max-width: 420px; }
 .mission-details .danger-zone { justify-content: flex-start; }
+.assignment-removal { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--border); }
 
 /* Dialogs ("sheets") ----------------------------------------------------------- */
 

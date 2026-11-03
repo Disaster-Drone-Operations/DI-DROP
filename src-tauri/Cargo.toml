@@ -40,6 +40,7 @@ tauri-plugin-process = "2"
 tauri-plugin-single-instance = "2"
 dji-log-parser = "0.5.7"
 mtp-rs = "0.33"
+trash = "5"
 
 # Memory cards: is the card write-protected (lock switch)? – src/sdcard.rs
 [target.'cfg(unix)'.dependencies]

@@ -19,6 +19,7 @@ import Person from '/app/models/person.js'
 import FlightLog from '/app/models/flight_log.js'
 import DeviceName from '/app/models/device_name.js'
 import Annotation from '/app/models/annotation.js'
+import { removalPreview, removeAssignmentMedia } from '/app/services/media_removal.js'
 import { roleLabel } from '/app/helpers/mission_helper.js'
 
 export default class AssignmentsController extends ApplicationController {
@@ -70,6 +71,7 @@ export default class AssignmentsController extends ApplicationController {
       provisions: await this.provisions(),
       people: await Person.roster(),
       flights: await FlightLog.forAssignment(this.assignment.id),
+      removal: files.length ? await removalPreview(this.assignment) : null,
       names: await DeviceName.all(),
       comparisons: comparisons.map((c) => ({ comparison: c, viewpointName: viewpointNames.get(c.viewpoint_id) ?? null })),
       comparisonGroups: groupComparisons(comparisons),
@@ -174,6 +176,19 @@ export default class AssignmentsController extends ApplicationController {
   }
 
   // Only assignments without images
+  // All imported images of this assignment out of di-drop and into the trash (not undoable – asked before)
+  async removeMedia() {
+    const path = `/missions/${this.mission.id}/assignments/${this.assignment.id}`
+    const preview = await removalPreview(this.assignment)
+    if (preview.active) return this.redirectTo(path, { alert: 'Für diesen Auftrag läuft noch eine Bereitstellung – erst abwarten oder abbrechen.' })
+    const { removed, comparisons, skipped } = await removeAssignmentMedia(this.assignment)
+    const extra = comparisons ? ` und ${comparisons === 1 ? 'ein Vergleichsbild' : `${comparisons} Vergleichsbilder`}` : ''
+    const flash = skipped.length
+      ? { alert: `${removed} Dateien${extra} entfernt – ${skipped.length} ließen sich nicht in den Papierkorb legen (${[...new Set(skipped.map(([, r]) => r))].slice(0, 2).join('; ')}).` }
+      : { notice: `${removed} Dateien${extra} entfernt und in den Papierkorb gelegt. Dieselben Bilder lassen sich jetzt neu importieren.` }
+    this.redirectTo(path, flash)
+  }
+
   async destroy() {
     const files = await MediaFile.count('assignment_id = ?', [this.assignment.id])
     if (files) return this.redirectTo(this.returnTo, { alert: 'Aufträge mit Bildern können nicht gelöscht werden.' })

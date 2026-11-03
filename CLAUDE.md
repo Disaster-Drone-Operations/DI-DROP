@@ -190,6 +190,13 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Auswerfen (`sdcard::eject`, Seitenleiste „SD-Karten“ ⏏ und „SD-Karte anschließend auswerfen“ beim Import):
   nur gerade erkannte Karten auf einem eigenen Laufwerk – Testordner nie (Brücke: nur ausblenden).
   Mit eigenem Disk-Image testen (`hdiutil create -fs MS-DOS -srcfolder <Ordner mit DCIM>` + `hdiutil attach`).
+- Schreibschutz (Schieber „Lock“): `Card.read_only` (macOS/Linux `statvfs` ST_RDONLY, Windows Laufwerksinfo +
+  `IOCTL_DISK_IS_WRITABLE`) → rot „Schreibgeschützt“ in der Seitenleiste, Löschen im Import-Dialog gesperrt.
+  Klick auf die Karte öffnet sie im Finder/Explorer.
+- Importierte Bilder wieder entfernen (Auftragsseite ganz unten, `app/services/media_removal.js`): Kopien samt
+  `_markiert` und betroffenen Vergleichsbildern in den Papierkorb (`media::trash_files`, nur Bild-/Videodateien, nur leere
+  Ordner), Bereitstellungs-Verlauf/Markierungen/leere Wegpunkte und Flüge weg – danach lassen sich dieselben Bilder neu
+  importieren. Nicht während einer laufenden Bereitstellung.
 - Neu eingesteckte Karte holt di-drop nach vorne (`bring_to_front`). Windows erlaubt das zuverlässig nur, wenn
   di-drop in der Automatischen Wiedergabe für Speicherkarten gewählt ist: der Installer trägt es dafür ein
   (`src-tauri/windows/hooks.nsh`), ein zweiter Start landet per `tauri-plugin-single-instance` im laufenden di-drop.

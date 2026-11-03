@@ -415,9 +415,79 @@ fn copy_into(item: &ImportItem, name: &str) -> Result<PathBuf, String> {
     unreachable!()
 }
 
+// ── Removing imported images ────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Default)]
+pub struct TrashReport {
+    pub trashed: Vec<String>,
+    /// (path, reason) – not touched
+    pub skipped: Vec<(String, String)>,
+    pub removed_dirs: Vec<String>,
+}
+
+/// Moves imported copies (images, videos, comparison and marked images) to the trash (Papierkorb) – never
+/// folders or other files; afterwards removes the given folders if they became empty (assignment folders).
+/// The originals on the memory card are not affected (they're the source for importing again).
+pub fn trash_files(paths: &[String], dirs: &[String]) -> TrashReport {
+    let mut report = TrashReport::default();
+    let mut ok = Vec::new();
+    for path in paths {
+        let p = Path::new(path);
+        let is_file = std::fs::symlink_metadata(p).is_ok_and(|m| m.file_type().is_file());
+        let allowed = media_kind(p).is_some()
+            || p.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("png"));
+        match (is_file, allowed) {
+            (false, _) => report.skipped.push((path.clone(), "nicht vorhanden".into())),
+            (true, false) => report.skipped.push((path.clone(), "kein Bild oder Video".into())),
+            (true, true) => ok.push(path.clone()),
+        }
+    }
+    #[allow(unused_mut)]
+    let mut trash = trash::TrashContext::default();
+    #[cfg(target_os = "macos")]
+    {
+        // Without Finder remote control – no permission prompt
+        use trash::macos::{DeleteMethod, TrashContextExtMacos};
+        trash.set_delete_method(DeleteMethod::NsFileManager);
+    }
+    for path in ok {
+        match trash.delete(&path) {
+            Ok(()) => report.trashed.push(path),
+            Err(e) => report.skipped.push((path, e.to_string())),
+        }
+    }
+    for dir in dirs {
+        let d = Path::new(dir);
+        let _ = std::fs::remove_file(d.join(".DS_Store")); // Finder leftovers don't count as content
+        if std::fs::read_dir(d).is_ok_and(|mut e| e.next().is_none()) && std::fs::remove_dir(d).is_ok() {
+            report.removed_dirs.push(dir.clone());
+        }
+    }
+    report
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn trashes_only_media_files_and_removes_only_empty_folders() {
+        let root = std::env::temp_dir().join(format!("didrop-trash-{}", std::process::id()));
+        let empty = root.join("Lageerkundung");
+        let full = root.join("Kontrollflug");
+        fs::create_dir_all(&empty).unwrap();
+        fs::create_dir_all(&full).unwrap();
+        fs::write(empty.join(".DS_Store"), b"x").unwrap();
+        fs::write(full.join("notes.txt"), b"x").unwrap();
+        let s = |p: PathBuf| p.display().to_string();
+        // nothing that would really go to the trash: a text file, a missing image, a folder
+        let report = trash_files(&[s(full.join("notes.txt")), s(full.join("weg.JPG")), s(full.clone())], &[s(empty.clone()), s(full.clone())]);
+        assert!(report.trashed.is_empty());
+        assert_eq!(report.skipped.len(), 3);
+        assert_eq!(report.removed_dirs, vec![s(empty.clone())]);
+        assert!(full.join("notes.txt").exists() && full.exists() && !empty.exists());
+        fs::remove_dir_all(&root).unwrap();
+    }
 
     #[test]
     fn lists_media_files_by_folder_however_deep() {

@@ -3,6 +3,7 @@
 //
 //   POST /__didrop/scan    ["/path", …]            → ScanResult
 //   POST /__didrop/list    "/folder"               → [{ dir, files }] (all media files below, by folder)
+//   POST /__didrop/trash   { paths, dirs }         → TrashReport (imported copies to the trash)
 //   POST /__didrop/import  [{ src, dest_dir, … }]  → ImportResult[]
 //   GET  /__didrop/file?path=…                     → image file (for thumbnails)
 //   POST /__didrop/write?path=…  (image data)      → { path }
@@ -101,6 +102,10 @@ export default function devBridge({ root }) {
           if (url.pathname === '/scan') {
             res.setHeader('Content-Type', 'application/json')
             return res.end(await run('scan', await body(req)))
+          }
+          if (url.pathname === '/trash') {
+            res.setHeader('Content-Type', 'application/json')
+            return res.end(await run('trash', await body(req)))
           }
           if (url.pathname === '/list') {
             res.setHeader('Content-Type', 'application/json')
