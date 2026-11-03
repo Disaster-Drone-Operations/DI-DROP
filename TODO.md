@@ -16,6 +16,14 @@ Offene Punkte, die beim Entwickeln aufgefallen sind (noch nicht umgesetzt).
   aufteilen können, z. B. per Auswahl unter „Auswahl anpassen“. Seit Import-Gruppen nur noch nach Ordner entstehen
   (keine Pausen-Regel mehr), landet ein Flug mit zwei Aufgaben sonst in einem Auftrag.
 
+## Karte
+
+- **Mini-Karte im exportierten Bild:** die Karte mit Aufnahmeort und Bildausschnitt wie den Kompass ins bereitgestellte
+  Bild einblenden (Quellenangabe der Kartendaten muss dann mit ins Bild: basemap.de/BKG, GDI-Th).
+- **Karte offline:** Kartenpaket für Thüringen (Vektorkacheln basemap.de, ggf. Luftbild in niedriger Auflösung,
+  Höhenmodell) unter Einstellungen → Aktualisierungen herunterladbar machen (`app/services/updates.js`) – im Einsatz
+  gibt es oft kein Netz.
+
 ## Flugprotokolle
 
 - **Detailansicht je Flug:** eigene Seite pro Flug (Eckdaten, später Flugweg/Karte aus den Messreihen, Akku, Fotos

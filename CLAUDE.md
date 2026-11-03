@@ -270,8 +270,9 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 ## Testen
 
 - Browser + echter Rust-Code: `http://localhost:1420/?bridge` (siehe README).
-- Unit-Tests reiner JS-Module (ohne Datenbank/Plattform, z. B. `history_grouping.js`):
-  `node --import ./test/support/app_paths.mjs --test test/history_grouping.test.mjs`.
+- Unit-Tests reiner JS-Module (ohne Datenbank/Plattform, z. B. `history_grouping.js`, `footprint.js`):
+  `node --import ./test/support/app_paths.mjs --test test/history_grouping.test.mjs test/footprint.test.mjs`
+  (neue Testdateien auch in `.github/workflows/check.yml` eintragen).
 - Desktop-App für den Entwickler bauen: als App-Paket (nur so wirken `src-tauri/Info.plist` –
   deutsche App – und das Suchfeld im Hilfe-Menü):
   `TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/di-drop-updater.key)" npx tauri build --debug --bundles app`,

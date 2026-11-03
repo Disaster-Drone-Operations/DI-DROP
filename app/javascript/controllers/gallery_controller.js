@@ -510,7 +510,7 @@ export default class extends Controller {
   }
 
   drawCompassLayer() {
-    if (!this.hasCompassTarget || !this.current) return
+    if (!this.hasCompassTarget || !this.items?.length || !this.current) return
     const file = this.current.files[this.variant]
     const data = this.compassFile(file)
     const canDo = data?.gimbal_yaw != null && data?.gimbal_pitch != null && !file.video

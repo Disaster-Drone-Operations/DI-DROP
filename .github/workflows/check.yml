@@ -32,7 +32,7 @@ jobs:
 
       - run: npm ci
       - run: npm run build          # UI (embedded into the app)
-      - run: node --import ./test/support/app_paths.mjs --test test/history_grouping.test.mjs   # pure JS modules
+      - run: node --import ./test/support/app_paths.mjs --test test/history_grouping.test.mjs test/footprint.test.mjs   # pure JS modules
 
       - name: Build and test Rust
         working-directory: src-tauri
