@@ -23,6 +23,14 @@ export default class extends Controller {
       this.dataValue = { ...this.dataValue, files }
     }
     window.addEventListener('media:renamed', this.moved)
+    // Compass switched/moved in the gallery → the next opening shows it like that
+    this.compassChanged = ({ detail: { ids, changes } }) => {
+      const names = { compass: 'compass', compass_x: 'compassX', compass_y: 'compassY' }
+      const files = Object.fromEntries(Object.entries(this.dataValue.files).map(([v, f]) => [v, ids.includes(f.mediaFileId)
+        ? { ...f, ...Object.fromEntries(Object.entries(changes).map(([k, val]) => [names[k], val])) } : f]))
+      this.dataValue = { ...this.dataValue, files }
+    }
+    window.addEventListener('compass:changed', this.compassChanged)
     // Markings drawn over the thumbnail – redrawn when the card changes size
     if (this.hasMarksTarget) {
       this.resize = new ResizeObserver(() => this.drawMarks())
@@ -34,6 +42,7 @@ export default class extends Controller {
   disconnect() {
     window.removeEventListener('viewpoint:renamed', this.renamed)
     window.removeEventListener('media:renamed', this.moved)
+    window.removeEventListener('compass:changed', this.compassChanged)
     this.resize?.disconnect()
   }
 

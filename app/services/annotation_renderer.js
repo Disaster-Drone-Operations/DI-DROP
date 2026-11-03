@@ -179,7 +179,7 @@ export function drawOnThumbnail(canvas, img, shapes) {
 // the flatter the view the flatter the ellipse. The needle lies in that disc and points north.
 //   yaw: GimbalYawDegree (camera heading, 0 = north, clockwise), pitch: GimbalPitchDegree (−90 = straight down)
 
-export const COMPASS_RADIUS = 0.075 // of the shorter image side
+export const COMPASS_RADIUS = 0.049 // of the shorter image side
 export const COMPASS_MARGIN = 0.03
 
 // Centre in pixels: stored position (relative 0…1) or top right – room for the "N" beyond the rim

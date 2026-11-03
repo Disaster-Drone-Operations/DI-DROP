@@ -8,6 +8,9 @@ export function thumbUrl(path) {
   return platform.media?.thumbUrl(path) ?? ''
 }
 
+// Gimbal position + compass state of an image for the gallery (app/services/compass.js)
+export const compassData = (f) => ({ yaw: f.gimbal_yaw, pitch: f.gimbal_pitch, compass: f.compass, compassX: f.compass_x, compassY: f.compass_y })
+
 // "…/DJI_0001_T.JPG" → "DJI_0001_T_markiert.JPG" (marked copy next to the original)
 export function markedFileName(path) {
   return markedPath(path).split(/[\\/]/).pop()
@@ -65,7 +68,7 @@ export function defaultVariant(files) {
 export function shotData(shot, { assignmentTitle = '' } = {}) {
   const files = {}
   for (const f of shot.files) {
-    files[f.variant ?? 'other'] = { path: f.path, thumb: thumbUrl(f.thumb_path), name: f.original_name, video: f.kind === 'video', mediaFileId: f.id, shapes: shot.shapes?.get(f.id) ?? null }
+    files[f.variant ?? 'other'] = { path: f.path, thumb: thumbUrl(f.thumb_path), name: f.original_name, video: f.kind === 'video', mediaFileId: f.id, shapes: shot.shapes?.get(f.id) ?? null, ...compassData(f) }
   }
   return JSON.stringify({
     key: `${shot.files[0].flight_id}/${shot.key}`,

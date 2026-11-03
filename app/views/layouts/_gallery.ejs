@@ -3,7 +3,10 @@
     <%# Image + markings (canvas) move and zoom together -%>
     <div class="gallery__frame" data-gallery-target="frame" data-action="dblclick->gallery#toggleZoom pointerdown->gallery#panStart">
       <img class="gallery__image" data-gallery-target="image" alt="" draggable="false">
+      <canvas class="gallery__compass" data-gallery-target="compass"></canvas>
       <canvas class="gallery__marks" data-gallery-target="marks"></canvas>
+      <%# Grab the compass to move it (only shown while it is on and not marking) -%>
+      <div class="gallery__compass-handle" data-gallery-target="compassHandle" data-action="pointerdown->gallery#compassDrag" title="Kompass verschieben" hidden></div>
     </div>
     <div class="annot-tools" data-gallery-target="tools" role="toolbar" aria-label="Markieren" hidden></div>
     <p class="gallery__notice" data-gallery-target="notice" hidden></p>
@@ -27,6 +30,7 @@
     </div>
     <div class="segmented segmented--dark" data-gallery-target="variants"></div>
     <div class="gallery__actions">
+      <button type="button" class="button button--dark" data-action="gallery#toggleCompass" data-gallery-target="compassButton" title="Kompass ein-/ausblenden (K) – zeigt Norden und die Neigung der Kamera; wird in die bereitgestellten Bilder eingezeichnet" hidden><%- icon('compass') %></button>
       <button type="button" class="button button--dark" data-action="gallery#toggleMarks" data-gallery-target="marksToggle" title="Markierungen ein-/ausblenden (M)" hidden><%- icon('eye') %></button>
       <button type="button" class="button button--dark" data-action="gallery#editMarks" data-gallery-target="markButton" title="Kreis, Rechteck, Pfeil oder Text einzeichnen – das Original bleibt unverändert"><%- icon('markup') %><span>Markieren</span></button>
       <button type="button" class="button button--dark" data-action="gallery#sendToPhone" data-gallery-target="phone" title="An ein Telefon senden (QR-Code) – mit Markierungen, wenn sie eingeblendet sind"><%- icon('phone') %><span>An Telefon</span></button>

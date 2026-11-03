@@ -945,6 +945,12 @@ input[type=number].input-inline { width: 64px !important; }
 .gallery__frame.is-panning { cursor: grabbing; }
 /* Markings over the image (annotation_editor.js) – only takes the mouse while editing */
 .gallery__marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* Compass (app/services/compass.js) – drawn like the markings, moved by its handle */
+.gallery__compass { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.gallery__compass-handle { position: absolute; border-radius: 50%; cursor: grab; touch-action: none; }
+.gallery__compass-handle:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, .5); }
+.gallery__compass-handle.is-dragging { cursor: grabbing; }
+.gallery__compass-handle[hidden] { display: none; }
 .gallery__marks.is-editing { pointer-events: auto; cursor: crosshair; }
 .annot-tools { position: absolute; top: calc(var(--titlebar-h) + 8px); left: 50%; transform: translateX(-50%); z-index: 3;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 24px);

@@ -3,7 +3,7 @@ import platform from '/lib/platform/index.js'
 import MediaFile from '/app/models/media_file.js'
 import Assignment from '/app/models/assignment.js'
 import { formatDate, formatTime } from '/app/helpers/application_helper.js'
-import { variantLabel, PREFERRED_VARIANTS, toggledVariant } from '/app/helpers/media_helper.js'
+import { variantLabel, PREFERRED_VARIANTS, toggledVariant, compassData } from '/app/helpers/media_helper.js'
 import { isVariantSpace } from '/lib/keys.js'
 import { viewpointNameTag } from '/app/helpers/mission_helper.js'
 import { escapeHtml } from '/app/helpers/application_helper.js'
@@ -12,6 +12,8 @@ import { relayBaseUrl } from '/app/services/location_service.js'
 import AnnotationEditor from '/app/javascript/annotation_editor.js'
 import Annotation from '/app/models/annotation.js'
 import { saveAnnotations, markedPath } from '/app/services/annotations.js'
+import { compassOf, setShotCompass } from '/app/services/compass.js'
+import { compassCenter, drawCompass } from '/app/services/annotation_renderer.js'
 
 // Gallery (almost full screen):
 //   ← / →  previous / next shot on the page (chronological)
@@ -20,10 +22,11 @@ import { saveAnnotations, markedPath } from '/app/services/annotations.js'
 //   + / − / 0, trackpad gesture, Ctrl+mouse wheel (Windows/Linux: mouse wheel), double-click: zoom; drag: pan
 //   Space  visible ↔ thermal image
 //   M      show/hide markings; "Markieren" opens the editor (annotation_editor.js) – Esc/Fertig saves
+//   K      compass on/off for this shot (drag it to move it) – app/services/compass.js
 //   Esc    close
 // The preview image appears immediately, the original is loaded afterwards.
 export default class extends Controller {
-  static targets = ['stage', 'frame', 'image', 'marks', 'tools', 'notice', 'prev', 'next', 'vertical', 'verticalLabel', 'earlier', 'later', 'caption', 'position', 'variants', 'zoomLevel', 'phone', 'markButton', 'marksToggle']
+  static targets = ['stage', 'frame', 'image', 'marks', 'tools', 'notice', 'prev', 'next', 'vertical', 'verticalLabel', 'earlier', 'later', 'caption', 'position', 'variants', 'zoomLevel', 'phone', 'markButton', 'marksToggle', 'compass', 'compassHandle', 'compassButton']
 
   static MAX_ZOOM = 8
   static DOUBLE_CLICK_ZOOM = 2.5
@@ -70,6 +73,9 @@ export default class extends Controller {
       canvas: this.marksTarget, image: this.imageTarget, toolbar: this.toolsTarget, overlay: this.stageTarget,
       onDone: (shapes, changed) => this.marksDone(shapes, changed),
     })
+    this.compassResize = new ResizeObserver(() => this.drawCompassLayer())
+    this.compassResize.observe(this.imageTarget)
+    this.imageTarget.addEventListener('load', () => this.drawCompassLayer())
     this.marksUndo = ({ detail }) => (detail.redo ? this.editor.redo() : this.editor.undo())
     window.addEventListener('annotations:undo', this.marksUndo)
   }
@@ -81,6 +87,7 @@ export default class extends Controller {
     window.removeEventListener('viewpoint:renamed', this.renamed)
     window.removeEventListener('media:renamed', this.moved)
     window.removeEventListener('annotations:undo', this.marksUndo)
+    this.compassResize.disconnect()
     this.editor.destroy()
     this.releaseAll()
   }
@@ -127,6 +134,10 @@ export default class extends Controller {
       if (event.metaKey || event.ctrlKey || event.altKey) return
       event.preventDefault()
       return this.toggleMarks()
+    }
+    if ((event.key === 'k' || event.key === 'K') && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      event.preventDefault()
+      return this.toggleCompass()
     }
     if (isVariantSpace(event, { inDialog: true })) {
       event.preventDefault() // no click on a focused button, no scrolling
@@ -333,8 +344,9 @@ export default class extends Controller {
       .map((v) => `<button type="button" class="${v === this.variant ? 'is-active' : ''}" data-action="gallery#showVariant" data-gallery-variant-param="${v}">${variantLabel(v)}</button>`)
       .join('')
 
-    // Markings of this image (loaded once per gallery opening)
+    // Markings of this image (loaded once per gallery opening) and the compass
     this.showMarks(file)
+    this.drawCompassLayer()
 
     // Image: preview first, then original
     this.noticeTarget.hidden = !file.video
@@ -395,7 +407,7 @@ export default class extends Controller {
           const key = `${f.flight_id}/${f.shot_key}`
           if (!shots.has(key)) shots.set(key, { key, files: {}, takenAt: f.taken_at, viewpointId, viewpointName, assignmentTitle: titles.get(f.assignment_id) ?? '' })
           shots.get(key).files[f.variant ?? 'other'] = {
-            path: f.path, thumb: platform.media?.thumbUrl(f.thumb_path) ?? null, name: f.original_name, video: f.kind === 'video', mediaFileId: f.id,
+            path: f.path, thumb: platform.media?.thumbUrl(f.thumb_path) ?? null, name: f.original_name, video: f.kind === 'video', mediaFileId: f.id, ...compassData(f),
           }
         }
         return [...shots.values()]
@@ -460,6 +472,7 @@ export default class extends Controller {
     this.markKey = mark
     this.editor.edit(await this.shapesFor(mark))
     this.markButtonTarget.hidden = true
+    this.drawCompassLayer() // not movable while marking
   }
 
   // Fertig: save (writes the marked copy "…_markiert.JPG" next to the original)
@@ -467,6 +480,7 @@ export default class extends Controller {
     const mark = this.markKey
     this.markKey = null
     this.markButtonTarget.hidden = false
+    this.drawCompassLayer()
     this.updateMarkButtons(shapes)
     if (!mark || !changed) return
     this.annotations.set(mark.key, shapes)
@@ -485,6 +499,93 @@ export default class extends Controller {
     this.noticeTarget.textContent = text
     this.noticeTarget.hidden = false
     this.noticeTimer = setTimeout(() => { this.noticeTarget.hidden = true }, 2500)
+  }
+
+  // ── Compass ───────────────────────────────────────────────────────────────
+
+  // compassOf() wants the database fields – the gallery data names them shorter
+  compassFile(file = this.current?.files[this.variant]) {
+    if (!file) return null
+    return { gimbal_yaw: file.yaw, gimbal_pitch: file.pitch, compass: file.compass, compass_x: file.compassX, compass_y: file.compassY }
+  }
+
+  drawCompassLayer() {
+    if (!this.hasCompassTarget || !this.current) return
+    const file = this.current.files[this.variant]
+    const data = this.compassFile(file)
+    const canDo = data?.gimbal_yaw != null && data?.gimbal_pitch != null && !file.video
+    const compass = canDo ? compassOf(data) : null
+    this.compassButtonTarget.hidden = !canDo
+    this.compassButtonTarget.classList.toggle('is-active', !!compass)
+    const canvas = this.compassTarget
+    const img = this.imageTarget
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = Math.round(img.clientWidth * dpr)
+    canvas.height = Math.round(img.clientHeight * dpr)
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    this.compassHandleTarget.hidden = !compass || this.editor.editing
+    if (!compass || !canvas.width) return
+    const { cx, cy, r } = compassCenter(canvas.width, canvas.height, compass.x, compass.y)
+    drawCompass(ctx, compass, cx, cy, r)
+    // Grab area over the disc (CSS pixels, relative to the image)
+    Object.assign(this.compassHandleTarget.style, {
+      left: `${((cx - r * 1.3) / canvas.width) * 100}%`, top: `${((cy - r * 1.3) / canvas.height) * 100}%`,
+      width: `${((r * 2.6) / canvas.width) * 100}%`, height: `${((r * 2.6) / canvas.height) * 100}%`,
+    })
+  }
+
+  // Changes of the shot's compass – all its images (visible and thermal share the gimbal position)
+  async updateCompass(changes) {
+    const files = Object.values(this.current.files).filter((f) => f.mediaFileId)
+    const map = { compass: 'compass', compass_x: 'compassX', compass_y: 'compassY' }
+    for (const f of files) for (const [k, v] of Object.entries(changes)) f[map[k]] = v
+    this.drawCompassLayer()
+    const ids = files.map((f) => f.mediaFileId)
+    await setShotCompass(ids, changes)
+    window.dispatchEvent(new CustomEvent('compass:changed', { detail: { ids, changes } })) // the page's shot cards keep their data
+  }
+
+  toggleCompass() {
+    const data = this.compassFile()
+    if (data?.gimbal_yaw == null) return
+    this.updateCompass({ compass: compassOf(data) ? 0 : 1 })
+    this.flashNotice(compassOf(this.compassFile()) ? 'Kompass an – wird in die bereitgestellten Bilder eingezeichnet' : 'Kompass aus')
+  }
+
+  // Drag the compass – position relative to the image, stored when let go
+  compassDrag(event) {
+    if (event.button !== 0) return
+    event.preventDefault()
+    event.stopPropagation()
+    const handle = this.compassHandleTarget
+    const rect = this.imageTarget.getBoundingClientRect()
+    const start = { x: event.clientX, y: event.clientY }
+    const compass = compassOf(this.compassFile())
+    const canvas = this.compassTarget
+    const { cx, cy } = compassCenter(canvas.width, canvas.height, compass.x, compass.y)
+    const origin = { x: cx / canvas.width, y: cy / canvas.height }
+    const file = this.current.files[this.variant]
+    let pos = origin
+    handle.setPointerCapture(event.pointerId)
+    handle.classList.add('is-dragging')
+    const move = (e) => {
+      const clamp = (v) => Math.min(0.97, Math.max(0.03, v))
+      pos = { x: clamp(origin.x + (e.clientX - start.x) / rect.width), y: clamp(origin.y + (e.clientY - start.y) / rect.height) }
+      file.compassX = pos.x
+      file.compassY = pos.y
+      this.drawCompassLayer()
+    }
+    const up = () => {
+      handle.classList.remove('is-dragging')
+      handle.removeEventListener('pointermove', move)
+      handle.removeEventListener('pointerup', up)
+      handle.removeEventListener('pointercancel', up)
+      if (pos !== origin) this.updateCompass({ compass_x: pos.x, compass_y: pos.y, ...(file.compass == null ? { compass: 1 } : {}) })
+    }
+    handle.addEventListener('pointermove', move)
+    handle.addEventListener('pointerup', up)
+    handle.addEventListener('pointercancel', up)
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
