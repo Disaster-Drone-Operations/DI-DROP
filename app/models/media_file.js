@@ -10,6 +10,9 @@ export default class MediaFile extends Record {
     mission_id: 'integer',
     flight_id: 'integer',
     flight_log_id: 'integer', // real flight from the flight logs (linkMedia() in app/services/flight_missions.js)
+    compass: 'integer', // compass on the image: 1/0, NULL = as in the settings (app/services/compass.js)
+    compass_x: 'float',
+    compass_y: 'float',
     assignment_id: 'integer',
     kind: 'string',
     shot_key: 'string',

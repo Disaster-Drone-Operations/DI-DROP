@@ -173,3 +173,72 @@ export function drawOnThumbnail(canvas, img, shapes) {
   drawShapes(ctx, shapes, w, h, { minLine: 2 * dpr })
   ctx.restore()
 }
+
+// ── Compass ───────────────────────────────────────────────────────────────
+// A disc lying flat on the ground as the camera sees it: looking straight down (pitch −90°) a circle,
+// the flatter the view the flatter the ellipse. The needle lies in that disc and points north.
+//   yaw: GimbalYawDegree (camera heading, 0 = north, clockwise), pitch: GimbalPitchDegree (−90 = straight down)
+
+export const COMPASS_RADIUS = 0.075 // of the shorter image side
+export const COMPASS_MARGIN = 0.03
+
+// Centre in pixels: stored position (relative 0…1) or top right – room for the "N" beyond the rim
+export function compassCenter(width, height, x = null, y = null) {
+  const r = Math.min(width, height) * COMPASS_RADIUS
+  const m = Math.min(width, height) * COMPASS_MARGIN + r * 1.45
+  return { cx: x != null ? x * width : width - m, cy: y != null ? y * height : m, r }
+}
+
+export function drawCompass(ctx, { yaw, pitch }, cx, cy, r) {
+  const k = Math.max(0.15, Math.sin((Math.abs(pitch ?? -90) * Math.PI) / 180))
+  const a = (-(yaw ?? 0) * Math.PI) / 180
+  const pt = (angle, radius) => [cx + radius * Math.sin(angle), cy - radius * k * Math.cos(angle)]
+  const line = Math.max(1.5, r * 0.05)
+  ctx.save()
+  // Disc with rim and small ticks for east/south/west
+  ctx.beginPath()
+  ctx.ellipse(cx, cy, r, r * k, 0, 0, Math.PI * 2)
+  ctx.fillStyle = 'rgba(0,0,0,.45)'
+  ctx.fill()
+  ctx.lineWidth = line
+  ctx.strokeStyle = 'rgba(255,255,255,.9)'
+  ctx.stroke()
+  ctx.lineCap = 'round'
+  for (const quarter of [1, 2, 3]) {
+    const angle = a + (quarter * Math.PI) / 2
+    ctx.beginPath()
+    ctx.moveTo(...pt(angle, r * 0.78))
+    ctx.lineTo(...pt(angle, r * 0.95))
+    ctx.stroke()
+  }
+  // Needle: red half to the north, white half to the south
+  const tip = pt(a, r * 0.8)
+  const tail = pt(a + Math.PI, r * 0.8)
+  const left = pt(a - Math.PI / 2, r * 0.17)
+  const right = pt(a + Math.PI / 2, r * 0.17)
+  const half = (end, color) => {
+    ctx.beginPath()
+    ctx.moveTo(...end)
+    ctx.lineTo(...left)
+    ctx.lineTo(...right)
+    ctx.closePath()
+    ctx.fillStyle = color
+    ctx.fill()
+    ctx.lineWidth = Math.max(1, line * 0.6)
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'
+    ctx.stroke()
+  }
+  half(tail, '#ffffff')
+  half(tip, COLORS.red.value)
+  // "N" just outside the rim, in the needle's direction
+  const [nx, ny] = pt(a, r * 1.28)
+  ctx.font = `700 ${Math.round(r * 0.42)}px ${FONT}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.lineWidth = Math.max(2, r * 0.08)
+  ctx.strokeStyle = 'rgba(0,0,0,.6)'
+  ctx.strokeText('N', nx, ny)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText('N', nx, ny)
+  ctx.restore()
+}

@@ -63,6 +63,9 @@ export default [
     fields: [
       { key: 'base_path', label: 'Basisordner', type: 'folder', default: '',
         hint: 'Leer lassen für den Standard: Ordner „Bilder/di-drop“ in deinem Benutzerordner. Darin entsteht pro Einsatz „2026_10_06__Einsatzname“ und pro Flug „2026_10_06__1430“. Gilt für Einsätze, die noch keine Bilder haben.' },
+      { key: 'compass_default', label: 'Kompass auf den Bildern', type: 'select', default: 'no',
+        options: [['no', 'Nur wenn in der Großansicht eingeschaltet'], ['yes', 'Standardmäßig auf jedem Bild']],
+        hint: 'Zeigt Norden und die Neigung der Kamera (aus den Drohnendaten). Er wird in die bereitgestellten Bilder eingezeichnet – die Originale in der Bildablage bleiben unverändert. In der Großansicht lässt er sich je Aufnahme an- und ausschalten und verschieben.' },
     ],
     // Windows opens an Explorer window for every inserted memory card – how to get di-drop instead
     appendix: { partial: 'settings/_autoplay', os: 'windows' },
