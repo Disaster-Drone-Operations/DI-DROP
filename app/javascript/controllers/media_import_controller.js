@@ -22,7 +22,7 @@ export default class extends Controller {
     if (this.element.isConnected) this.unlisten = unlisten
     else unlisten()
 
-    this.dialogTarget.addEventListener('cancel', (e) => ['importing', 'deleting', 'ejecting'].includes(this.state) && e.preventDefault())
+    this.dialogTarget.addEventListener('cancel', (e) => ['importing', 'deleting', 'ejecting', 'kept'].includes(this.state) && e.preventDefault())
     this.dialogTarget.addEventListener('close', () => (this.state = null))
 
     this.checkCard = () => this.startPendingCard()
@@ -131,8 +131,9 @@ export default class extends Controller {
     try {
       const { imported, failed, assignments, copies } = await this.importer.import(selection, (progress) => this.show('importing', { progress }))
       const cleanup = this.card && data.get('delete_from_card') ? await this.deleteFromCard(copies, { companions: !!data.get('delete_companions'), clear: !!data.get('clear_card') }) : null
-      const ejectError = this.card && data.get('eject_card') ? await this.ejectCard() : undefined
-      this.close()
+      // Eject only once everything to be deleted is really gone – otherwise the dialog stays and says what is left
+      const incomplete = cleanup?.kept.length > 0
+      const ejectError = this.card && data.get('eject_card') && !incomplete ? await this.ejectCard() : undefined
       const names = (assignments ?? []).map((a) => `„${a.title}“`).join(', ')
       let flash = failed.length
         ? { alert: `${imported} importiert, ${failed.length} fehlgeschlagen: ${failed.slice(0, 3).map((f) => `${f.name} (${f.error})`).join('; ')}` }
@@ -141,6 +142,11 @@ export default class extends Controller {
           : { notice: 'Nichts ausgewählt – nichts importiert.' }
       if (cleanup) flash = this.withCleanup(flash, cleanup)
       if (ejectError !== undefined) flash = this.withEject(flash, ejectError)
+      if (incomplete) {
+        this.afterKept = { flash, root: this.card.root, eject: !!data.get('eject_card') }
+        return this.show('kept', { cleanup, eject: !!data.get('eject_card') })
+      }
+      this.close()
       document.dispatchEvent(new CustomEvent('router:visit', { detail: { path: this.returnPathValue, flash } }))
     } catch (error) {
       console.error(error)
@@ -148,12 +154,11 @@ export default class extends Controller {
     }
   }
 
-  // Delete the imported originals from the card – only current blocks (never "older" images);
-  // Rust checks every copy again before deleting
-  // clear: also everything on the card that was imported earlier (any mission) and the "older"
-  // recordings imported just now – i.e. everything that is safely imported
+  // Delete the imported originals from the card – everything imported just now, also "older" recordings if they
+  // were chosen (not imported = stays on the card); Rust checks every copy again before deleting
+  // clear: also everything on the card that was imported earlier (any mission) – i.e. everything safely imported
   async deleteFromCard(copies, { companions, clear }) {
-    const items = copies.filter((c) => clear || !c.older).map(({ src, copy }) => ({ src, copy }))
+    const items = copies.map(({ src, copy }) => ({ src, copy }))
     if (clear) {
       for (const e of this.importer.entries) if (e.duplicate?.copy) items.push({ src: e.path, copy: e.duplicate.copy })
     }
@@ -164,6 +169,20 @@ export default class extends Controller {
     } catch (error) {
       return { deleted: [], kept: items.map((i) => ({ src: i.src, reason: String(error) })) }
     }
+  }
+
+  // Not everything deleted (dialog "kept"): close – or eject anyway, knowing what is still on the card
+  async keptDone({ params: { eject } }) {
+    const { flash, root } = this.afterKept ?? {}
+    this.afterKept = null
+    let result = flash
+    if (eject && root) {
+      this.show('ejecting')
+      const error = await ejectCard(root, { quiet: true })
+      result = { alert: `${flash.alert ?? flash.notice}${error ? ` Die Karte wurde nicht ausgeworfen: ${error}` : ' Karte trotzdem ausgeworfen.'}` }
+    }
+    this.close()
+    document.dispatchEvent(new CustomEvent('router:visit', { detail: { path: this.returnPathValue, flash: result } }))
   }
 
   // „Anschließend auswerfen“ → null or why it didn't work (the result goes into the import message)
@@ -193,7 +212,7 @@ export default class extends Controller {
 
   show(state, locals = {}) {
     this.state = state
-    this.dialogTarget.innerHTML = render('media/_import_dialog', { state, review: null, progress: null, error: null, ...locals })
+    this.dialogTarget.innerHTML = render('media/_import_dialog', { state, review: null, progress: null, error: null, cleanup: null, eject: false, ...locals })
     if (!this.dialogTarget.open) this.dialogTarget.showModal()
   }
 }

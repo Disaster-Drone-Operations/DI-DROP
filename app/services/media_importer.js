@@ -10,7 +10,7 @@
 //   await importer.import({ blocks: [{ id, target, newKind, newTitle }], shotKeys, variants }, onProgress)
 //
 // Memory cards (scan(…, { card: true })): duplicates across all missions, blocks from before the
-// mission start count as "older" (not imported by default and never deleted from the card).
+// mission start count as "older" (not imported by default; deleted from the card only if imported).
 //
 // Storage: <base>/<2026_09_11__Einsatz>/<2026_09_11__1355_Kontrollflug 3>/DJI_….JPG
 

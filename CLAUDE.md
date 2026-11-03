@@ -175,7 +175,9 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - Erkennung: `src-tauri/src/sdcard.rs` prüft alle 2 s die eingehängten Laufwerke auf einen `DCIM`-Ordner
   (Ereignisse `sdcard:inserted`/`sdcard:removed`); `app/services/sdcard_watcher.js` öffnet den
   Import-Dialog auf der passenden Einsatzseite (nur wenn Bilder neu in *allen* Einsätzen sind).
-- Aufnahmen vor Einsatzbeginn = „Ältere Aufnahmen“: nicht vorausgewählt, nie von der Karte gelöscht.
+- Aufnahmen vor Einsatzbeginn = „Ältere Aufnahmen“: nicht vorausgewählt; von der Karte gelöscht nur, wenn sie importiert wurden.
+- „Anschließend auswerfen“ erst, wenn alles zu Löschende wirklich weg ist – sonst bleibt der Import-Dialog offen und nennt,
+  was warum noch auf der Karte liegt („Trotzdem auswerfen“ möglich).
 - Löschen von der Karte nur in Rust (`sdcard::delete_imported`): Quelle unter `<Karte>/DCIM`, Bild-/Videoformat,
   Kopie außerhalb der Karte mit gleicher Größe und gleichem Fingerabdruck – sonst bleibt die Datei.
   Danach nur leer gewordene Ordner unter DCIM entfernen, nie DCIM selbst.

@@ -1,4 +1,4 @@
-<%# locals: state, review, progress, error -%>
+<%# locals: state, review, progress, error, cleanup, eject -%>
 <div class="dialog">
   <% if (state === 'scanning') { -%>
     <div class="dialog__center">
@@ -16,6 +16,26 @@
       <div class="spinner"></div>
       <p>Kopien werden geprüft und die Bilder von der Karte gelöscht …</p>
     </div>
+  <% } else if (state === 'kept') { -%>
+    <%# Not everything could be deleted from the card – say so clearly; the card is only ejected on request -%>
+    <% const reasons = [...cleanup.kept.reduce((m, k) => m.set(k.reason, (m.get(k.reason) ?? 0) + 1), new Map())] -%>
+    <h2 class="dialog__title"><%- icon('alert', { size: 18 }) %> Nicht alles von der SD-Karte gelöscht</h2>
+    <p><%= cleanup.deleted.length ? `${pluralize(cleanup.deleted.length, 'Datei', 'Dateien')} gelöscht, ` : '' %><strong><%= pluralize(cleanup.kept.length, 'Datei bleibt', 'Dateien bleiben') %> auf der Karte.</strong>
+      Der Import selbst ist vollständig – nur das Löschen von der Karte hat nicht überall geklappt.<% if (eject) { %> Die Karte wurde deshalb <strong>nicht</strong> ausgeworfen.<% } %></p>
+    <ul class="import-kept">
+      <% reasons.forEach(([reason, count]) => { -%>
+        <li><strong><%= count %>×</strong> <%= reason %></li>
+      <% }) -%>
+    </ul>
+    <details class="disclosure">
+      <summary>Betroffene Dateien</summary>
+      <div class="disclosure__body"><ul class="import-kept__files mono selectable"><% cleanup.kept.slice(0, 50).forEach((k) => { %><li><%= k.src.split(/[\\/]/).pop() %></li><% }) %><% if (cleanup.kept.length > 50) { %><li>… und <%= cleanup.kept.length - 50 %> weitere</li><% } %></ul></div>
+    </details>
+    <div class="dialog__actions">
+      <% if (eject) { %><button type="button" class="button" data-action="media-import#keptDone" data-media-import-eject-param="true">Trotzdem auswerfen</button><% } %>
+      <button type="button" class="button button--primary" data-action="media-import#keptDone" data-media-import-eject-param="false">Schließen</button>
+    </div>
+
   <% } else if (state === 'ejecting') { -%>
     <div class="dialog__center">
       <div class="spinner"></div>

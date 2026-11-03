@@ -11,6 +11,7 @@ pub mod flightlogs;
 pub mod sdcard;
 pub mod training;
 mod app_update;
+#[cfg(target_os = "macos")] // menu bar only on the Mac – Windows has none (src/menu.rs)
 mod menu;
 
 use std::path::{Path, PathBuf};
