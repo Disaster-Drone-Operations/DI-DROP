@@ -97,6 +97,17 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   Markierung = fehlt wieder, kommt als neue Datei (`…_markiert_2`). Telefon/Öffnen/Finder nehmen die markierte Fassung,
   solange sie eingeblendet ist.
 
+## Kompass auf Bildern
+
+- Perspektivische Scheibe mit Nordnadel aus `gimbal_yaw`/`gimbal_pitch` (DJI-XMP; die Fluglage der Drohne zählt nicht,
+  der Gimbal gleicht sie aus): `drawCompass`/`compassCenter` in `annotation_renderer.js`, Logik in `app/services/compass.js`.
+- Je Aufnahme `media_files.compass` (1/0, NULL = Einstellung `storage.compass_default`, Standard an) und `compass_x/y`
+  (Mitte relativ, NULL = oben rechts) – Sicht- und Wärmebild gemeinsam. Großansicht: Knopf/Taste K, Ziehen verschiebt.
+- Ins Bereitgestellte eingezeichnet: `upload_queue.js` rendert kurz vor dem Hochladen (`providedPath` → App-Cache
+  `rendered/`, Rust `marked::write_rendered` mit den Metadaten des Originals) und lädt unter dem normalen Namen hoch.
+  Ebenso „An Telefon“/„Öffnen“ und die `_markiert`-Fassung (wird bei Änderungen am Kompass neu gezeichnet).
+  Das Original bleibt unverändert; eine Kompass-Änderung nach dem Bereitstellen löst kein neues Hochladen aus.
+
 ## Tastenkürzel, Menü, Widerrufen
 
 - Neue App-Befehle: in `app/javascript/shortcuts.js` (Befehl + Taste für Windows/Browser)
