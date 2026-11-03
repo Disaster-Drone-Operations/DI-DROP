@@ -3,8 +3,12 @@
 <% if (cards.length) { -%>
   <div class="nav__heading">SD-Karten</div>
   <% cards.forEach((card) => { -%>
-    <div class="nav__item sdcard-item" title="<%= card.name %>">
-      <%- icon('sdcard') %><span class="truncate"><%= card.name %></span>
+    <div class="nav__item sdcard-item" title="<%= card.name %><%= card.read_only ? ' – schreibgeschützt: Bilder lassen sich importieren, aber nicht von der Karte löschen (Schieber „Lock“ an der Karte)' : '' %>">
+      <%- icon('sdcard') %>
+      <span class="sdcard-item__text">
+        <span class="truncate"><%= card.name %></span>
+        <% if (card.read_only) { %><span class="sdcard-item__locked"><%- icon('lock', { size: 10 }) %>Schreibgeschützt</span><% } %>
+      </span>
       <button type="button" class="sdcard-item__eject" title="Auswerfen" aria-label="„<%= card.name %>“ auswerfen"
               data-action="sdcards#eject" data-sdcards-root-param="<%= card.root %>" <%= ejecting ? 'disabled' : '' %>>
         <% if (ejecting === card.root) { %><span class="spinner"></span><% } else { %><%- icon('eject', { size: 13 }) %><% } %>

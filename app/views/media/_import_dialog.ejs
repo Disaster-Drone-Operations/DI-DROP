@@ -135,15 +135,23 @@
           </div>
         </details>
 
+        <% if (review.card?.read_only) { -%>
+          <%# Lock switch on the card: importing works, deleting doesn't – say so instead of failing afterwards -%>
+          <div class="callout callout--warning import-card__locked">
+            <%- icon('lock', { size: 16 }) %>
+            <span><strong>Die SD-Karte ist schreibgeschützt</strong> (Schieber „Lock“ an der Seite der Karte). Importieren geht, löschen nicht –
+              die Bilder bleiben auf der Karte. Zum Löschen: Karte auswerfen, Schieber nach oben schieben, wieder einstecken.</span>
+          </div>
+        <% } -%>
         <% if (review.card) { -%>
           <div class="import-card__delete">
-            <label class="checkbox"><input type="checkbox" name="delete_from_card" value="yes" checked data-action="media-import#toggleCardDelete"> Importierte Bilder danach von der SD-Karte löschen</label>
+            <label class="checkbox"><input type="checkbox" name="delete_from_card" value="yes" <%= review.card.read_only ? 'disabled' : 'checked' %> data-action="media-import#toggleCardDelete"> Importierte Bilder danach von der SD-Karte löschen</label>
             <p class="subtle">Endgültig – aber nur Bilder, deren Kopie vollständig und geprüft im Einsatz liegt. Nicht importierte Bilder bleiben auf der Karte.</p>
             <% if (review.duplicateCount) { -%>
-              <label class="checkbox import-card__sub"><input type="checkbox" name="clear_card" value="yes" checked> SD-Karte leeren – auch die <%= review.duplicateCount %> schon früher importierten Dateien löschen</label>
+              <label class="checkbox import-card__sub"><input type="checkbox" name="clear_card" value="yes" <%= review.card.read_only ? 'disabled' : 'checked' %>> SD-Karte leeren – auch die <%= review.duplicateCount %> schon früher importierten Dateien löschen</label>
               <p class="subtle">Ebenfalls erst nach Vergleich mit der importierten Kopie.</p>
             <% } -%>
-            <label class="checkbox import-card__sub"><input type="checkbox" name="delete_companions" value="yes" checked> RTK-Rohdaten der Drohne mit löschen</label>
+            <label class="checkbox import-card__sub"><input type="checkbox" name="delete_companions" value="yes" <%= review.card.read_only ? 'disabled' : 'checked' %>> RTK-Rohdaten der Drohne mit löschen</label>
             <p class="subtle">.MRK, .OBS, .NAV, .RTK – nur in Ordnern, in denen danach keine Aufnahme mehr liegt. Werden bisher nicht gebraucht; die genauen Positionen stehen schon in den Bildern.</p>
           </div>
           <div class="import-card__delete">

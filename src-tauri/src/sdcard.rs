@@ -22,6 +22,8 @@ pub struct Card {
     /// Display name (volume name or drive letter)
     pub name: String,
     pub dcim: String,
+    /// Write-protected – usually the lock switch on the side of the card: importing works, deleting doesn't
+    pub read_only: bool,
 }
 
 /// Files DJI writes next to the images of RTK drones (M4TD, M30T …), for recomputing the positions
@@ -78,7 +80,55 @@ fn card_for(root: &Path) -> Option<Card> {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| root.display().to_string().trim_end_matches('\\').to_string());
-    Some(Card { root: root.display().to_string(), name, dcim: dcim.display().to_string() })
+    Some(Card { root: root.display().to_string(), name, dcim: dcim.display().to_string(), read_only: is_read_only(root) })
+}
+
+/// Mounted read-only (a locked SD card is mounted like this by macOS and Linux)
+#[cfg(unix)]
+fn is_read_only(root: &Path) -> bool {
+    use std::os::unix::ffi::OsStrExt;
+    let Ok(path) = std::ffi::CString::new(root.as_os_str().as_bytes()) else { return false };
+    let mut stat: libc::statvfs = unsafe { std::mem::zeroed() };
+    // SAFETY: path is a valid C string, stat a writable statvfs
+    unsafe { libc::statvfs(path.as_ptr(), &mut stat) == 0 && stat.f_flag & libc::ST_RDONLY != 0 }
+}
+
+/// Read-only volume, or the drive reports the medium as write-protected (lock switch in the card reader)
+#[cfg(windows)]
+fn is_read_only(root: &Path) -> bool {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Foundation::{CloseHandle, GetLastError, ERROR_WRITE_PROTECT, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::Storage::FileSystem::{CreateFileW, GetVolumeInformationW, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING};
+    use windows_sys::Win32::System::Ioctl::IOCTL_DISK_IS_WRITABLE;
+    use windows_sys::Win32::System::SystemServices::FILE_READ_ONLY_VOLUME;
+    use windows_sys::Win32::System::IO::DeviceIoControl;
+
+    let wide = |s: &std::ffi::OsStr| s.encode_wide().chain(std::iter::once(0)).collect::<Vec<u16>>();
+    let mut flags = 0u32;
+    // SAFETY: zero-terminated path, all optional outputs null
+    let volume = unsafe {
+        GetVolumeInformationW(wide(root.as_os_str()).as_ptr(), std::ptr::null_mut(), 0, std::ptr::null_mut(),
+            std::ptr::null_mut(), &mut flags, std::ptr::null_mut(), 0)
+    };
+    if volume != 0 && flags & FILE_READ_ONLY_VOLUME != 0 {
+        return true;
+    }
+    // "E:\" → device "\\.\E:" (only asks, no access rights needed)
+    let drive = root.display().to_string();
+    let Some(letter) = drive.chars().next().filter(|c| c.is_ascii_alphabetic()) else { return false };
+    let device = wide(std::ffi::OsStr::new(&format!("\\\\.\\{letter}:")));
+    // SAFETY: valid device path; the handle is closed below
+    unsafe {
+        let handle = CreateFileW(device.as_ptr(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE, std::ptr::null(), OPEN_EXISTING, 0, std::ptr::null_mut());
+        if handle == INVALID_HANDLE_VALUE {
+            return false;
+        }
+        let mut returned = 0u32;
+        let writable = DeviceIoControl(handle, IOCTL_DISK_IS_WRITABLE, std::ptr::null(), 0, std::ptr::null_mut(), 0, &mut returned, std::ptr::null_mut());
+        let protected = writable == 0 && GetLastError() == ERROR_WRITE_PROTECT;
+        CloseHandle(handle);
+        protected
+    }
 }
 
 /// All currently mounted cards

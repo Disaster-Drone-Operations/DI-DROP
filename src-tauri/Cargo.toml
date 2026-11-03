@@ -41,6 +41,13 @@ tauri-plugin-single-instance = "2"
 dji-log-parser = "0.5.7"
 mtp-rs = "0.33"
 
+# Memory cards: is the card write-protected (lock switch)? – src/sdcard.rs
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl", "Win32_System_SystemServices"] }
+
 # Optimize dependencies in debug builds too – image decoding would be very slow otherwise
 [profile.dev.package."*"]
 opt-level = 3

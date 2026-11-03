@@ -1040,6 +1040,7 @@ dependencies = [
  "jpeg-decoder",
  "kamadak-exif",
  "keyring",
+ "libc",
  "mtp-rs",
  "percent-encoding",
  "rayon",
@@ -1057,6 +1058,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tokio",
  "walkdir",
+ "windows-sys 0.59.0",
  "zip 2.4.2",
 ]
 
