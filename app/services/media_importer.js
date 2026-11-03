@@ -1,7 +1,7 @@
 // Import of a flight's images into a mission.
 //
 // Flow: after landing all new images come in at once. The app splits them
-// into blocks (waypoint flight vs. manual shots, folders, time gaps) and suggests
+// into blocks (folders – the drone starts a new one per flight –, waypoint flight vs. manual shots) and suggests
 // an assignment per block. New assignments can be created right there –
 // in case an assignment only came in during the flight.
 //
@@ -27,7 +27,6 @@ import Viewpoint from '/app/models/viewpoint.js'
 import { syncFileNames } from '/app/services/file_namer.js'
 import { assignFlights } from '/app/services/flight_missions.js'
 
-const BLOCK_GAP_MINUTES = 5
 // Mapping flight: most images straight down, enough of them
 const NADIR_PITCH = -80
 const MAPPING_MIN_SHOTS = 8
@@ -117,15 +116,14 @@ export default class MediaImporter {
     }
   }
 
-  // New blocks on: different folder, switch waypoint flight ↔ manual shots, time gap
+  // New blocks on: different folder (DJI drones start a new one per flight), switch waypoint flight ↔ manual shots.
+  // No time gaps – hovering or searching for a few minutes within one flight is normal.
   buildBlocks(shots) {
     const blocks = []
     for (const shot of shots) {
       const last = blocks.at(-1)
       const prev = last?.shots.at(-1)
-      const gap = prev && shot.taken_at && prev.taken_at
-        ? (parseLocal(shot.taken_at) - parseLocal(prev.taken_at)) / 60_000 : 0
-      if (!last || prev.dir !== shot.dir || prev.hasWaypoint !== shot.hasWaypoint || gap > BLOCK_GAP_MINUTES) {
+      if (!last || prev.dir !== shot.dir || prev.hasWaypoint !== shot.hasWaypoint) {
         blocks.push({ id: String(blocks.length), shots: [], hasWaypoint: shot.hasWaypoint })
       }
       blocks.at(-1).shots.push(shot)

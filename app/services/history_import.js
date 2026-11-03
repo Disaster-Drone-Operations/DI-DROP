@@ -164,7 +164,7 @@ async function addToMission(missionId, parts, files, onProgress) {
   return mission
 }
 
-// One block (folder/time gap, media_importer.js) per assignment: named after its folder, mapping flights
+// One block (folder, media_importer.js) per assignment: named after its folder, mapping flights
 // → "Kartierung", the rest → fallbackTarget (the Lageerkundung) or "Nachgetragene Bilder". Never a control
 // flight series – that would plan due times.
 async function importImages(mission, files, titleHint, fallbackTarget, onProgress) {
