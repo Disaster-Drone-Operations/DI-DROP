@@ -106,8 +106,10 @@ export default class Mission extends Record {
   }
 
   async destroy() {
-    // Image files on disk are kept
-    for (const table of ['comparisons', 'media_files', 'viewpoints', 'assignments', 'assignment_series', 'flights', 'mission_crew']) {
+    // Image files on disk are kept; already provided files stay at their target – only the history goes.
+    // Order: whatever references something comes first (foreign keys)
+    for (const table of ['upload_items', 'upload_batches', 'comparisons', 'media_files', 'viewpoints', 'assignments',
+      'assignment_series', 'flights', 'mission_crew']) {
       await db.execute(`DELETE FROM ${table} WHERE mission_id = ?`, [this.id])
     }
     // Flight logs stay – they only lose the assignment (and may be assigned automatically again)

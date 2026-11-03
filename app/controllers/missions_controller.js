@@ -12,6 +12,8 @@ import { flightStats } from '/app/services/flight_missions.js'
 import { assignOperators } from '/app/services/flight_crew.js'
 import MissionCrew from '/app/models/mission_crew.js'
 import Person from '/app/models/person.js'
+import { db } from '/lib/db.js'
+import { forget } from '/app/services/upload_queue.js'
 
 export default class MissionsController extends ApplicationController {
   async beforeAction() {
@@ -130,7 +132,15 @@ export default class MissionsController extends ApplicationController {
   }
 
   async destroy() {
+    // Not while something is still being provided – the queue would run into the void
+    const [active] = await db.select(
+      `SELECT COUNT(*) AS n FROM upload_items WHERE mission_id = ? AND status IN ('queued', 'running', 'paused', 'failed')`, [this.mission.id])
+    if (Number(active?.n)) {
+      return this.redirectTo(`/missions/${this.mission.id}`, { alert: 'Für diesen Einsatz läuft noch eine Bereitstellung – erst abwarten oder unter „Bereitstellungen“ abbrechen.' })
+    }
+    const uploads = (await db.select('SELECT id FROM upload_items WHERE mission_id = ?', [this.mission.id])).map((r) => r.id)
     await this.mission.destroy()
+    forget(uploads) // out of the „Bereitstellungen“ list too
     this.redirectTo('/', { notice: `„${this.mission.title}“ gelöscht.` })
   }
 }
