@@ -2,7 +2,7 @@
 //   node --import ./test/support/app_paths.mjs --test test/history_grouping.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { droneOf, deviceList, parseFolderName, isMeaningful, assignmentHint, groupHistory } from '../app/services/history_grouping.js'
+import { droneOf, deviceList, parseFolderName, isMeaningful, assignmentHint, groupHistory, folderSegments } from '../app/services/history_grouping.js'
 
 const OWN = '1581F8HGX255M00A'
 let n = 0
@@ -68,4 +68,11 @@ test('images join their flight; gaps > 4 h and > 5 km split; titles from the own
   assert.equal(proposals[1].titleHint, 'Hochwasser')
   assert.equal(proposals[2].kind, 'exercise')
   assert.equal(proposals[2].titleHint, 'x') // "Übungen" is a category, not a name
+})
+
+test('Windows paths: backslashes and a chosen folder with trailing separator', () => {
+  const path = 'C:\\Bilder\\Einsätze\\2025_09_05 Waldbrand\\Suche Nord\\DCIM\\DJI_0001_T.JPG'
+  assert.deepEqual(folderSegments(path, 'C:\\Bilder'), ['Einsätze', '2025_09_05 Waldbrand', 'Suche Nord', 'DCIM'])
+  assert.deepEqual(folderSegments(path, 'C:\\Bilder\\'), ['Einsätze', '2025_09_05 Waldbrand', 'Suche Nord', 'DCIM'])
+  assert.equal(assignmentHint({ path }, 'C:\\Bilder', 'Waldbrand'), 'Suche Nord')
 })

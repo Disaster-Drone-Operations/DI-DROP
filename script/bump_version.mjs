@@ -1,4 +1,4 @@
-// Sets the version number everywhere at once: package.json, tauri.conf.json, Cargo.toml
+// Sets the version number everywhere at once: package.json, tauri.conf.json, Cargo.toml, Cargo.lock
 //   node script/bump_version.mjs 0.2.0
 import fs from 'node:fs'
 
@@ -23,5 +23,15 @@ json('package-lock.json', (d) => {
 const cargo = 'src-tauri/Cargo.toml'
 const toml = fs.readFileSync(cargo, 'utf8')
 fs.writeFileSync(cargo, toml.replace(/^version = "[^"]+"/m, `version = "${version}"`))
+
+// Cargo.lock too – otherwise Cargo only catches up on the next build and the release commit carries the old version
+const lock = 'src-tauri/Cargo.lock'
+const locked = fs.readFileSync(lock, 'utf8')
+const updated = locked.replace(/(\[\[package\]\]\nname = "di-drop"\nversion = ")[^"]+"/, `$1${version}"`)
+if (updated === locked && !locked.includes(`name = "di-drop"\nversion = "${version}"`)) {
+  console.error('di-drop not found in src-tauri/Cargo.lock – please check')
+  process.exit(1)
+}
+fs.writeFileSync(lock, updated)
 
 console.log(`Version ${version} set. Next:\n  git commit -am "Version ${version}" && git tag v${version} && git push && git push --tags`)

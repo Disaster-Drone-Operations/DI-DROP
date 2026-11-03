@@ -17,9 +17,12 @@ pub fn marked_path(original: &Path) -> PathBuf {
     original.with_file_name(format!("{stem}{SUFFIX}.{ext}"))
 }
 
-/// A marked copy (never imported as an image of its own)
+/// A marked copy (never imported as an image of its own) – also "…_markiert_2.JPG": a changed marking provided
+/// again gets a number at the target, and such a folder may well be imported again later (USB stick, Nextcloud sync)
 pub fn is_marked(path: &Path) -> bool {
-    path.file_stem().and_then(|s| s.to_str()).is_some_and(|s| s.ends_with(SUFFIX))
+    let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else { return false };
+    let base = stem.trim_end_matches(|c: char| c.is_ascii_digit());
+    stem.ends_with(SUFFIX) || (base.len() < stem.len() && base.strip_suffix('_').is_some_and(|b| b.ends_with(SUFFIX)))
 }
 
 fn check_original(original: &Path) -> Result<(), String> {
@@ -180,6 +183,8 @@ mod tests {
         assert_eq!(target.file_name().unwrap(), "DJI_0001_T_markiert.JPG");
         assert!(is_marked(&target));
         assert!(write(&target, &rendered()).is_err()); // never a marked copy of a marked copy
+        assert!(is_marked(&dir.join("DJI_0001_T_markiert_2.JPG")) && is_marked(&dir.join("Vergleich_Ost_markiert_12.jpg")));
+        assert!(!is_marked(&dir.join("DJI_0001_T.JPG")) && !is_marked(&dir.join("DJI_0001_T_2.JPG")) && !is_marked(&dir.join("markiert_2.JPG")));
         write(&original_path, &rendered()).unwrap(); // overwrites its own copy
         remove(&original_path).unwrap();
         assert!(!target.exists() && original_path.exists());

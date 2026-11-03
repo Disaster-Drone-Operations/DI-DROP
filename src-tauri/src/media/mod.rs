@@ -422,11 +422,11 @@ mod tests {
     #[test]
     fn lists_media_files_by_folder_however_deep() {
         let root = std::env::temp_dir().join(format!("didrop-list-{}", std::process::id()));
-        let deep = root.join("Einsatz/Suche Nord/DCIM/100MEDIA");
+        let deep: PathBuf = ["Einsatz", "Suche Nord", "DCIM", "100MEDIA"].iter().fold(root.clone(), |p, s| p.join(s)); // native separators, also on Windows
         fs::create_dir_all(&deep).unwrap();
         fs::create_dir_all(root.join(".hidden")).unwrap();
         for p in [root.join("a.JPG"), deep.join("DJI_0001_T.JPG"), deep.join("DJI_0001_V.JPG"), deep.join("clip.MP4"), deep.join("DJI_0001_T_markiert.JPG"),
-            root.join("Einsatz/notes.txt"), root.join(".hidden/x.jpg")] {
+            root.join("Einsatz").join("notes.txt"), root.join(".hidden").join("x.jpg")] {
             fs::write(p, b"x").unwrap();
         }
         let dirs = list(&root.display().to_string());

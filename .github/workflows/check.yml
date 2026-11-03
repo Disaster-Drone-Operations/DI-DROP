@@ -1,5 +1,6 @@
 # Checks on every push that di-drop compiles on macOS and Windows and the tests pass –
 # without installers and without a release (Windows-specific code isn't compiled on the Mac).
+# The release workflow (release.yml) only builds – the tests run here.
 name: Check
 
 on:
@@ -31,6 +32,7 @@ jobs:
 
       - run: npm ci
       - run: npm run build          # UI (embedded into the app)
+      - run: node --import ./test/support/app_paths.mjs --test test/history_grouping.test.mjs   # pure JS modules
 
       - name: Build and test Rust
         working-directory: src-tauri
