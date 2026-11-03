@@ -138,7 +138,9 @@ export default class AnnotationEditor {
     ctx.clearRect(0, 0, w, h)
     if (!w || !h || (!this._visible && !this.editing)) return
     drawShapes(ctx, this.shapes, w, h)
-    if (this.editing && this.selected >= 0 && this.shapes[this.selected]) this.drawSelection(ctx, this.shapes[this.selected])
+    // no selection frame around a text that is being typed (the text field shows it)
+    const typing = this.textInput?.index === this.selected
+    if (this.editing && this.selected >= 0 && this.shapes[this.selected] && !typing) this.drawSelection(ctx, this.shapes[this.selected])
   }
 
   drawSelection(ctx, shape) {
@@ -355,9 +357,10 @@ export default class AnnotationEditor {
     })
     const hidden = { ...shape }
     shape.text = '' // shown by the field while typing
-    this.redraw()
     this.overlay.append(input)
     this.textInput = { input, index, isNew, previous: hidden.text }
+    this.redraw() // after textInput is set: no selection frame around the text being typed
+    this.fitTextInput(input, px)
     input.addEventListener('keydown', (e) => {
       e.stopPropagation()
       if (e.key === 'Escape') {
@@ -368,9 +371,21 @@ export default class AnnotationEditor {
         this.commitText()
       }
     })
-    input.addEventListener('input', () => { input.rows = Math.max(1, input.value.split('\n').length) })
+    input.addEventListener('input', () => this.fitTextInput(input, px))
     input.addEventListener('blur', () => this.commitText())
     input.focus()
+  }
+
+  // The text field grows with the text – same font as drawn into the image (annotation_renderer.js)
+  fitTextInput(input, px) {
+    const ctx = this.canvas.getContext('2d')
+    ctx.save()
+    ctx.font = `600 ${px}px ${getComputedStyle(input).fontFamily}`
+    const lines = input.value.split('\n')
+    const width = Math.max(px * 2, ...lines.map((l) => ctx.measureText(l).width))
+    ctx.restore()
+    input.style.width = `${Math.ceil(width + px * 0.6)}px`
+    input.style.height = `${Math.ceil(lines.length * px * 1.2 + 4)}px`
   }
 
   commitText() {
