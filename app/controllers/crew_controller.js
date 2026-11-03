@@ -18,7 +18,7 @@ export default class CrewController extends ApplicationController {
       : p.from === 'at' && p.at ? p.at.slice(0, 16)
         : localNow()
 
-    const { entry, previous, replaced } = await MissionCrew.change(mission.id, p.role, personId, fromAt)
+    const { entry, previous, replaced, removed } = await MissionCrew.change(mission.id, p.role, personId, fromAt)
     await followCrew(mission.id)
     const person = personId ? await Person.find(personId) : null
     const label = `${roleLabel(p.role)} ab ${crewTime(fromAt, mission)}: ${person?.name ?? 'niemand'}`
@@ -26,6 +26,7 @@ export default class CrewController extends ApplicationController {
       label,
       undo: async () => {
         await (replaced ? entry.update({ person_id: previous }) : entry.destroy())
+        for (const attrs of removed) await MissionCrew.create(attrs) // later entries that had become redundant
         await followCrew(mission.id)
       },
       redo: async () => {

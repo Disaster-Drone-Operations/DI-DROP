@@ -33,14 +33,36 @@ export default class MissionCrew extends Record {
     return personId
   }
 
-  // Set the role from a point in time on; an entry at exactly that time is replaced → { entry, previous }
+  // Set the role from a point in time on; an entry at exactly that time is replaced → { entry, previous, removed }.
+  // Later entries that would change nothing anymore go (removed: their attributes, for undo) – e.g. someone was
+  // set "ab jetzt" by mistake and is then set again from the start of the mission: one entry, from the start.
   static async change(missionId, role, personId, fromAt) {
     const existing = await this.findBy('mission_id = ? AND role = ? AND from_at = ?', [missionId, role, fromAt])
+    let result
     if (existing) {
       const previous = existing.person_id
       await existing.update({ person_id: personId })
-      return { entry: existing, previous, replaced: true }
+      result = { entry: existing, previous, replaced: true }
+    } else {
+      result = { entry: await this.create({ mission_id: missionId, role, person_id: personId, from_at: fromAt }), replaced: false }
     }
-    return { entry: await this.create({ mission_id: missionId, role, person_id: personId, from_at: fromAt }), replaced: false }
+    result.removed = await this.dropRedundantAfter(missionId, role, fromAt)
+    return result
+  }
+
+  // Entries after fromAt that repeat the person valid right before them → removed (their attributes)
+  static async dropRedundantAfter(missionId, role, fromAt) {
+    const entries = (await this.forMission(missionId)).filter((e) => e.role === role)
+    const removed = []
+    let current
+    for (const e of entries) {
+      if (e.from_at > fromAt && (e.person_id ?? null) === (current ?? null)) {
+        removed.push({ mission_id: e.mission_id, role: e.role, person_id: e.person_id, from_at: e.from_at })
+        await e.destroy()
+        continue
+      }
+      current = e.person_id
+    }
+    return removed
   }
 }
