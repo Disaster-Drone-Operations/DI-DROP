@@ -363,6 +363,20 @@ fn write_marked(request: tauri::ipc::Request<'_>) -> Result<String, String> {
     media::marked::write(&original, bytes).map(|p| p.display().to_string())
 }
 
+/// An image as provided – e.g. with the compass drawn in – with the original's metadata, into the app cache
+/// ("x-original" header = original, "x-name" = file name in the cache, raw body = rendered JPEG) → its path
+#[tauri::command]
+fn write_rendered(app: AppHandle, request: tauri::ipc::Request<'_>) -> Result<String, String> {
+    let header = |key: &str| request.headers().get(key).and_then(|h| h.to_str().ok()).ok_or("Angabe fehlt").and_then(|v| percent_decode(v).map_err(|_| "Angabe fehlt"));
+    let original = PathBuf::from(header("x-original")?);
+    let name = header("x-name")?;
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("Bilddaten fehlen".into());
+    };
+    let dir = app.path().app_cache_dir().map_err(|e| e.to_string())?.join("rendered");
+    media::marked::write_rendered(&original, bytes, &dir, &name).map(|p| p.display().to_string())
+}
+
 /// Removes the marked copy of an image (markings deleted)
 #[tauri::command]
 fn remove_marked(original: String) -> Result<(), String> {
@@ -451,7 +465,7 @@ pub fn run() {
             watch_sdcards(app.handle().clone());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![scan_media, list_media, trash_media, import_media, open_path, reveal_path, read_image, write_image, write_marked, remove_marked, rename_file, rename_dir, open_url,
+        .invoke_handler(tauri::generate_handler![scan_media, list_media, trash_media, import_media, open_path, reveal_path, read_image, write_image, write_marked, write_rendered, remove_marked, rename_file, rename_dir, open_url,
             cloudflare::cf_set_token, cloudflare::cf_has_token, cloudflare::cf_delete_token,
             geocode::reverse_geocode,
             make_thumbnail,

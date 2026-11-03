@@ -11,6 +11,7 @@ import Annotation from '/app/models/annotation.js'
 import MediaFile from '/app/models/media_file.js'
 import Comparison from '/app/models/comparison.js'
 import { cleanShapes, drawShapes } from '/app/services/annotation_renderer.js'
+import { drawCompassOf } from '/app/services/compass.js'
 
 export const MARKED_SUFFIX = '_markiert'
 
@@ -21,14 +22,15 @@ async function sourceOf({ mediaFileId, comparisonId }) {
   return mediaFileId ? MediaFile.find(mediaFileId) : Comparison.find(comparisonId)
 }
 
-// Image with markings in full resolution → JPEG blob
-export async function renderMarked(path, shapes) {
+// Image with markings (and the compass, if the image has one on – compassFile: its media_files row) → JPEG blob
+export async function renderMarked(path, shapes, compassFile = null) {
   const bitmap = await createImageBitmap(await platform.readImage(path))
   const canvas = document.createElement('canvas')
   canvas.width = bitmap.width
   canvas.height = bitmap.height
   const ctx = canvas.getContext('2d')
   ctx.drawImage(bitmap, 0, 0)
+  if (compassFile) drawCompassOf(ctx, compassFile, canvas.width, canvas.height)
   drawShapes(ctx, shapes, canvas.width, canvas.height)
   bitmap.close?.()
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92))
@@ -47,7 +49,7 @@ export async function saveAnnotations(target, shapes) {
     await existing?.destroy()
     return null
   }
-  const blob = await renderMarked(source.path, clean)
+  const blob = await renderMarked(source.path, clean, target.mediaFileId ? source : null)
   await platform.writeMarked(source.path, blob)
   const annotation = existing ?? new Annotation({ media_file_id: target.mediaFileId ?? null, comparison_id: target.comparisonId ?? null })
   annotation.shapes = JSON.stringify(clean)

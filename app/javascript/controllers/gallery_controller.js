@@ -12,7 +12,7 @@ import { relayBaseUrl } from '/app/services/location_service.js'
 import AnnotationEditor from '/app/javascript/annotation_editor.js'
 import Annotation from '/app/models/annotation.js'
 import { saveAnnotations, markedPath } from '/app/services/annotations.js'
-import { compassOf, setShotCompass } from '/app/services/compass.js'
+import { compassOf, setShotCompass, providedPath } from '/app/services/compass.js'
 import { compassCenter, drawCompass } from '/app/services/annotation_renderer.js'
 
 // Gallery (almost full screen):
@@ -544,6 +544,11 @@ export default class extends Controller {
     const ids = files.map((f) => f.mediaFileId)
     await setShotCompass(ids, changes)
     window.dispatchEvent(new CustomEvent('compass:changed', { detail: { ids, changes } })) // the page's shot cards keep their data
+    // Marked copies show the compass too – draw them anew
+    for (const f of files) {
+      const shapes = this.annotations.get(`m${f.mediaFileId}`) ?? (await this.shapesFor({ key: `m${f.mediaFileId}`, target: { mediaFileId: f.mediaFileId } }))
+      if (shapes.length) await saveAnnotations({ mediaFileId: f.mediaFileId }, shapes).catch((e) => console.error(e))
+    }
   }
 
   toggleCompass() {
@@ -590,25 +595,28 @@ export default class extends Controller {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  // The file as it is shown: the marked copy ("…_markiert.JPG") while markings are shown, otherwise the original
-  shownPath() {
+  // The file as it is shown: the marked copy ("…_markiert.JPG", with compass) while markings are shown, otherwise
+  // the image with compass (rendered into the cache) or the original. reveal: never a cache copy – show the original's folder
+  async shownPath({ reveal = false } = {}) {
     const file = this.current.files[this.variant]
     const shapes = this.annotations.get(this.markTarget(file)?.key)
-    return shapes?.length && this.editor.visible ? markedPath(file.path) : file.path
+    if (shapes?.length && this.editor.visible) return markedPath(file.path)
+    if (reveal || !file.mediaFileId || !compassOf(this.compassFile(file))) return file.path
+    return (await providedPath(await MediaFile.find(file.mediaFileId)).catch((e) => console.error(e))) ?? file.path
   }
 
-  openExternal() {
-    platform.openPath(this.shownPath()).catch((e) => console.error(e))
+  async openExternal() {
+    platform.openPath(await this.shownPath()).catch((e) => console.error(e))
   }
 
-  reveal() {
-    platform.revealPath(this.shownPath()).catch((e) => console.error(e))
+  async reveal() {
+    platform.revealPath(await this.shownPath({ reveal: true })).catch((e) => console.error(e))
   }
 
-  // The variant shown (thermal/visible …) as original file – with markings if they are shown
-  sendToPhone() {
+  // The variant shown (thermal/visible …) – with markings and compass as they are shown
+  async sendToPhone() {
     const file = this.current.files[this.variant]
-    if (file && !file.video) sendImageToPhone(this.shownPath())
+    if (file && !file.video) sendImageToPhone(await this.shownPath())
   }
 }
 

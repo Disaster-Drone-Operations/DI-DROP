@@ -12,6 +12,8 @@ import Setting from '/app/models/setting.js'
 import UploadBatch from '/app/models/upload_batch.js'
 import UploadItem from '/app/models/upload_item.js'
 import { TARGETS } from '/app/services/upload_targets.js'
+import MediaFile from '/app/models/media_file.js'
+import { providedPath } from '/app/services/compass.js'
 import { now as clockNow, nowMs } from '/lib/clock.js'
 
 const CONCURRENCY = 2
@@ -147,7 +149,9 @@ async function run(item) {
     if (!target) throw new Error(`Unbekanntes Ziel: ${item.target}`)
     if (job.intent) throw new Error('CANCELED') // paused/moved while starting
     await refreshSource(item)
-    const result = await target.transfer(item, transferId, ({ done }) => {
+    // With compass: the image as shown in di-drop goes (rendered just now into the cache) – under its normal name
+    const rendered = await renderedSource(item)
+    const result = await target.transfer(rendered ? { ...item, source_path: rendered } : item, transferId, ({ done }) => {
       transferred += Math.max(0, done - job.done)
       job.done = done
       samples.push({ t: Date.now(), bytes: transferred })
@@ -216,6 +220,13 @@ async function refreshSource(item) {
   const dest = item.dest_path.split(/[\\/]/)
   dest.splice(-depth, depth, ...source.slice(-depth))
   await persist(item, { source_path: row.path, dest_path: dest.join('/') })
+}
+
+// Images (not comparison/marked copies – those are complete files already) with compass → rendered copy
+async function renderedSource(item) {
+  if (!item.media_file_id || item.category === 'marked') return null
+  const file = await MediaFile.find(item.media_file_id).catch(() => null)
+  return file ? providedPath(file) : null
 }
 
 // ── Control ──────────────────────────────────────────────────────────────

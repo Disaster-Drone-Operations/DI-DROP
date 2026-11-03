@@ -109,6 +109,12 @@ fn main() {
             let rendered = std::fs::read(req["rendered"].as_str().unwrap_or("")).expect("rendered image");
             result(media::marked::write(req["original"].as_str().unwrap_or("").as_ref(), &rendered).map(|p| p.display().to_string()))
         }
+        Some("write_rendered") => {
+            let req: Value = serde_json::from_str(&input).expect("JSON");
+            let rendered = std::fs::read(req["rendered"].as_str().unwrap_or("")).expect("rendered image");
+            let path = |k: &str| std::path::PathBuf::from(req[k].as_str().unwrap_or(""));
+            result(media::marked::write_rendered(&path("original"), &rendered, &path("dir"), req["name"].as_str().unwrap_or("")).map(|p| p.display().to_string()))
+        }
         Some("remove_marked") => {
             let original: String = serde_json::from_str(&input).expect("JSON string");
             result(media::marked::remove(original.as_ref()))

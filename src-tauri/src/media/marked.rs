@@ -48,6 +48,27 @@ pub fn write(original: &Path, rendered: &[u8]) -> Result<PathBuf, String> {
     Ok(target)
 }
 
+/// An image as it is provided (e.g. with compass drawn in): `rendered` + the original's metadata, written to
+/// `dir/name` – a cache folder, never next to the original. Copies older than an hour are cleared up there first.
+pub fn write_rendered(original: &Path, rendered: &[u8], dir: &Path, name: &str) -> Result<PathBuf, String> {
+    check_original(original)?;
+    if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
+        return Err("Ungültiger Dateiname".into());
+    }
+    fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    let hour = std::time::Duration::from_secs(3600);
+    for entry in fs::read_dir(dir).map_err(|e| e.to_string())?.flatten() {
+        let old = entry.metadata().and_then(|m| m.modified()).ok().and_then(|t| t.elapsed().ok()).is_some_and(|age| age > hour);
+        if old && entry.file_type().is_ok_and(|t| t.is_file()) {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
+    let bytes = with_metadata(&fs::read(original).map_err(|e| e.to_string())?, rendered)?;
+    let target = dir.join(name);
+    fs::write(&target, bytes).map_err(|e| e.to_string())?;
+    Ok(target)
+}
+
 /// Removes the marked copy of `original` (if there is one)
 pub fn remove(original: &Path) -> Result<(), String> {
     let target = marked_path(original);
@@ -186,6 +207,10 @@ mod tests {
         assert!(is_marked(&dir.join("DJI_0001_T_markiert_2.JPG")) && is_marked(&dir.join("Vergleich_Ost_markiert_12.jpg")));
         assert!(!is_marked(&dir.join("DJI_0001_T.JPG")) && !is_marked(&dir.join("DJI_0001_T_2.JPG")) && !is_marked(&dir.join("markiert_2.JPG")));
         write(&original_path, &rendered()).unwrap(); // overwrites its own copy
+        let cache = dir.join("cache");
+        let rendered_copy = write_rendered(&original_path, &rendered(), &cache, "7_DJI_0001_T.JPG").unwrap();
+        assert_eq!(rendered_copy, cache.join("7_DJI_0001_T.JPG"));
+        assert!(write_rendered(&original_path, &rendered(), &cache, "../x.JPG").is_err());
         remove(&original_path).unwrap();
         assert!(!target.exists() && original_path.exists());
         fs::remove_dir_all(&dir).unwrap();

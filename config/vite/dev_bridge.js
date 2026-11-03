@@ -148,6 +148,18 @@ export default function devBridge({ root }) {
               fs.rmSync(rendered, { force: true })
             }
           }
+          if (url.pathname === '/write-rendered') {
+            const chunks = []
+            for await (const chunk of req) chunks.push(chunk)
+            const rendered = path.join(root, 'tmp', `rendered-${process.pid}-${Date.now()}.jpg`)
+            fs.writeFileSync(rendered, Buffer.concat(chunks))
+            try {
+              res.setHeader('Content-Type', 'application/json')
+              return res.end(await run('write_rendered', { original: url.searchParams.get('original'), name: url.searchParams.get('name'), rendered, dir: path.join(root, 'tmp/dev-rendered') }))
+            } finally {
+              fs.rmSync(rendered, { force: true })
+            }
+          }
           if (url.pathname === '/remove-marked') {
             res.setHeader('Content-Type', 'application/json')
             return res.end(await run('remove_marked', (await body(req)).original))
