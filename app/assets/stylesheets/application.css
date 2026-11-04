@@ -956,6 +956,13 @@ input[type=number].input-inline { width: 64px !important; }
 .mission-map { position: relative; height: calc(100vh - 260px); min-height: 360px; padding: 0; overflow: hidden; }
 .mission-map__canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .mission-map__kind { position: absolute; top: 10px; left: 10px; z-index: 1; }
+.mission-map__waiting { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 24px; text-align: center; background: var(--surface, inherit); }
+.mission-map__waiting[hidden] { display: none; }
+/* Hover hint on map points (MapLibre popup) */
+.map-tip { pointer-events: none; }
+.map-tip .maplibregl-popup-content { padding: 4px 8px; border-radius: 6px; font-size: 12px; background: rgba(28, 28, 30, 0.92); color: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+.map-tip .maplibregl-popup-tip { display: none; }
+.mission-map__waiting .button { margin-top: 8px; }
 /* Mini map (bottom left of the stage) */
 .gallery__map { position: absolute; left: 16px; bottom: 16px; z-index: 2; width: min(300px, 32vw); height: min(240px, 34vh);
   border-radius: 10px; overflow: hidden; background: #222; box-shadow: 0 4px 18px rgba(0, 0, 0, .45); border: 1px solid rgba(255, 255, 255, .15); }

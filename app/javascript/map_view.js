@@ -4,9 +4,12 @@
 //   view.setKind('aerial')
 //   view.showFootprints([{ id, footprint, highlight }])   // footprint.js results
 //   view.onClick((id) => …); view.hoverLinks()               // hover: area, drone and line of one shot light up together
+//   view.trackUser()                                          // own position from „Mein Standort“ (phone), kept up to date
+//   view.showSite({ lat, lon })                               // Einsatzort (mission coordinates)
+//   view.showPlaces([{ lat, lon }])                           // nothing photographed yet: centre on these points
 //   view.destroy()
 
-import { Map as MapLibreMap, LngLatBounds, setWorkerUrl, prewarm } from 'maplibre-gl'
+import { Map as MapLibreMap, LngLatBounds, Popup, setWorkerUrl, prewarm } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 // MapLibre's worker is self-contained – loaded unchanged as a blob (Vite's processing of worker files breaks it;
 // the CSP allows workers from blob:)
@@ -16,6 +19,8 @@ setWorkerUrl(URL.createObjectURL(new Blob([workerSource], { type: 'text/javascri
 // Start the worker now – the first map created while it was still starting up never finished loading its style
 prewarm()
 import { mapStyle, ATTRIBUTION } from '/app/services/map_sources.js'
+import { currentLocation } from '/app/services/location_service.js'
+import { nowMs } from '/lib/clock.js'
 
 const EMPTY = { type: 'FeatureCollection', features: [] }
 
@@ -78,6 +83,55 @@ function droneIcon() {
   return ctx.getImageData(0, 0, size, size)
 }
 
+// Own position: dot + accuracy circle (polygon in metres); stale (older than 5 min) → grey
+const STALE_MS = 5 * 60_000
+function userFeatures(position) {
+  if (!position) return EMPTY
+  const stale = nowMs() - position.timestamp > STALE_MS // training: simulated clock
+  const props = { stale }
+  const out = [{ type: 'Feature', properties: { ...props, kind: 'dot' }, geometry: { type: 'Point', coordinates: [position.lon, position.lat] } }]
+  const r = Number(position.accuracy)
+  if (r > 0) {
+    const ring = []
+    for (let i = 0; i <= 48; i++) {
+      const a = (i / 48) * 2 * Math.PI
+      ring.push([position.lon + (r * Math.sin(a)) / (111_320 * Math.cos((position.lat * Math.PI) / 180)), position.lat + (r * Math.cos(a)) / 111_320])
+    }
+    out.unshift({ type: 'Feature', properties: { ...props, kind: 'accuracy' }, geometry: { type: 'Polygon', coordinates: [ring] } })
+  }
+  return { type: 'FeatureCollection', features: out }
+}
+
+// "gerade eben", "vor 3 Min.", "vor 1 Std. 5 Min." (training: simulated clock)
+function ageText(timestamp) {
+  const minutes = Math.floor((nowMs() - timestamp) / 60_000)
+  if (minutes < 1) return 'gerade eben'
+  if (minutes < 60) return `vor ${minutes} Min.`
+  return `vor ${Math.floor(minutes / 60)} Std.${minutes % 60 ? ` ${minutes % 60} Min.` : ''}`
+}
+
+// Text for the hover hint on the Einsatzort / own position
+function placeTip(layer) {
+  if (layer === 'site') return 'Einsatzort (Koordinaten des Einsatzes)'
+  const p = currentLocation().position
+  if (!p) return null
+  return ['Euer Standort', ageText(p.timestamp), p.accuracy ? `± ${Math.round(p.accuracy)} m` : null].filter(Boolean).join(' · ')
+}
+
+const point = (p, props = {}) => (p ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [p.lon, p.lat] } }] } : EMPTY)
+
+function addUserLayers(map, data, siteData) {
+  if (!map.getSource('site')) {
+    map.addSource('site', { type: 'geojson', data: siteData })
+    map.addLayer({ id: 'site', type: 'circle', source: 'site', paint: { 'circle-radius': 7, 'circle-color': '#ffffff', 'circle-opacity': 0.9, 'circle-stroke-color': '#ff3b30', 'circle-stroke-width': 3 } })
+  }
+  if (map.getSource('user')) return
+  map.addSource('user', { type: 'geojson', data })
+  const color = ['case', ['get', 'stale'], '#8e8e93', '#30d158']
+  map.addLayer({ id: 'user-accuracy', type: 'fill', source: 'user', filter: ['==', ['get', 'kind'], 'accuracy'], paint: { 'fill-color': color, 'fill-opacity': 0.15, 'fill-outline-color': color } })
+  map.addLayer({ id: 'user-dot', type: 'circle', source: 'user', filter: ['==', ['get', 'kind'], 'dot'], paint: { 'circle-radius': 6, 'circle-color': color, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } })
+}
+
 // cones: drone points with the viewing cone (mission map) – otherwise plain dots (mini map of one shot, which
 // shows the line to the image centre anyway)
 function addLayers(map, data, { cones }) {
@@ -112,6 +166,9 @@ function addLayers(map, data, { cones }) {
 
 export function createMapView(container, { kind = 'map', interactive = true, cones = true } = {}) {
   let data = EMPTY
+  let userData = EMPTY
+  let siteData = EMPTY
+  let untrack = null
   const map = new MapLibreMap({
     container,
     style: mapStyle(kind),
@@ -121,7 +178,20 @@ export function createMapView(container, { kind = 'map', interactive = true, con
     attributionControl: { compact: true, customAttribution: ATTRIBUTION.heights },
     fadeDuration: 0,
   })
-  map.on('style.load', () => addLayers(map, data, { cones }))
+  // Hover hint on Einsatzort and own position (what the red and green dot mean)
+  const tip = new Popup({ closeButton: false, closeOnClick: false, offset: 12, className: 'map-tip' })
+  for (const layer of ['site', 'user-dot']) {
+    map.on('mousemove', layer, (e) => {
+      const text = placeTip(layer)
+      if (!text || !e.features?.[0]) return
+      tip.setLngLat(e.features[0].geometry.coordinates).setText(text).addTo(map)
+    })
+    map.on('mouseleave', layer, () => tip.remove())
+  }
+  map.on('style.load', () => {
+    addLayers(map, data, { cones })
+    addUserLayers(map, userData, siteData) // after the footprints: on top
+  })
   // Attribution collapsed to its "i" on small maps (it would cover a third of them) – one click shows it
   map.once('load', () => container.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'))
 
@@ -135,7 +205,10 @@ export function createMapView(container, { kind = 'map', interactive = true, con
     showFootprints(items, { fit = true } = {}) {
       data = features(items)
       if (map.getSource('footprints')) map.getSource('footprints').setData(data)
-      else if (map.isStyleLoaded()) addLayers(map, data, { cones })
+      else if (map.isStyleLoaded()) {
+        addLayers(map, data, { cones })
+        for (const id of ['site', 'user-accuracy', 'user-dot']) if (map.getLayer(id)) map.moveLayer(id) // Einsatzort, own position stay on top
+      }
       if (!fit || !data.features.length) return
       const bounds = new LngLatBounds()
       for (const f of data.features) {
@@ -169,7 +242,36 @@ export function createMapView(container, { kind = 'map', interactive = true, con
       map.on('mouseout', () => set(null))
       map.on('styledata', () => (current = null)) // new style (map ↔ aerial): states are gone
     },
+    showSite(site) {
+      siteData = point(site)
+      map.getSource('site')?.setData(siteData)
+    },
+    // No footprints: one point → centred (zoom 16), several → all in view
+    showPlaces(places) {
+      if (!places.length) return
+      if (places.length === 1) return map.jumpTo({ center: [places[0].lon, places[0].lat], zoom: 16 })
+      const bounds = new LngLatBounds()
+      for (const p of places) bounds.extend([p.lon, p.lat])
+      map.fitBounds(bounds, { padding: { top: 60, right: 60, bottom: 60, left: 60 }, maxZoom: 16, duration: 0 })
+    },
+    // Own position (from „Mein Standort“, memory only) – follows live transfers, greys out when old
+    trackUser() {
+      const update = () => {
+        userData = userFeatures(currentLocation().position)
+        if (map.getSource('user')) map.getSource('user').setData(userData)
+      }
+      update()
+      window.addEventListener('location:changed', update)
+      const ticker = setInterval(update, 30_000)
+      untrack = () => {
+        window.removeEventListener('location:changed', update)
+        clearInterval(ticker)
+      }
+    },
     resize: () => map.resize(),
-    destroy: () => map.remove(),
+    destroy: () => {
+      untrack?.()
+      map.remove()
+    },
   }
 }

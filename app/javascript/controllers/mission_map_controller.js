@@ -2,19 +2,40 @@ import { Controller } from '@hotwired/stimulus'
 import { footprint, hasView } from '/app/services/footprint.js'
 import { groundAround } from '/app/services/terrain.js'
 import { insideAerial } from '/app/services/map_sources.js'
+import { currentLocation } from '/app/services/location_service.js'
+import { distance } from '/lib/geo.js'
 
-// Mission map (mission_maps/show.ejs): all shots as footprints; click → the shot in the large view (gallery)
+// Mission map (mission_maps/show.ejs): all shots as footprints, the Einsatzort and the own position; click → the shot in
+// the large view (gallery)
 //   data-mission-map-shots-value='[{ data: <shotData>, params: <imageParams>, variant }]'
+//   data-mission-map-site-value='{ lat, lon }' (Einsatzort, or null)
 export default class extends Controller {
-  static targets = ['map', 'kinds']
-  static values = { shots: Array }
+  static targets = ['map', 'kinds', 'waiting']
+  static values = { shots: Array, site: Object }
 
-  async connect() {
+  // Shows the map as soon as there is something to show: shots with position, the Einsatzort or the own position
+  connect() {
+    // Index in the full list (= gallery position); shotsValue parses anew on every access – no indexOf on it
+    this.located = this.shotsValue.map((shot, index) => ({ ...shot, index })).filter((s) => s.params)
+    this.site = this.hasSiteValue ? this.siteValue : null
+    const position = currentLocation().position
+    if (this.located.length || this.site || position) return this.show()
+    this.waitingTarget.hidden = false
+    this.onLocation = () => {
+      if (!currentLocation().position) return
+      window.removeEventListener('location:changed', this.onLocation)
+      this.waitingTarget.hidden = true
+      this.show()
+    }
+    window.addEventListener('location:changed', this.onLocation)
+  }
+
+  async show() {
     const { createMapView } = await import('/app/javascript/map_view.js') // MapLibre only when needed
     if (!this.element.isConnected) return
-    // Index in the full list (= gallery position); shotsValue parses anew on every access – no indexOf on it
-    const located = this.shotsValue.map((shot, index) => ({ ...shot, index })).filter((s) => s.params)
-    const first = located[0].params
+    const located = this.located
+    const position = currentLocation().position
+    const first = located[0]?.params ?? this.site ?? position
     let kind = null
     try {
       kind = localStorage.getItem('didrop.missionmap.kind')
@@ -24,6 +45,14 @@ export default class extends Controller {
     this.markKind(kind)
     this.view.onClick((id) => this.open(Number(id)))
     this.view.hoverLinks()
+    this.view.trackUser()
+    this.view.showSite(this.site)
+    if (!located.length) {
+      // Nothing photographed yet: Einsatzort and own position in view (own position far away, e.g. at home: only the Einsatzort)
+      const near = position && (!this.site || distance(this.site.lat, this.site.lon, position.lat, position.lon) < 20_000)
+      this.view.showPlaces([this.site, near ? position : null].filter(Boolean))
+      return
+    }
     this.view.showFootprints(located.map((s) => this.item(s, null)))
 
     // Terrain per area (shots of one mission lie close together – a few tiles)
@@ -38,6 +67,7 @@ export default class extends Controller {
   }
 
   disconnect() {
+    if (this.onLocation) window.removeEventListener('location:changed', this.onLocation)
     this.view?.destroy()
   }
 

@@ -1,11 +1,11 @@
-<%# locals: mission, assignments, assignmentId, variants, variant, shots, located -%>
+<%# locals: mission, site, assignments, assignmentId, variants, variant, shots, located -%>
 <% const path = `/missions/${mission.id}/map` -%>
 <% const query = (changes) => { const q = { assignment: assignmentId ?? '', variant: variant ?? '', ...changes }; const s = Object.entries(q).filter(([, v]) => v !== '' && v != null).map(([k, v]) => `${k}=${v}`).join('&'); return s ? `${path}?${s}` : path } -%>
 <header class="page-header">
   <div>
     <a class="backlink" href="#/missions/<%= mission.id %>"><%= mission.title %></a>
     <h1>Karte</h1>
-    <p class="subtle">Wo die Aufnahmen entstanden sind und welchen Bereich sie zeigen. Klick auf eine Fläche öffnet die Aufnahme groß.</p>
+    <p class="subtle">Wo die Aufnahmen entstanden sind und welchen Bereich sie zeigen<%= located ? '. Klick auf eine Fläche öffnet die Aufnahme groß.' : ' – mit Einsatzort und eurem Standort.' %></p>
   </div>
 </header>
 
@@ -21,15 +21,18 @@
   <% } -%>
 </nav>
 
-<% if (!located) { -%>
-  <div class="empty empty--compact"><p class="subtle"><%= shots.length ? 'Diese Aufnahmen haben keine Positionsdaten.' : 'Noch keine Bilder.' %></p></div>
-<% } else { -%>
-  <div class="mission-map card" data-controller="mission-map" data-mission-map-shots-value="<%= JSON.stringify(shots) %>">
-    <div class="mission-map__canvas" data-mission-map-target="map"></div>
-    <div class="segmented segmented--dark mission-map__kind" data-mission-map-target="kinds">
-      <button type="button" data-action="mission-map#kind" data-mission-map-kind-param="map">Karte</button>
-      <button type="button" data-action="mission-map#kind" data-mission-map-kind-param="aerial">Luftbild</button>
-    </div>
+<%# Also without shots: own position ("Mein Standort") or the Einsatzort – the controller waits for a position otherwise -%>
+<div class="mission-map card" data-controller="mission-map" data-mission-map-shots-value="<%= JSON.stringify(shots) %>" <% if (site) { %> data-mission-map-site-value="<%= JSON.stringify(site) %>"<% } %>>
+  <div class="mission-map__canvas" data-mission-map-target="map"></div>
+  <div class="segmented segmented--dark mission-map__kind" data-mission-map-target="kinds">
+    <button type="button" data-action="mission-map#kind" data-mission-map-kind-param="map">Karte</button>
+    <button type="button" data-action="mission-map#kind" data-mission-map-kind-param="aerial">Luftbild</button>
   </div>
-  <p class="hint"><%= pluralize(located, 'Aufnahme', 'Aufnahmen') %> mit Position<%= shots.length > located ? ` · ${shots.length - located} ohne` : '' %>. Blau: Drohne mit Blickrichtung, Fläche: Bildausschnitt (berechnet aus Brennweite, Neigung und Gelände). Mit der Maus über Drohne oder Fläche leuchtet beides zusammen auf, mit Linie zur Bildmitte.</p>
-<% } -%>
+  <div class="mission-map__waiting" data-mission-map-target="waiting" hidden>
+    <p class="subtle">Noch nichts zu zeigen – es gibt noch keine Bilder mit Position und keine Koordinaten zum Einsatzort.</p>
+    <p class="subtle">Sobald di-drop euren Standort kennt („Mein Standort“), erscheint hier die Karte.</p>
+    <a class="button" href="#/location"><%- icon('pin') %><span>Mein Standort</span></a>
+  </div>
+</div>
+<% const legend = [located && 'blau: Drohne mit Blickrichtung, Fläche: Bildausschnitt (berechnet aus Brennweite, Neigung und Gelände)', site && 'rot umrandet: Einsatzort', 'grün: euer Standort von „Mein Standort“'].filter(Boolean).join(', ') -%>
+<p class="hint"><%= located ? `${pluralize(located, 'Aufnahme', 'Aufnahmen')} mit Position${shots.length > located ? ` · ${shots.length - located} ohne` : ''}.` : shots.length ? 'Diese Aufnahmen haben keine Positionsdaten.' : 'Noch keine Bilder.' %> <%= legend.charAt(0).toUpperCase() + legend.slice(1) %>.<%= located ? ' Mit der Maus über Drohne oder Fläche leuchtet beides zusammen auf, mit Linie zur Bildmitte.' : '' %></p>

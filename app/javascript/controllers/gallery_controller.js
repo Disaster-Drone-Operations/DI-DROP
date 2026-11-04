@@ -570,6 +570,7 @@ export default class extends Controller {
       } catch { /* default */ }
       this.mapKindChosen = kind ?? (insideAerial(first.lon, first.lat) ? 'aerial' : 'map')
       this.mapView = createMapView(this.mapTarget, { kind: this.mapKindChosen, cones: false })
+      this.mapView.trackUser()
       this.markMapKind(this.mapKindChosen)
     }
     const ground = await groundAround(first.lat, first.lon).catch(() => null) // offline: flat ground

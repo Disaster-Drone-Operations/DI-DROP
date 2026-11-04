@@ -120,6 +120,11 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
 - `app/javascript/map_view.js`: MapLibre (exakt gepinnt, Worker als `?raw`-Blob), `showFootprints(items)`, `onClick`,
   `hoverLinks` (Feature-State `hover` über `promoteId: 'key'` – alle Teile einer Aufnahme leuchten zusammen).
   `cones: false` = einfache Punkte statt Blickrichtungs-Trichter.
+  `trackUser()`: eigener Standort aus `location_service.js` (grün, Genauigkeitskreis, grau ab 5 Min. Alter), folgt
+  `location:changed` – nur im Speicher, wie bei „Mein Standort“ üblich; die Karte zoomt nicht darauf.
+- Einsatzkarte auch ohne Bilder: zeigt Einsatzort (`missions.coordinates`, `showSite`) und eigenen Standort
+  (`showPlaces`, Standort weiter als 20 km vom Einsatzort bleibt außen vor); ohne beides wartet sie auf `location:changed`.
+  Beim Darüberfahren erklärt ein Hinweis (`placeTip`, Popup `.map-tip`) den roten und den grünen Punkt.
 - Mini-Karte in der Großansicht (`gallery_controller.js`, Taste L, × schließt, Zustand in localStorage) und Einsatzkarte
   `/missions/:id/map` (`mission_maps_controller.js`, `mission_map_controller.js`, Klick öffnet die Aufnahme in der Großansicht).
 - Testen im versteckten Browser-Fenster: dort läuft kein `requestAnimationFrame`, MapLibre lädt seinen Stil nie. Vorher

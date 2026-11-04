@@ -31,8 +31,12 @@ export default class MissionMapsController extends ApplicationController {
         variant: file.variant,
       }
     })
+    // Einsatzort ("Breite, Länge") – marker, and where the map starts without shots
+    const [siteLat, siteLon] = (mission.coordinates ?? '').split(/[,;]/).map((v) => Number(v.trim()))
+    const site = mission.coordinates && Number.isFinite(siteLat) && Number.isFinite(siteLon) ? { lat: siteLat, lon: siteLon } : null
     await this.render('mission_maps/show', {
       mission,
+      site,
       assignments: assignments.filter((a) => files.length || a.id === assignmentId),
       assignmentId,
       variants,
