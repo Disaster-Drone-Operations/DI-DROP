@@ -207,12 +207,13 @@ function xmpFor(shot, at) {
     `/></rdf:RDF></x:xmpmeta><?xpacket end="w"?>`
 }
 
-function tag(file, shot, at) {
+// 35 mm equivalent focal length like the M4TD (wide 24 mm, thermal 52 mm) – the map draws the image footprint from it
+function tag(file, shot, at, focal35 = 24) {
   const xmp = `${file}.xmp`
   fs.writeFileSync(xmp, xmpFor(shot, at))
   const drone = geo(shot.drone[0], shot.drone[1])
   const stamp = `${at.getFullYear()}:${pad(at.getMonth() + 1)}:${pad(at.getDate())} ${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`
-  run('exiftool', ['-q', '-overwrite_original', `-XMP<=${xmp}`, '-Make=DJI', '-Model=M4TD', `-DateTimeOriginal=${stamp}`, `-CreateDate=${stamp}`,
+  run('exiftool', ['-q', '-overwrite_original', `-XMP<=${xmp}`, '-Make=DJI', '-Model=M4TD', `-FocalLengthIn35mmFormat=${focal35}`, `-DateTimeOriginal=${stamp}`, `-CreateDate=${stamp}`,
     `-GPSLatitude=${drone.lat}`, '-GPSLatitudeRef=N', `-GPSLongitude=${drone.lon}`, '-GPSLongitudeRef=E',
     `-GPSAltitude=${spec.groundAltitude + shot.alt}`, file])
   fs.rmSync(xmp)
@@ -251,7 +252,7 @@ for (const card of spec.cards) {
       if (folder.shots !== 'mapping') {
         // Thermal camera: narrower field of view → only the middle of the visible image (52 vs 24 mm)
         cut(world.thermal, `${base}_T.JPG`, { ...shot, crop: shot.crop * THERMAL_SHARE }, 640, 512, 80)
-        tag(`${base}_T.JPG`, shot, at)
+        tag(`${base}_T.JPG`, shot, at, 52)
       }
     })
     if (folder.rtk) {

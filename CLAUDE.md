@@ -108,6 +108,23 @@ Funktionen kennen und teils wenig Computererfahrung haben. Vorbild ist macOS:
   Ebenso „An Telefon“/„Öffnen“ und die `_markiert`-Fassung (wird bei Änderungen am Kompass neu gezeichnet).
   Das Original bleibt unverändert; eine Kompass-Änderung nach dem Bereitstellen löst kein neues Hochladen aus.
 
+## Karte
+
+- Bildausschnitt am Boden: `app/services/footprint.js` (rein, Tests in `test/footprint.test.mjs`). Höhen relativ zum
+  Startpunkt (`RelativeAltitude`, `LRFTargetAlt` passen zusammen, absolute Höhen nicht); der Laserpunkt eicht das
+  Höhenmodell, Sichtfeld aus 35-mm-Brennweite und Digitalzoom, Ränder am Horizont enden bei 600 m (`MAX_DISTANCE`).
+  `imageParams(file)` holt die Werte aus `media_files`, ohne Brennweite gibt es nur Punkt + Richtung (`hasView`).
+- Gelände: `app/services/terrain.js` (`groundAround`, Terrarium-Kacheln von AWS). Kartendaten: `app/services/map_sources.js`
+  (basemap.de Vektor, Luftbild DOP Thüringen per WMS – nur innerhalb `AERIAL_BOUNDS`). Quellenangaben stehen in der Karte
+  und auf „Über di-drop“; neue Quellen dort ergänzen, CSP in `tauri.conf.json` (`connect-src`/`img-src`, Worker aus `blob:`).
+- `app/javascript/map_view.js`: MapLibre (exakt gepinnt, Worker als `?raw`-Blob), `showFootprints(items)`, `onClick`,
+  `hoverLinks` (Feature-State `hover` über `promoteId: 'key'` – alle Teile einer Aufnahme leuchten zusammen).
+  `cones: false` = einfache Punkte statt Blickrichtungs-Trichter.
+- Mini-Karte in der Großansicht (`gallery_controller.js`, Taste L, × schließt, Zustand in localStorage) und Einsatzkarte
+  `/missions/:id/map` (`mission_maps_controller.js`, `mission_map_controller.js`, Klick öffnet die Aufnahme in der Großansicht).
+- Testen im versteckten Browser-Fenster: dort läuft kein `requestAnimationFrame`, MapLibre lädt seinen Stil nie. Vorher
+  `window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16)` (und `cancelAnimationFrame`) setzen.
+
 ## Tastenkürzel, Menü, Widerrufen
 
 - Neue App-Befehle: in `app/javascript/shortcuts.js` (Befehl + Taste für Windows/Browser)

@@ -167,6 +167,11 @@
       "text": "In der Großansicht zeigt oben rechts ein Kompass, wo Norden ist und wie schräg die Kamera nach unten schaut (aus den Drohnendaten). Mit K oder dem Kompass-Knopf für eine Aufnahme aus- und einschalten, zum Verschieben anfassen. Er wird in die bereitgestellten Bilder eingezeichnet – das Original bleibt unverändert. Standard: Einstellungen → Bildablage."
     },
     {
+      "at": "13:21",
+      "action": "note",
+      "text": "Wo wurde fotografiert? In der Großansicht unten links die Mini-Karte: blauer Punkt = Drohne, rote Fläche = Bildausschnitt (mit L oder × ein-/ausblenden, Karte ↔ Luftbild umschaltbar). Auf der Einsatzseite „Karte“ zeigt alle Aufnahmen auf einmal – der Trichter am Punkt zeigt die Blickrichtung, mit der Maus über Drohne oder Fläche leuchtet beides zusammen auf, ein Klick öffnet die Aufnahme."
+    },
+    {
       "at": "13:22",
       "action": "note",
       "text": "Auf einem Wärmebild der Lageerkundung den Brandherd markieren: Bild groß öffnen → „Markieren“ – Kreis um die heiße Stelle, Pfeil zur Zufahrt, Text „Glutnest“ (Esc = Fertig). Mit M ein-/ausblenden. Das Original bleibt unverändert; daneben entsteht „…_markiert.JPG“, das beim Bereitstellen zuerst mitgeht und mit „An Telefon“ verschickt wird, solange die Markierungen eingeblendet sind."
