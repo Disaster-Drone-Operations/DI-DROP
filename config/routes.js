@@ -17,6 +17,8 @@ export default (r) => {
     r.get('/assignments/:id/provide', 'provisions#new')
     r.post('/assignments/:id/provide', 'provisions#create')
     r.resources('comparisons', { only: ['index'] })
+    // Map of all shots: where they were taken and which part of the ground they show
+    r.get('/map', 'mission_maps#show')
     r.resources('viewpoints', { only: ['update'] })
     // Crew: who fills which role from when on
     r.post('/crew', 'crew#create')

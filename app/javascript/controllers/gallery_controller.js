@@ -569,7 +569,7 @@ export default class extends Controller {
         kind = localStorage.getItem('didrop.gallery.mapkind')
       } catch { /* default */ }
       this.mapKindChosen = kind ?? (insideAerial(first.lon, first.lat) ? 'aerial' : 'map')
-      this.mapView = createMapView(this.mapTarget, { kind: this.mapKindChosen })
+      this.mapView = createMapView(this.mapTarget, { kind: this.mapKindChosen, cones: false })
       this.markMapKind(this.mapKindChosen)
     }
     const ground = await groundAround(first.lat, first.lon).catch(() => null) // offline: flat ground

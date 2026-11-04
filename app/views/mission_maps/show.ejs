@@ -1,0 +1,35 @@
+<%# locals: mission, assignments, assignmentId, variants, variant, shots, located -%>
+<% const path = `/missions/${mission.id}/map` -%>
+<% const query = (changes) => { const q = { assignment: assignmentId ?? '', variant: variant ?? '', ...changes }; const s = Object.entries(q).filter(([, v]) => v !== '' && v != null).map(([k, v]) => `${k}=${v}`).join('&'); return s ? `${path}?${s}` : path } -%>
+<header class="page-header">
+  <div>
+    <a class="backlink" href="#/missions/<%= mission.id %>"><%= mission.title %></a>
+    <h1>Karte</h1>
+    <p class="subtle">Wo die Aufnahmen entstanden sind und welchen Bereich sie zeigen. Klick auf eine Fläche öffnet die Aufnahme groß.</p>
+  </div>
+</header>
+
+<nav class="filterbar mission-map__filters" aria-label="Auswahl">
+  <div class="segmented segmented--links">
+    <a href="#<%= query({ assignment: '' }) %>" class="<%= assignmentId ? '' : 'is-active' %>">Alle Aufträge</a>
+    <% assignments.forEach((a) => { %><a href="#<%= query({ assignment: a.id }) %>" class="<%= assignmentId === a.id ? 'is-active' : '' %>"><%= a.title %></a><% }) %>
+  </div>
+  <% if (variants.length > 1) { -%>
+    <div class="segmented segmented--links">
+      <% variants.slice().sort((a, b) => PREFERRED_VARIANTS.indexOf(a) - PREFERRED_VARIANTS.indexOf(b)).forEach((v) => { %><a href="#<%= query({ variant: v }) %>" class="<%= variant === v ? 'is-active' : '' %>"><%= variantLabel(v) %></a><% }) %>
+    </div>
+  <% } -%>
+</nav>
+
+<% if (!located) { -%>
+  <div class="empty empty--compact"><p class="subtle"><%= shots.length ? 'Diese Aufnahmen haben keine Positionsdaten.' : 'Noch keine Bilder.' %></p></div>
+<% } else { -%>
+  <div class="mission-map card" data-controller="mission-map" data-mission-map-shots-value="<%= JSON.stringify(shots) %>">
+    <div class="mission-map__canvas" data-mission-map-target="map"></div>
+    <div class="segmented segmented--dark mission-map__kind" data-mission-map-target="kinds">
+      <button type="button" data-action="mission-map#kind" data-mission-map-kind-param="map">Karte</button>
+      <button type="button" data-action="mission-map#kind" data-mission-map-kind-param="aerial">Luftbild</button>
+    </div>
+  </div>
+  <p class="hint"><%= pluralize(located, 'Aufnahme', 'Aufnahmen') %> mit Position<%= shots.length > located ? ` · ${shots.length - located} ohne` : '' %>. Blau: Drohne mit Blickrichtung, Fläche: Bildausschnitt (berechnet aus Brennweite, Neigung und Gelände). Mit der Maus über Drohne oder Fläche leuchtet beides zusammen auf, mit Linie zur Bildmitte.</p>
+<% } -%>
